@@ -1,0 +1,137 @@
+[project]
+name = "sentinel-x"
+version = "0.1.0"
+description = "Sentinel-X — Autonomous AI Security Operations Platform (backend)"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = { text = "MIT" }
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.6",
+    "email-validator>=2.2",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "aiosqlite>=0.20",
+    "alembic>=1.14",
+    "pyjwt[crypto]>=2.10",
+    "pwdlib[argon2]>=0.2.1",
+    "redis>=5.2",
+    "prometheus-client>=0.21",
+    "httpx>=0.28",
+]
+
+[project.optional-dependencies]
+otel = [
+    "opentelemetry-sdk>=1.29",
+    "opentelemetry-exporter-otlp-proto-http>=1.29",
+    "opentelemetry-instrumentation-fastapi>=0.50b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.50b0",
+]
+
+[project.scripts]
+sentinelx = "app.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "pytest-cov>=6.0",
+    "fakeredis>=2.26",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "import-linter>=2.1",
+    "bandit>=1.8",
+    "pip-audit>=2.7",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+# ---------------------------------------------------------------- ruff
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["app/migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "S", "SIM", "RUF", "ASYNC", "PT", "N", "TID"]
+ignore = ["B008"]  # FastAPI Depends() in defaults is idiomatic
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S105", "S106"]
+"app/tests/**" = ["S101", "S105", "S106"]
+"app/conftest.py" = ["S101", "S105"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "migrations"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Security"]
+
+# ---------------------------------------------------------------- mypy
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["app/migrations/versions/"]
+
+[[tool.mypy.overrides]]
+module = ["fakeredis.*", "opentelemetry.*"]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------- pytest
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["app"]
+addopts = "-ra --strict-markers"
+filterwarnings = ["error::DeprecationWarning:app.*"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/migrations/*", "*/tests/*"]
+# SQLAlchemy's asyncio layer runs ORM code inside greenlets; without this, coverage misses it.
+concurrency = ["greenlet", "thread"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+
+# ---------------------------------------------------------------- import-linter
+# Module boundaries are physical (docs/09 §2): these contracts fail CI on violation.
+[tool.importlinter]
+root_package = "app"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Domain layers stay framework-free"
+type = "forbidden"
+source_modules = ["app.modules.*.domain"]
+forbidden_modules = ["fastapi", "sqlalchemy", "redis", "httpx", "app.core.db"]
+
+[[tool.importlinter.contracts]]
+name = "Application layers do not import infrastructure or interface"
+type = "forbidden"
+source_modules = ["app.modules.*.application"]
+forbidden_modules = ["app.modules.*.infrastructure", "app.modules.*.interface", "fastapi", "sqlalchemy"]
+
+[[tool.importlinter.contracts]]
+name = "Core does not depend on business modules"
+type = "forbidden"
+source_modules = ["app.core"]
+forbidden_modules = ["app.modules"]
+
+[[tool.importlinter.contracts]]
+name = "Modules are independent"
+type = "independence"
+modules = ["app.modules.identity", "app.modules.platform"]
+# Tests share the composition-root fixtures; production code may not.
+ignore_imports = ["app.modules.*.tests.* -> app.conftest"]

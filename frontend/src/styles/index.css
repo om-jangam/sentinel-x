@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* SOC consoles are used for long shifts in dim rooms: a low-glare dark theme is the default. */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-background: oklch(0.165 0.012 255);
+  --color-surface: oklch(0.205 0.014 255);
+  --color-surface-raised: oklch(0.245 0.016 255);
+  --color-border: oklch(0.32 0.016 255);
+  --color-foreground: oklch(0.95 0.006 255);
+  --color-muted: oklch(0.72 0.016 255);
+  --color-primary: oklch(0.72 0.12 190);
+  --color-primary-foreground: oklch(0.2 0.03 190);
+  --color-danger: oklch(0.64 0.2 25);
+  --color-warning: oklch(0.82 0.15 80);
+  --color-success: oklch(0.74 0.14 155);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-background text-foreground font-sans antialiased;
+}
+
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-primary;
+}

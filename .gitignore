@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv*/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# Local state & secrets — never commit
+.env
+.env.*
+!.env.example
+.secrets/
+*.pem
+*.key
+*.db
+*.sqlite3
+
+# Machine-specific tool config
+.claude/launch.json
+.claude/settings.local.json
+
+# Editors / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
