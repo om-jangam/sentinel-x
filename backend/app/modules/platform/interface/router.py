@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Protocol
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -72,14 +72,31 @@ class AuditVerificationRead(BaseModel):
     reason: str | None
 
 
-async def _readiness(container: Container) -> ReadinessReport:
+class Pingable(Protocol):
+    """Structural probe: platform reports on the event store without depending on ingestion."""
+
+    async def ping(self) -> bool: ...
+
+
+def get_event_store_probe(request: Request) -> Pingable | None:
+    store: Pingable | None = getattr(request.app.state, "event_store", None)
+    return store
+
+
+# An unreachable event store stops ingestion and search, but authentication, RBAC and the audit
+# trail still work — so it is reported without taking the process out of rotation.
+FATAL_CHECKS = ("database", "redis")
+
+
+async def _readiness(container: Container, event_store: Pingable | None) -> ReadinessReport:
     redis = await container.ping_redis()
     checks: dict[str, CheckState] = {
         "database": "ok" if await container.database.ping() else "failing",
         "redis": "not_configured" if redis is None else ("ok" if redis else "failing"),
+        "event_store": "not_configured" if event_store is None else ("ok" if await event_store.ping() else "failing"),
     }
     return ReadinessReport(
-        status="degraded" if "failing" in checks.values() else "ok",
+        status="degraded" if any(checks[name] == "failing" for name in FATAL_CHECKS) else "ok",
         checks=checks,
     )
 
@@ -94,8 +111,11 @@ async def healthz() -> dict[str, str]:
 
 
 @probes_router.get("/readyz")
-async def readyz(container: Container = Depends(get_container)) -> JSONResponse:
-    report = await _readiness(container)
+async def readyz(
+    container: Container = Depends(get_container),
+    event_store: Pingable | None = Depends(get_event_store_probe),
+) -> JSONResponse:
+    report = await _readiness(container, event_store)
     code = status.HTTP_200_OK if report.status == "ok" else status.HTTP_503_SERVICE_UNAVAILABLE
     return JSONResponse(report.model_dump(), status_code=code)
 
@@ -115,8 +135,9 @@ platform_router = APIRouter(prefix="/api/v1", tags=["platform"])
 async def health(
     _: Principal = Depends(require_permission(Permission.PLATFORM_READ)),
     container: Container = Depends(get_container),
+    event_store: Pingable | None = Depends(get_event_store_probe),
 ) -> HealthReport:
-    report = await _readiness(container)
+    report = await _readiness(container, event_store)
     return HealthReport(**report.model_dump(), version=__version__, environment=container.settings.environment.value)
 
 

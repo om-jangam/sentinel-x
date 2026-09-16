@@ -65,6 +65,18 @@ class PermissionDeniedError(AppError):
         super().__init__(detail or f"Requires '{permission}'")
 
 
+class PayloadTooLargeError(AppError):
+    status = 413
+    type_slug = "payload-too-large"
+    title = "Payload too large"
+
+
+class ServiceUnavailableError(AppError):
+    status = 503
+    type_slug = "service-unavailable"
+    title = "Service unavailable"
+
+
 class RateLimitedError(AppError):
     status = 429
     type_slug = "rate-limited"

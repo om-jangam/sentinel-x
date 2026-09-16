@@ -7,5 +7,6 @@ Composition-root wiring: the one place allowed to know about every module's mode
 from app.core.audit import models as _audit_models  # noqa: F401
 from app.core.db.base import Base
 from app.modules.identity.infrastructure import models as _identity_models  # noqa: F401
+from app.modules.ingestion.infrastructure import models as _ingestion_models  # noqa: F401
 
 metadata = Base.metadata

@@ -23,5 +23,6 @@ Superseded}.
 | [0010](ADR-0010-auth-stack.md) | Auth stack: PyJWT + argon2 + custom JWT | Accepted |
 | [0011](ADR-0011-opensearch-over-elasticsearch.md) | OpenSearch over Elasticsearch | Accepted |
 | [0012](ADR-0012-determinism-first-ai.md) | Determinism-first AI with human-in-the-loop | Accepted |
+| [0013](ADR-0013-vector-http-ingest-and-python-ocsf-mapping.md) | Vector → HTTP ingest API, OCSF mapping in Python | Accepted |
 
 New ADRs are added as implementation surfaces new significant decisions (per-phase).

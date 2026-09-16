@@ -1,0 +1,15 @@
+2026-09-15T09:02:11.114812+00:00 web-01 sshd[1804]: Accepted publickey for alice from 10.0.1.20 port 50022 ssh2: ED25519 SHA256:q1Kf0mY4bM3r8B9o2c0dZyXhU6w1tLrWm7nQpE5aVfs
+2026-09-15T09:14:02.301442+00:00 web-01 sshd[2211]: Invalid user admin from 203.0.113.45 port 41822
+2026-09-15T09:14:02.519004+00:00 web-01 sshd[2211]: Failed password for invalid user admin from 203.0.113.45 port 41822 ssh2
+2026-09-15T09:14:04.020377+00:00 web-01 sshd[2213]: Failed password for invalid user oracle from 203.0.113.45 port 41840 ssh2
+2026-09-15T09:14:05.771120+00:00 web-01 sshd[2215]: Failed password for invalid user test from 203.0.113.45 port 41852 ssh2
+2026-09-15T09:14:07.498856+00:00 web-01 sshd[2217]: Failed password for root from 203.0.113.45 port 41866 ssh2
+2026-09-15T09:14:09.210533+00:00 web-01 sshd[2219]: Failed password for root from 203.0.113.45 port 41878 ssh2
+2026-09-15T09:14:10.954410+00:00 web-01 sshd[2221]: Failed password for invalid user ubuntu from 203.0.113.45 port 41890 ssh2
+2026-09-15T09:14:12.688791+00:00 web-01 sshd[2223]: Failed password for deploy from 203.0.113.45 port 41904 ssh2
+2026-09-15T09:14:14.402265+00:00 web-01 sshd[2225]: Failed password for deploy from 203.0.113.45 port 41918 ssh2
+2026-09-15T09:14:16.133097+00:00 web-01 sshd[2227]: Failed password for invalid user postgres from 203.0.113.45 port 41930 ssh2
+2026-09-15T09:14:17.861574+00:00 web-01 sshd[2229]: Failed password for deploy from 203.0.113.45 port 41944 ssh2
+2026-09-15T09:14:19.590018+00:00 web-01 sshd[2231]: Accepted password for deploy from 203.0.113.45 port 41958 ssh2
+2026-09-15T09:14:19.602113+00:00 web-01 sshd[2231]: pam_unix(sshd:session): session opened for user deploy(uid=1001) by (uid=0)
+2026-09-15T09:31:45.004951+00:00 web-01 sshd[2390]: Accepted publickey for alice from 10.0.1.20 port 50318 ssh2: ED25519 SHA256:q1Kf0mY4bM3r8B9o2c0dZyXhU6w1tLrWm7nQpE5aVfs

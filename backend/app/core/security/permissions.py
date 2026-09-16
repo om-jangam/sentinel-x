@@ -17,6 +17,10 @@ class Permission(StrEnum):
     USER_MANAGE = "user:manage"
     ROLE_READ = "role:read"
     ROLE_MANAGE = "role:manage"
+    EVENT_READ = "event:read"
+    SOURCE_READ = "source:read"
+    SOURCE_MANAGE = "source:manage"
+    INGEST_WRITE = "ingest:write"
 
 
 PERMISSION_DESCRIPTIONS: Mapping[Permission, str] = {
@@ -26,6 +30,10 @@ PERMISSION_DESCRIPTIONS: Mapping[Permission, str] = {
     Permission.USER_MANAGE: "Create, update, deactivate users and assign their roles",
     Permission.ROLE_READ: "List and view roles and permissions",
     Permission.ROLE_MANAGE: "Create custom roles and change their permissions",
+    Permission.EVENT_READ: "Search and view normalised security events",
+    Permission.SOURCE_READ: "View ingest sources and their health",
+    Permission.SOURCE_MANAGE: "Register ingest sources, rotate their tokens, enable or disable them",
+    Permission.INGEST_WRITE: "Submit events through the HTTP ingest API",
 }
 
 # Granting these to a machine principal would let a compromised agent escalate itself (docs/07 §3).
@@ -52,14 +60,16 @@ SYSTEM_ROLE_DESCRIPTIONS: Mapping[SystemRole, str] = {
     SystemRole.SERVICE: "Least-privilege machine principal (agents, integrations)",
 }
 
-_READ_ONLY = frozenset({Permission.PLATFORM_READ})
+_READ_ONLY = frozenset({Permission.PLATFORM_READ, Permission.EVENT_READ})
+_SOC = _READ_ONLY | {Permission.SOURCE_READ}
 
 SYSTEM_ROLE_PERMISSIONS: Mapping[SystemRole, frozenset[Permission]] = {
     SystemRole.VIEWER: _READ_ONLY,
-    SystemRole.ANALYST: _READ_ONLY,
-    SystemRole.SENIOR_ANALYST: _READ_ONLY | {Permission.AUDIT_READ},
-    SystemRole.INCIDENT_RESPONDER: _READ_ONLY,
-    SystemRole.DETECTION_ENGINEER: _READ_ONLY,
+    SystemRole.ANALYST: _SOC,
+    SystemRole.SENIOR_ANALYST: _SOC | {Permission.AUDIT_READ},
+    SystemRole.INCIDENT_RESPONDER: _SOC,
+    SystemRole.DETECTION_ENGINEER: _SOC | {Permission.SOURCE_MANAGE},
     SystemRole.ADMIN: frozenset(Permission),
-    SystemRole.SERVICE: _READ_ONLY,
+    # Integrations push telemetry; they never administer sources or read the audit trail.
+    SystemRole.SERVICE: frozenset({Permission.PLATFORM_READ, Permission.EVENT_READ, Permission.INGEST_WRITE}),
 }

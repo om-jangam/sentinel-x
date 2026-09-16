@@ -34,6 +34,19 @@ class Settings(BaseSettings):
     database_echo: bool = False
     redis_url: str | None = None
 
+    # --- event store (ADR-0011); ingestion and event search are unavailable until this is set
+    opensearch_url: str | None = None
+    opensearch_username: str | None = None
+    opensearch_password: SecretStr | None = None
+    opensearch_verify_certs: bool = True
+    opensearch_shards: int = Field(default=1, ge=1)
+    opensearch_replicas: int = Field(default=0, ge=0)
+    event_retention_days: int = Field(default=90, ge=1, le=3650)
+
+    # --- ingestion
+    ingest_rate_limit: int = Field(default=600, ge=1)
+    ingest_rate_window_seconds: int = Field(default=60, ge=1)
+
     # --- HTTP
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
     expose_api_docs: bool = True
@@ -87,6 +100,10 @@ class Settings(BaseSettings):
             problems.append(f"argon2 time cost must be >= {_MIN_ARGON2_TIME_COST}")
         if "*" in self.cors_origins:
             problems.append("wildcard CORS origin is not allowed")
+        if not self.opensearch_url:
+            problems.append("SENTINELX_OPENSEARCH_URL is required (event store)")
+        elif self.opensearch_url.startswith("https") and not self.opensearch_verify_certs:
+            problems.append("SENTINELX_OPENSEARCH_VERIFY_CERTS must be true")
         if problems:
             raise ValueError("insecure production configuration: " + "; ".join(problems))
         return self

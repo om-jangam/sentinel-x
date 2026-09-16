@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import httpx
 import pytest
+from fastapi import FastAPI
 from sqlalchemy import update
 
 from app.conftest import Seeded, bearer
@@ -20,7 +22,22 @@ async def test_liveness_needs_no_auth(client: httpx.AsyncClient) -> None:
 async def test_readiness_reports_dependencies(client: httpx.AsyncClient) -> None:
     response = await client.get("/readyz")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "checks": {"database": "ok", "redis": "not_configured"}}
+    assert response.json() == {
+        "status": "ok",
+        "checks": {"database": "ok", "redis": "not_configured", "event_store": "not_configured"},
+    }
+
+
+async def test_unreachable_event_store_is_reported_but_keeps_the_api_in_rotation(
+    app: FastAPI, client: httpx.AsyncClient
+) -> None:
+    app.state.event_store = SimpleNamespace(ping=AsyncMock(return_value=False))
+
+    response = await client.get("/readyz")
+
+    assert response.status_code == 200, "ingestion degrades; authentication and admin still work"
+    assert response.json()["checks"]["event_store"] == "failing"
+    assert response.json()["status"] == "ok"
 
 
 async def test_readiness_fails_when_database_is_down(

@@ -1,9 +1,12 @@
-# Sentinel-X — `lite` profile (docs/08 §A.4): Postgres, Redis, API, web console.
-# Later phases add OpenSearch, Qdrant (lite) and Neo4j, Redpanda, MinIO, observability (`--profile full`).
+# Sentinel-X — `lite` profile (docs/08 §A.4): Postgres, Redis, OpenSearch, API, indexer, web console.
+# Later phases add Qdrant (lite) and Neo4j, Redpanda, MinIO, observability (`--profile full`).
 #
 #   make keys                                  # RS256 signing key → ./.secrets
 #   SENTINELX_BOOTSTRAP_ADMIN_PASSWORD=... docker compose up --build
 #   open http://localhost:8080
+#
+# Optional telemetry collector (needs ingest tokens, see pipeline/vector/vector.yaml):
+#   docker compose --profile collector up -d vector
 
 name: sentinel-x
 
@@ -11,6 +14,7 @@ x-backend-env: &backend-env
   SENTINELX_ENVIRONMENT: production
   SENTINELX_DATABASE_URL: postgresql+asyncpg://sentinelx:${POSTGRES_PASSWORD:-sentinelx}@postgres:5432/sentinelx
   SENTINELX_REDIS_URL: redis://redis:6379/0
+  SENTINELX_OPENSEARCH_URL: http://opensearch:9200
   SENTINELX_JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
   SENTINELX_CORS_ORIGINS: '["http://localhost:8080"]'
   SENTINELX_COOKIE_SECURE: "true"
@@ -44,9 +48,35 @@ services:
       retries: 20
     networks: [data]
 
+  # Single node, security plugin off: it is only reachable on the internal `data` network and never
+  # published to the host. A multi-node deployment with TLS and auth is a `full`-profile concern.
+  opensearch:
+    image: opensearchproject/opensearch:2.19.0
+    environment:
+      discovery.type: single-node
+      bootstrap.memory_lock: "true"
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: ${OPENSEARCH_JAVA_OPTS:--Xms1g -Xmx1g}
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    networks: [data]
+
   migrate:
     build: ./backend
-    command: ["sh", "-c", "sentinelx migrate && sentinelx seed --admin-email \"$$SENTINELX_BOOTSTRAP_ADMIN_EMAIL\""]
+    command:
+      - sh
+      - -c
+      - sentinelx migrate && sentinelx opensearch-init && sentinelx seed --admin-email "$$SENTINELX_BOOTSTRAP_ADMIN_EMAIL"
     environment:
       <<: *backend-env
       SENTINELX_BOOTSTRAP_ADMIN_EMAIL: ${SENTINELX_BOOTSTRAP_ADMIN_EMAIL:-admin@example.com}
@@ -54,6 +84,7 @@ services:
     secrets: [jwt_private_key]
     depends_on:
       postgres: { condition: service_healthy }
+      opensearch: { condition: service_healthy }
     restart: "no"
     networks: [data]
 
@@ -74,6 +105,23 @@ services:
       retries: 12
     networks: [data, app]
 
+  # Consumes the normalised-event stream into OpenSearch. Scale horizontally: each replica joins the
+  # same consumer group, so messages are shared and redelivered if a replica dies mid-batch.
+  indexer:
+    build: ./backend
+    command: ["sentinelx-worker"]
+    environment: *backend-env
+    secrets: [jwt_private_key]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      opensearch: { condition: service_healthy }
+    restart: unless-stopped
+    networks: [data]
+
   web:
     build: ./frontend
     ports:
@@ -85,6 +133,22 @@ services:
       api: { condition: service_healthy }
     networks: [app]
 
+  vector:
+    image: timberio/vector:0.54.0-alpine
+    profiles: [collector]
+    environment:
+      SENTINELX_INGEST_URL: http://api:8000
+      VECTOR_SX_TOKEN_LINUX_AUTH: ${VECTOR_SX_TOKEN_LINUX_AUTH:?create an ingest source and export its token}
+      VECTOR_SX_TOKEN_WINDOWS_SECURITY: ${VECTOR_SX_TOKEN_WINDOWS_SECURITY:?create an ingest source and export its token}
+    volumes:
+      - ./pipeline/vector/vector.yaml:/etc/vector/vector.yaml:ro
+      - vector-data:/var/lib/vector
+      - /var/log:/var/log:ro
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+    networks: [app]
+
 secrets:
   jwt_private_key:
     file: ./.secrets/jwt_private.pem
@@ -92,6 +156,8 @@ secrets:
 volumes:
   postgres-data:
   redis-data:
+  opensearch-data:
+  vector-data:
 
 networks:
   data:

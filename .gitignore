@@ -37,3 +37,7 @@ frontend/dist/
 !.vscode/extensions.json
 .DS_Store
 Thumbs.db
+
+# Local dev server logs
+*.log
+!pipeline/samples/*.log

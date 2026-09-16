@@ -1,0 +1,110 @@
+# Vector collects, shapes and buffers; Sentinel-X owns OCSF semantics (ADR-0013).
+#
+# Each sink targets an ingest source whose parser matches what it sends, authenticated with that
+# source's token. Create the sources first:
+#   sentinelx … → POST /api/v1/ingest/sources {"name": "web-01-auth", "parser": "linux_auth"}
+# then export the tokens as VECTOR_SX_TOKEN_* before starting Vector.
+
+data_dir: /var/lib/vector
+
+api:
+  enabled: false
+
+sources:
+  linux_auth_files:
+    type: file
+    include:
+      - /var/log/auth.log
+      - /var/log/secure
+    ignore_older_secs: 86400
+    read_from: beginning
+
+  syslog_udp:
+    type: syslog
+    address: 0.0.0.0:5140
+    mode: udp
+
+  windows_security_files:
+    type: file
+    include:
+      - /var/log/windows/security*.jsonl
+    read_from: beginning
+
+transforms:
+  # sshd lines only: everything else would just be rejected by the API and burn quota.
+  linux_auth_ready:
+    type: filter
+    inputs: [linux_auth_files, syslog_udp]
+    condition: |
+      contains(string!(.message), "sshd")
+
+  linux_auth_shaped:
+    type: remap
+    inputs: [linux_auth_ready]
+    source: |
+      # The API's linux_auth parser reads `.message`, and `.timestamp` when the line has no year.
+      .timestamp = format_timestamp!(.timestamp || now(), format: "%+")
+      . = { "message": string!(.message), "timestamp": .timestamp }
+
+  windows_security_shaped:
+    type: remap
+    inputs: [windows_security_files]
+    source: |
+      # Winlogbeat-style JSON lines: forward the event object itself.
+      parsed, err = parse_json(string!(.message))
+      if err != null {
+        log("dropping unparseable Windows record: " + err, level: "warn")
+        abort
+      }
+      . = object!(parsed)
+
+sinks:
+  sentinelx_linux_auth:
+    type: http
+    inputs: [linux_auth_shaped]
+    uri: ${SENTINELX_INGEST_URL:-http://api:8000}/api/v1/ingest/events
+    method: post
+    encoding:
+      codec: json
+    framing:
+      method: newline_delimited
+    request:
+      headers:
+        Content-Type: application/x-ndjson
+    auth:
+      strategy: bearer
+      token: ${VECTOR_SX_TOKEN_LINUX_AUTH}
+    batch:
+      max_events: 500
+      timeout_secs: 5
+    buffer:
+      type: disk
+      max_size: 268435488
+      when_full: block
+    healthcheck:
+      enabled: false
+
+  sentinelx_windows_security:
+    type: http
+    inputs: [windows_security_shaped]
+    uri: ${SENTINELX_INGEST_URL:-http://api:8000}/api/v1/ingest/events
+    method: post
+    encoding:
+      codec: json
+    framing:
+      method: newline_delimited
+    request:
+      headers:
+        Content-Type: application/x-ndjson
+    auth:
+      strategy: bearer
+      token: ${VECTOR_SX_TOKEN_WINDOWS_SECURITY}
+    batch:
+      max_events: 500
+      timeout_secs: 5
+    buffer:
+      type: disk
+      max_size: 268435488
+      when_full: block
+    healthcheck:
+      enabled: false

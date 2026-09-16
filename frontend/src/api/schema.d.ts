@@ -201,6 +201,127 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ingest/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit telemetry */
+        post: operations["ingest_events_api_v1_ingest_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ingest/parsers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Supported source parsers */
+        get: operations["list_parsers_api_v1_ingest_parsers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ingest/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List ingest sources */
+        get: operations["list_sources_api_v1_ingest_sources_get"];
+        put?: never;
+        /** Register an ingest source */
+        post: operations["create_source_api_v1_ingest_sources_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ingest/sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inspect an ingest source */
+        get: operations["get_source_api_v1_ingest_sources__source_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Enable or disable an ingest source */
+        patch: operations["update_source_api_v1_ingest_sources__source_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/ingest/sources/{source_id}/rotate-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Issue a new ingest token */
+        post: operations["rotate_source_token_api_v1_ingest_sources__source_id__rotate_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Search normalised events */
+        post: operations["search_events_api_v1_events_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_uid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch one event */
+        get: operations["get_event_api_v1_events__event_uid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -330,6 +451,57 @@ export interface components {
             /** Reason */
             reason: string | null;
         };
+        /** EventPageResponse */
+        EventPageResponse: {
+            /** Items */
+            items: {
+                [key: string]: unknown;
+            }[];
+            /** Total */
+            total: number;
+            /** Total Is Lower Bound */
+            total_is_lower_bound: boolean;
+            /** Took Ms */
+            took_ms: number;
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** EventSearchRequest */
+        EventSearchRequest: {
+            /**
+             * Time From
+             * Format: date-time
+             */
+            time_from: string;
+            /**
+             * Time To
+             * Format: date-time
+             */
+            time_to: string;
+            /** Class Uids */
+            class_uids?: number[];
+            /** Severity Min */
+            severity_min?: number | null;
+            /** Status Id */
+            status_id?: number | null;
+            /** Text */
+            text?: string | null;
+            /** Ip */
+            ip?: string | null;
+            /** User Name */
+            user_name?: string | null;
+            /** Hostname */
+            hostname?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+            /**
+             * Limit
+             * @default 50
+             */
+            limit: number;
+            /** Cursor */
+            cursor?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -350,6 +522,22 @@ export interface components {
             version: string;
             /** Environment */
             environment: string;
+        };
+        /** IngestErrorRead */
+        IngestErrorRead: {
+            /** Index */
+            index: number;
+            /** Reason */
+            reason: string;
+        };
+        /** IngestResponse */
+        IngestResponse: {
+            /** Accepted */
+            accepted: number;
+            /** Rejected */
+            rejected: number;
+            /** Errors */
+            errors: components["schemas"]["IngestErrorRead"][];
         };
         /** LoginRequest */
         LoginRequest: {
@@ -397,6 +585,13 @@ export interface components {
             items: components["schemas"]["UserRead"][];
             /** Next Cursor */
             next_cursor?: string | null;
+        };
+        /** ParserRead */
+        ParserRead: {
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
         };
         /** PermissionRead */
         PermissionRead: {
@@ -470,6 +665,82 @@ export interface components {
             description?: string | null;
             /** Permissions */
             permissions?: string[] | null;
+        };
+        /** SourceCreate */
+        SourceCreate: {
+            /**
+             * Name
+             * @example web-01-auth
+             */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Parser
+             * @example linux_auth
+             */
+            parser: string;
+        };
+        /**
+         * SourceHealth
+         * @enum {string}
+         */
+        SourceHealth: "healthy" | "stale" | "erroring" | "awaiting_data" | "disabled";
+        /** SourceRead */
+        SourceRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Parser */
+            parser: string;
+            /** Is Enabled */
+            is_enabled: boolean;
+            /** Token Prefix */
+            token_prefix: string;
+            health: components["schemas"]["SourceHealth"];
+            /** Last Event At */
+            last_event_at: string | null;
+            /** Events Accepted */
+            events_accepted: number;
+            /** Events Rejected */
+            events_rejected: number;
+            /** Last Error */
+            last_error: string | null;
+            /** Last Error At */
+            last_error_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** SourceUpdate */
+        SourceUpdate: {
+            /** Is Enabled */
+            is_enabled: boolean;
+        };
+        /**
+         * SourceWithToken
+         * @description Returned only by create and rotate: the token is never retrievable afterwards.
+         */
+        SourceWithToken: {
+            source: components["schemas"]["SourceRead"];
+            /** Token */
+            token: string;
         };
         /** TokenResponse */
         TokenResponse: {
@@ -984,6 +1255,274 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PermissionRead"][];
+                };
+            };
+        };
+    };
+    ingest_events_api_v1_ingest_events_post: {
+        parameters: {
+            query?: {
+                /** @description Required when using a user access token */
+                source_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_parsers_api_v1_ingest_parsers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParserRead"][];
+                };
+            };
+        };
+    };
+    list_sources_api_v1_ingest_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRead"][];
+                };
+            };
+        };
+    };
+    create_source_api_v1_ingest_sources_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceWithToken"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_source_api_v1_ingest_sources__source_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_source_api_v1_ingest_sources__source_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rotate_source_token_api_v1_ingest_sources__source_id__rotate_token_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceWithToken"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_events_api_v1_events_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventPageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_event_api_v1_events__event_uid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_uid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

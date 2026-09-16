@@ -13,6 +13,7 @@ def _production(**overrides: object) -> Settings:
         "database_url": "postgresql+asyncpg://u:p@db/sx",
         "redis_url": "redis://redis:6379/0",
         "jwt_private_key_file": "/run/secrets/jwt_private.pem",
+        "opensearch_url": "https://opensearch:9200",
     }
     values.update(overrides)
     return Settings(**values)  # type: ignore[arg-type]
@@ -31,6 +32,8 @@ def test_secure_production_configuration_is_accepted() -> None:
         ({"database_url": "sqlite+aiosqlite:///x.db"}, "SQLite"),
         ({"argon2_memory_cost_kib": 1024}, "argon2 memory"),
         ({"cors_origins": ["*"]}, "wildcard CORS"),
+        ({"opensearch_url": None}, "OPENSEARCH_URL"),
+        ({"opensearch_verify_certs": False}, "OPENSEARCH_VERIFY_CERTS"),
     ],
 )
 def test_insecure_production_configuration_is_refused(override: dict[str, object], message: str) -> None:
