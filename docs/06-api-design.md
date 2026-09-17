@@ -1,6 +1,11 @@
 # 06 · API Design
 
-*Phase 1 · Sentinel-X · covers requested deliverable 10*
+*Reference design, July 2026.*
+
+> **Status — partially superseded by [ADR-0014](adr/ADR-0014-lock-scope-security-investigation.md).**
+> **Still current:** §2 conventions (RFC 9457 errors, cursor pagination, constrained queries, no raw
+> query pass-through). **Not adopted:** the MCP interface and agent endpoints. The endpoint catalogue below
+> is a plan; the implemented API is in [architecture.md](architecture.md) §9 and `backend/openapi.json`.
 
 ---
 
@@ -15,7 +20,7 @@
 - **Async streaming** via **WebSocket** (live alerts, agent-step updates) and **SSE** (report/agent
   progress) — the investigation canvas is realtime.
 - **Everything authorised**: JWT bearer + RBAC permission check per endpoint; every mutation audited.
-- **MCP is a parallel interface** for agents (see [§04](04-ai-agent-architecture.md)), not a
+- **MCP is a parallel interface** for agents (see [§04](04-ai-investigation-assistant.md)), not a
   replacement for REST.
 
 ## 2. Conventions

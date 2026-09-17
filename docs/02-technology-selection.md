@@ -1,6 +1,15 @@
 # 02 · Technology Selection
 
-*Phase 1 · Sentinel-X · covers requested deliverable 4*
+*Reference design, July 2026.*
+
+> **Status — partially superseded by [ADR-0014](adr/ADR-0014-lock-scope-security-investigation.md).**
+> **In use:** Python 3.12, FastAPI, SQLAlchemy 2 (async), Pydantic 2, PostgreSQL, Redis (including Redis
+> Streams as the bus, §5), OpenSearch, Vector (configuration only), React, Vite, Tailwind, TanStack,
+> Docker Compose, GitHub Actions.
+> **Not adopted:** LangGraph/LangChain agents, MCP, Qdrant and embeddings, Neo4j, Redpanda,
+> MinIO/object storage, Fluent Bit, Kubernetes/Helm, and risk-based alerting as the primary alerting model.
+> **Decided later by phase ADRs:** Sigma evaluation approach (Phase 2), threat-intelligence providers
+> (Phase 5), model provider (Phase 6). Current architecture: [architecture.md](architecture.md).
 
 Every choice below lists **what, why, alternatives considered, and the deciding factor**. Version
 numbers reflect the verified 2025–2026 state; the recurring theme is that pre-2025 tutorials for

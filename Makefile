@@ -9,7 +9,7 @@ help:  ## Show targets
 keys:  ## Generate the RS256 JWT signing key into ./.secrets
 	$(BACKEND) uv run sentinelx generate-keys --out ../.secrets
 
-up:  ## Start the lite stack (Postgres, Redis, API, web) on http://localhost:8080
+up:  ## Start the lite stack (Postgres, Redis, OpenSearch, API, indexer, web) on http://localhost:8080
 	docker compose up --build -d
 
 down:  ## Stop the stack

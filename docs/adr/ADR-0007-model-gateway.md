@@ -1,6 +1,6 @@
 # ADR-0007 · Model gateway / bring-your-own-model
 
-**Status:** Accepted · **Date:** 2026-07
+**Status:** Accepted, amended by [ADR-0014](ADR-0014-lock-scope-security-investigation.md) (thin provider adapter; budgets and routing deferred) · **Date:** 2026-07
 
 ## Context
 

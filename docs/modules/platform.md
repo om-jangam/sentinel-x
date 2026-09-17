@@ -25,7 +25,7 @@ are independent of each other.
 | Endpoint | Auth | Purpose |
 |----------|------|---------|
 | `GET /healthz` | — | Liveness; never touches dependencies |
-| `GET /readyz` | — | Readiness: database and Redis; `503` when degraded |
+| `GET /readyz` | — | Readiness: database, Redis and event store; `503` only when the database or Redis is failing (an unreachable event store is reported but not fatal) |
 | `GET /metrics` | internal network only | Prometheus exposition |
 | `GET /api/v1/health` | `platform:read` | Readiness + version + environment |
 | `GET /api/v1/config` | `platform:read` | Non-secret runtime configuration, including the active signing `kid` |

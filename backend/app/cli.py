@@ -200,7 +200,9 @@ def _shift(record: dict[str, object], delta: timedelta) -> dict[str, object]:
     return shifted
 
 
-async def _load_demo(rebase: bool) -> int:
+async def _load_demo(samples: Path, *, rebase: bool) -> int:
+    import secrets
+
     from sqlalchemy import select
 
     from app.core.audit.port import AuditEvent
@@ -218,10 +220,21 @@ async def _load_demo(rebase: bool) -> int:
     from app.modules.ingestion.infrastructure.unit_of_work import SqlIngestionUnitOfWork
 
     settings = get_settings()
-    samples = BACKEND_ROOT.parent / "pipeline" / "samples"
-    if not samples.is_dir():
-        print(f"sample telemetry not found at {samples}", file=sys.stderr)
+    missing = [filename for _, _, filename, _ in SAMPLE_SOURCES if not (samples / filename).is_file()]
+    if missing:
+        print(f"sample telemetry not found in {samples}: {', '.join(missing)}", file=sys.stderr)
         return 1
+
+    datasets = [
+        (name, parser, description, _read_sample(samples / filename))
+        for name, parser, filename, description in SAMPLE_SOURCES
+    ]
+    if rebase:
+        # One shift for every file, so the attack story keeps its cross-source order and spacing.
+        times = [t for *_, records in datasets for t in map(_sample_time, records) if t is not None]
+        if times:
+            delta = utcnow() - timedelta(minutes=5) - max(times)
+            datasets = [(n, p, d, [_shift(r, delta) for r in records]) for n, p, d, records in datasets]
 
     store = event_store_from_settings(settings)
     if store is None:
@@ -243,15 +256,13 @@ async def _load_demo(rebase: bool) -> int:
             service = IngestService(uow, bus=bus)
             now = utcnow()
             total_accepted = total_rejected = 0
+            existing = {source.name: source for source in await uow.sources.list_for_org(org.id)}
 
-            for name, parser, filename, description in SAMPLE_SOURCES:
-                records = _read_sample(samples / filename)
-                if rebase:
-                    newest = max((t for t in map(_sample_time, records) if t is not None), default=None)
-                    if newest is not None:
-                        records = [_shift(record, now - timedelta(minutes=5) - newest) for record in records]
-
-                source = await uow.sources.get_by_token_hash(hash_opaque_token(f"demo:{org.id}:{name}"))
+            for name, parser, description, records in datasets:
+                source = existing.get(name)
+                if source is not None and source.parser != parser:
+                    print(f"source '{name}' already exists with parser '{source.parser}'", file=sys.stderr)
+                    return 1
                 if source is None:
                     source = IngestSource(
                         id=uuid7(),
@@ -261,7 +272,8 @@ async def _load_demo(rebase: bool) -> int:
                         parser=parser,
                         is_enabled=True,
                         token_prefix="sxi_demo",  # noqa: S106 — a display prefix, not a credential
-                        token_hash=hash_opaque_token(f"demo:{org.id}:{name}"),
+                        # Demo sources ingest in-process only: their credential is random and never revealed.
+                        token_hash=hash_opaque_token(secrets.token_urlsafe(32)),
                         created_at=now,
                         updated_at=now,
                     )
@@ -292,7 +304,7 @@ async def _load_demo(rebase: bool) -> int:
 
 
 def cmd_load_demo(args: argparse.Namespace) -> int:
-    return asyncio.run(_load_demo(rebase=not args.keep_timestamps))
+    return asyncio.run(_load_demo(Path(args.samples), rebase=not args.keep_timestamps))
 
 
 def cmd_worker(_: argparse.Namespace) -> int:
@@ -365,6 +377,11 @@ def main(argv: list[str] | None = None) -> int:
         "--keep-timestamps",
         action="store_true",
         help="load the samples at their original dates instead of shifting them to now",
+    )
+    demo.add_argument(
+        "--samples",
+        default=str(BACKEND_ROOT.parent / "pipeline" / "samples"),
+        help="directory holding the sample files (mount pipeline/samples when running in a container)",
     )
     demo.set_defaults(func=cmd_load_demo)
 

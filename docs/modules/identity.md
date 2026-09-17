@@ -35,7 +35,7 @@ and [ADR-0010](../adr/ADR-0010-auth-stack.md).
 - Each request resolves the principal's roles and permissions **from the database**, so role changes
   and deactivation take effect immediately rather than when a token expires.
 - Checks run at the route (`require_permission`) **and** inside every use-case (`Principal.require`),
-  so a future worker or MCP entry point cannot bypass them.
+  so another entry point (the worker, the CLI) cannot bypass them.
 - Every query is scoped by `org_id`; another org's user is indistinguishable from a missing one (404).
 
 ### Safety invariants

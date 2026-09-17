@@ -2,7 +2,10 @@
 
 Events land in ISM-managed rolling indices behind a per-category write alias rather than in data
 streams: data streams reject custom document ids, and we use the content fingerprint as `_id` so a
-redelivered batch updates in place instead of duplicating (ADR-0013).
+redelivered batch is rejected as a duplicate instead of stored twice (ADR-0013).
+
+Writes use `create`, never `index`: the first stored copy of an event is immutable, so its
+`sx.event_uid` stays valid as evidence even when the same record is delivered again.
 """
 
 from __future__ import annotations
@@ -254,20 +257,19 @@ class OpenSearchEventStore:
 
         operations: list[Any] = []
         for document in documents:
-            operations.append({"index": {"_index": write_alias(document.stream), "_id": document.id}})
+            operations.append({"create": {"_index": write_alias(document.stream), "_id": document.id}})
             operations.append(document.body)
 
         response = await self._client.bulk(body=operations, refresh=False)
         indexed = duplicates = failed = 0
         errors: list[str] = []
         for item in response.get("items", []):
-            result = item.get("index", {})
+            result = item.get("create", {})
             status = result.get("status", 500)
-            if status in (200, 201):
-                # 200 means the fingerprint was already present and was overwritten with identical content.
-                duplicates += status == 200
-                indexed += status == 201
+            if status == 201:
+                indexed += 1
             elif status == 409:
+                # Same fingerprint already stored: keep the original (and its event_uid) untouched.
                 duplicates += 1
             else:
                 failed += 1

@@ -65,7 +65,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="Sentinel-X API",
         version=__version__,
-        description="Autonomous AI Security Operations Platform",
+        description=(
+            "AI-assisted security investigation platform: correlates security telemetry, reconstructs "
+            "attack timelines and entity relationships, and assists analysts with evidence-backed findings."
+        ),
         lifespan=lifespan,
         docs_url="/docs" if docs else None,
         redoc_url=None,

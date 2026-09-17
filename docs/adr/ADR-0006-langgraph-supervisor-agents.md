@@ -1,6 +1,6 @@
 # ADR-0006 · LangGraph supervisor multi-agent orchestration
 
-**Status:** Accepted · **Date:** 2026-07
+**Status:** Superseded by [ADR-0014](ADR-0014-lock-scope-security-investigation.md) (single evidence-grounded investigation assistant) · **Date:** 2026-07
 
 ## Context
 

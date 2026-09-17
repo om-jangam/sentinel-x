@@ -1,79 +1,68 @@
 # Sentinel-X
 
-**Autonomous AI Security Operations Platform**
+**AI-assisted security investigation and attack-chain reconstruction**
 
-Sentinel-X is an enterprise-grade, AI-powered Security Operations platform that ingests security
-telemetry, detects threats, and drives investigations through a team of coordinated AI agents —
-enriching alerts with threat intelligence, mapping activity to MITRE ATT&CK, analysing malware and
-phishing, reconstructing attack timelines, and producing analyst- and executive-ready reports —
-while keeping a human in the loop for every consequential action.
+Sentinel-X correlates heterogeneous security telemetry, reconstructs attack timelines and entity
+relationships, enriches evidence with threat intelligence, and assists analysts in investigating security
+incidents.
 
-> **Status: Build Phase 0 — Platform foundation ✅**
-> The architecture ([`docs/`](docs/)) is complete, and the first vertical slice is implemented:
-> RS256 JWT auth with rotating refresh tokens and reuse detection, live-resolved RBAC, a
-> hash-chained tamper-evident audit log, the modular-monolith core, the React SOC console shell,
-> and CI. Next: **Phase 1 — Ingestion & OCSF normalisation** ([roadmap](docs/11-development-roadmap.md)).
+It is built to answer one question: *what actually happened during a security incident, how are the
+events connected, and what evidence should an analyst investigate?*
 
----
+```
+security data → ingestion → normalisation → detection → correlation
+             → timeline + evidence graph → threat intelligence → AI investigation → incident workspace
+```
 
-## Why Sentinel-X exists
+## Status
 
-The 2025–2026 SOC is defined by three hard numbers: teams see an average of **~2,992 alerts/day of
-which ~63% go unaddressed** (Vectra, 2026), **46% of alerts are false positives** (Microsoft/Omdia
-State of the SOC 2026), and the global workforce gap sits near **4.8M** with *budget* — not
-headcount availability — now the top constraint (ISC2 2025). Meanwhile IBM's Cost of a Data Breach
-2025 shows organisations using AI/automation extensively cut breach lifecycle by **80 days** and
-saved **~$1.9M** per breach.
+| Stage | State |
+|-------|-------|
+| Platform: identity, RBAC, hash-chained audit trail, console shell, CI | ✅ Built |
+| Ingestion: per-source tokens, limits, validation, audited source management | ✅ Built |
+| Normalisation: OCSF 1.6 subset for OpenSSH auth logs, Windows Security events, native OCSF | ✅ Built ([mappings](docs/modules/ingestion.md#ocsf-mappings)) |
+| Storage and search: immutable events in OpenSearch, constrained search API | ✅ Built (not yet run against a live cluster) |
+| Detection → correlation → timeline and graph → threat intelligence → AI assistant → workspace | Planned ([roadmap](docs/11-development-roadmap.md)) |
 
-Sentinel-X targets that gap directly: automate the triage, enrichment, correlation and investigation
-work that burns out analysts, compress mean-time-to-respond, and surface a transparent,
-auditable decision trail — the capability the market repeatedly cites as missing.
+Known limitations: [architecture.md §12](docs/architecture.md#12-known-limitations).
 
-## What makes it different
+## Principles
 
-- **Agentic investigation with a supervisor** — a LangGraph multi-agent workflow (triage →
-  enrichment → correlation → ATT&CK mapping → malware/phishing analysis → timeline → report) with
-  durable, resumable execution and **human approval gates on every state-changing action**.
-- **Risk-Based Alerting first** — inspired by Splunk RBA, detections contribute *scored risk* to
-  entities instead of paging per-signal; incidents fire when accumulated risk crosses a threshold.
-  This is the platform's structural answer to alert fatigue.
-- **OCSF-native normalisation** — all telemetry is normalised to the Open Cybersecurity Schema
-  Framework (v1.6) at ingest, making detections and AI reasoning portable across log sources.
-- **Detection-as-code** — Sigma rule corpus, versioned and MITRE-mapped, compiled to the search
-  backend via pySigma; temporal/correlation logic runs in a dedicated engine.
-- **Bring-your-own-model** — a model gateway routes between local Ollama models (Qwen3 for
-  structured extraction/summarisation) and any OpenAI-compatible API for heavy reasoning, with
-  prompt-injection guarding on all tool output.
-- **Honest scope** — a **modular monolith** with cleanly extractable service seams, not premature
-  microservices. Knowing when *not* to distribute is a deliberate architectural decision (see
-  [ADR-0002](docs/adr/ADR-0002-modular-monolith-over-microservices.md)).
+- **Evidence first:** every finding, relationship and timeline step cites stored events, and stored
+  events are immutable.
+- **Detection is deterministic:** Sigma and rules find things; correlation connects them.
+- **AI assists, never invents:** analysis is labelled FACT, INFERENCE or UNCERTAINTY, and statements
+  without valid citations are rejected ([design](docs/04-ai-investigation-assistant.md)).
+- **Source-agnostic:** Linux, Windows, network, firewall, cloud and other security tools. Aegis is one
+  possible source, and Sentinel-X works without it.
+- **Not endpoint security:** no agent, EDR, antivirus, hardening, local firewall or remediation, and no
+  execution of response actions. That is [Aegis](https://github.com/om-jangam/aegis)'s job.
+  ([ADR-0014](docs/adr/ADR-0014-lock-scope-security-investigation.md))
 
 ## Getting started
 
-### Local development (no Docker required)
+### Local development (no Docker)
 
 Prerequisites: Python 3.12, [uv](https://docs.astral.sh/uv/), Node 20.19+.
 
 ```bash
 cd backend
 uv sync
-uv run sentinelx generate-keys                 # RS256 signing key → ../.secrets (gitignored)
+uv run sentinelx generate-keys                          # RS256 signing key → ../.secrets (gitignored)
+export SENTINELX_DATABASE_URL=sqlite+aiosqlite:///./dev.db
 uv run sentinelx migrate
-uv run sentinelx seed --admin-email admin@example.com   # prompts for a password (12+ chars)
+uv run sentinelx seed --admin-email admin@example.com   # prompts for a password (12+ characters)
 uv run uvicorn app.main:create_app --factory --reload   # http://127.0.0.1:8000/docs
 ```
 
 ```bash
-cd frontend
-npm install
-npm run dev                                    # http://localhost:5173 (proxies /api to :8000)
+cd frontend && npm install && npm run dev              # http://localhost:5173 (proxies /api to :8000)
 ```
 
-Configuration is 12-factor; [`.env.example`](.env.example) documents every variable. Without
-`SENTINELX_DATABASE_URL` the API expects PostgreSQL on `localhost:5432`; for a quick try, point it
-at SQLite: `SENTINELX_DATABASE_URL=sqlite+aiosqlite:///./dev.db`.
+Every setting is documented in [`.env.example`](.env.example). Without `SENTINELX_OPENSEARCH_URL`,
+ingestion still authenticates and validates events but doesn't store them, and event search returns 503.
 
-### Docker Compose (`lite` profile)
+### Docker Compose
 
 ```bash
 make keys
@@ -81,71 +70,63 @@ SENTINELX_BOOTSTRAP_ADMIN_PASSWORD='choose-a-long-passphrase' docker compose up 
 # console: http://localhost:8080
 ```
 
-Runs PostgreSQL, Redis, a one-shot migrate/seed job, the API (production settings, read-only
-filesystem, non-root), and the nginx-served console with a strict CSP.
+Runs PostgreSQL, Redis, OpenSearch, a one-shot migrate/seed job, the API, the indexer worker and the
+nginx-served console. To load the demo attack telemetry, mount the samples into a one-off container:
+`docker compose run --rm -v "$PWD/pipeline/samples:/samples:ro" migrate sentinelx load-demo --samples /samples`.
+The Compose stack, including this command, has not yet been run end to end.
+
+### Sending events
+
+```bash
+# as an admin: register a source (the token is shown once)
+curl -X POST http://127.0.0.1:8000/api/v1/ingest/sources -H "Authorization: Bearer $ACCESS_TOKEN" \
+     -H 'Content-Type: application/json' -d '{"name": "web-01-auth", "parser": "linux_auth"}'
+
+# as the source
+curl -X POST http://127.0.0.1:8000/api/v1/ingest/events -H "Authorization: Bearer sxi_…" \
+     -H 'Content-Type: application/json' \
+     -d '[{"message": "2026-09-15T09:14:19Z web-01 sshd[2231]: Accepted password for deploy from 203.0.113.45 port 41958 ssh2"}]'
+# → 202 {"accepted": 1, "rejected": 0, "errors": []}
+```
+
+Limits, error codes and parser mappings: [ingestion module doc](docs/modules/ingestion.md).
 
 ### Quality gates
 
 ```bash
-make check      # ruff, ruff format, import-linter, mypy --strict, eslint, prettier, tsc, pytest, vitest
+make check      # ruff, import-linter, mypy --strict, eslint, prettier, tsc, pytest, vitest
 ```
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) also runs the backend suite against
-PostgreSQL, bandit, pip-audit, npm audit, gitleaks, trivy, the OpenAPI ↔ TypeScript client drift
-check, and image builds.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) additionally runs the backend suite on
+PostgreSQL, bandit, pip-audit, npm audit, gitleaks, Trivy, OpenAPI and client drift checks, and image
+builds.
 
 ## Documentation
 
-Read in order, or jump to what you need. Start with the executive summary.
+| Start here | |
+|---|---|
+| [Architecture (as built)](docs/architecture.md) | Components, data flow, security controls, stores, API, limitations |
+| [Executive summary](docs/00-executive-summary.md) | Purpose, principles, scope |
+| [Modules](docs/10-module-breakdown.md) · [Roadmap](docs/11-development-roadmap.md) | Built and planned modules; phases |
+| [AI investigation assistant](docs/04-ai-investigation-assistant.md) | Design of the evidence-grounded assistant |
+| Module docs: [identity](docs/modules/identity.md) · [platform + core](docs/modules/platform.md) · [ingestion](docs/modules/ingestion.md) | How each built module works |
+| [Architecture decision records](docs/adr/) | Why things are the way they are |
+| Reference design (July 2026): [02](docs/02-technology-selection.md) · [03](docs/03-system-architecture.md) · [05](docs/05-database-design.md) · [06](docs/06-api-design.md) · [07](docs/07-security-architecture.md) · [08](docs/08-deployment-and-cicd.md) · [09](docs/09-folder-structure.md) | Each carries a status banner saying what is current |
+| [Archive](docs/archive/2026-07-initial-design/) | The superseded "autonomous SOC" framing |
 
-| # | Document | Covers (requested deliverable) |
-|---|----------|-------------------------------|
-| 00 | [Executive Summary](docs/00-executive-summary.md) | Whole-of-Phase-1 TL;DR + final recommendation |
-| 01 | [Market Analysis, Feature Gaps & Competitor Comparison](docs/01-market-gap-competitor-analysis.md) | Market analysis, feature-gap analysis, competitor comparison |
-| 02 | [Technology Selection](docs/02-technology-selection.md) | Technology selection |
-| 03 | [System & Service Architecture](docs/03-system-architecture.md) | System architecture, microservice analysis |
-| 04 | [AI Agent Architecture](docs/04-ai-agent-architecture.md) | AI agent architecture |
-| 05 | [Database Design](docs/05-database-design.md) | Database design |
-| 06 | [API Design](docs/06-api-design.md) | API design |
-| 07 | [Security Architecture](docs/07-security-architecture.md) | Security architecture |
-| 08 | [Deployment & CI/CD](docs/08-deployment-and-cicd.md) | Deployment architecture, CI/CD design |
-| 09 | [Repository & Folder Structure](docs/09-folder-structure.md) | Folder structure |
-| 10 | [Module Breakdown](docs/10-module-breakdown.md) | Module breakdown |
-| 11 | [Development Roadmap](docs/11-development-roadmap.md) | Development roadmap |
-| 12 | [Risks, Trade-offs & Improvements](docs/12-risks-tradeoffs-improvements.md) | Risks & trade-offs, suggested improvements |
-| 13 | [Interview Value Analysis](docs/13-interview-value.md) | Interview value analysis |
-| — | [Architecture Decision Records](docs/adr/) | ADRs (item 5) |
+## Technology
 
-Implemented module docs: [`identity`](docs/modules/identity.md) ·
-[`platform` + `core`](docs/modules/platform.md).
-
-## Technology at a glance
-
-| Layer | Choice |
+| Layer | In use |
 |-------|--------|
-| Backend | Python 3.12, FastAPI (async), SQLAlchemy 2.0 async, Pydantic v2 |
-| AI orchestration | LangGraph 1.x (self-hosted, Postgres checkpointer), LangChain 1.x, MCP |
-| Models | Ollama (Qwen3) local + OpenAI-compatible API, routed via a model gateway |
-| Detection | Sigma + pySigma → OpenSearch, OpenSearch Security Analytics, custom correlation/risk engine |
-| Relational store | PostgreSQL 16 |
-| Event/log store | OpenSearch 2.x |
-| Vector store | Qdrant (BGE-M3 hybrid dense+sparse) |
-| Graph store | Neo4j (attack graph + GraphRAG over threat intel) |
-| Cache / bus | Redis 7 (cache, rate limits, Redis Streams MVP bus → Redpanda at scale) |
-| Pipeline | Vector.dev (OCSF normalisation) + Fluent Bit (edge) |
-| Threat intel | STIX 2.1/TAXII, MISP, OpenCTI, abuse.ch, VirusTotal, AbuseIPDB, OTX |
-| Frontend | React 19, TypeScript, Vite, Tailwind v4, shadcn/ui, TanStack Query/Router |
-| Deploy | Docker Compose (dev/lite) + Kubernetes/Helm (prod) |
-| CI/CD | GitHub Actions (ruff, mypy, pytest, trivy, bandit, semgrep, gitleaks, SBOM) |
-| Observability | Prometheus, Grafana, OpenTelemetry, structured logging |
+| Backend | Python 3.12, FastAPI, SQLAlchemy 2 (async), Pydantic 2, Alembic |
+| Stores | PostgreSQL 16 (system of record), Redis 7 (bus, rate limits, token revocation), OpenSearch 2 (events) |
+| Collection | HTTP ingest API; Vector configuration for log files and syslog |
+| Frontend | React 19, TypeScript, Vite, Tailwind 4, TanStack Router and Query |
+| Delivery | Docker Compose, GitHub Actions |
 
-Full rationale, alternatives considered, and version notes are in
-[Technology Selection](docs/02-technology-selection.md) and the [ADRs](docs/adr/).
+Detection, threat-intelligence and model-provider choices are made by ADRs at the start of their phases.
 
-## License & intent
+## Intent
 
-Built as a portfolio / learning project demonstrating modern AI, cybersecurity, cloud, backend,
-DevOps, and system-design engineering. It studies the architectures of Microsoft Sentinel, Palo Alto
-Cortex XSIAM, CrowdStrike Falcon, Google SecOps, Splunk, Elastic Security, SentinelOne and Wazuh to
-understand *why* they are built the way they are — and deliberately diverges where a better design
-exists for an open, single-team deployment. It does not copy any of them.
+A portfolio and learning project in security engineering, backend architecture and applied AI. It aims
+to be complete, understandable, secure, tested and demonstrable rather than broad.

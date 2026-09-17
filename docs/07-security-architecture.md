@@ -1,6 +1,20 @@
 # 07 · Security Architecture
 
-*Phase 1 · Sentinel-X · covers requested deliverable 11*
+*Reference design, July 2026.*
+
+> **Status — partially current.** **Implemented:**
+> - §2: RS256 access tokens, rotating refresh tokens with reuse detection, `jti` revocation, JWKS key
+>   rotation. *Not built:* MFA, breached-password checks, OIDC.
+> - §3: RBAC and `org_id` scoping, plus `event:*`, `source:*` and `ingest:write`; `incident_responder`
+>   no longer approves containment. *Not built:* field-level authorisation.
+> - §4: the audit chain.
+> - §6: stores on an internal network, CORS allowlist, CSP. *Not built:* TLS termination, mTLS, a secrets
+>   manager.
+> - §7: rate limiting, via an in-house Redis fixed-window limiter rather than `fastapi-limiter`.
+>
+> **Not adopted** ([ADR-0014](adr/ADR-0014-lock-scope-security-investigation.md)): §5 file upload and
+> malware analysis, and every control for agents, MCP, Neo4j and model-gateway budgets. AI safety is
+> specified in [04](04-ai-investigation-assistant.md). As built: [architecture.md](architecture.md) §7.
 
 A security product must be exemplary about its own security. This document specifies the platform's
 defensive posture. It maps to the requested controls (JWT, RBAC, audit logs, secure file upload,
@@ -131,7 +145,7 @@ Prompt injection is the #1 documented agent/MCP risk. Controls:
 - **PII redaction** before any external-API inference; local-first routing keeps sensitive data
   on-prem by default.
 - **Least-privilege agent identity** (§3) — an agent can't approve its own actions or touch RBAC.
-- **Golden-set evaluation + groundedness checks** ([§04](04-ai-agent-architecture.md) §9) catch
+- **Golden-set evaluation + groundedness checks** ([§04](04-ai-investigation-assistant.md) §8) catch
   regressions and unsupported conclusions before they reach analysts.
 
 ## 10. Compliance & data governance posture

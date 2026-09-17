@@ -1,6 +1,6 @@
 # ADR-0009 · Hybrid RAG by default, GraphRAG scoped
 
-**Status:** Accepted · **Date:** 2026-07
+**Status:** Deferred by [ADR-0014](ADR-0014-lock-scope-security-investigation.md) · **Date:** 2026-07
 
 ## Context
 

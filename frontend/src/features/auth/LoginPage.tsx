@@ -40,7 +40,7 @@ export function LoginPage() {
         <CardHeader className="items-center text-center">
           <ShieldCheck className="size-10 text-primary" aria-hidden />
           <CardTitle className="text-xl">Sign in to Sentinel-X</CardTitle>
-          <CardDescription>Autonomous AI Security Operations</CardDescription>
+          <CardDescription>Security Investigation Platform</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>

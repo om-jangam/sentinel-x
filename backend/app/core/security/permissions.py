@@ -54,7 +54,7 @@ SYSTEM_ROLE_DESCRIPTIONS: Mapping[SystemRole, str] = {
     SystemRole.VIEWER: "Read-only access to dashboards and incidents",
     SystemRole.ANALYST: "Tier-1 SOC analyst: triage and investigate",
     SystemRole.SENIOR_ANALYST: "Tier-2/3 analyst: resolve incidents, review the audit trail",
-    SystemRole.INCIDENT_RESPONDER: "Approve and execute containment actions",
+    SystemRole.INCIDENT_RESPONDER: "Lead incident investigations and manage investigation status",
     SystemRole.DETECTION_ENGINEER: "Author, test and promote detection content",
     SystemRole.ADMIN: "Full platform administration",
     SystemRole.SERVICE: "Least-privilege machine principal (agents, integrations)",

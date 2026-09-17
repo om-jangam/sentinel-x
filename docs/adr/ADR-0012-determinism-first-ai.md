@@ -1,6 +1,6 @@
 # ADR-0012 · Determinism-first AI with human-in-the-loop
 
-**Status:** Accepted · **Date:** 2026-07
+**Status:** Accepted, amended by [ADR-0014](ADR-0014-lock-scope-security-investigation.md) (no containment or response execution; FACT / INFERENCE / UNCERTAINTY output contract) · **Date:** 2026-07
 
 ## Context
 

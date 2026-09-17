@@ -1,7 +1,7 @@
 [project]
 name = "sentinel-x"
 version = "0.1.0"
-description = "Sentinel-X — Autonomous AI Security Operations Platform (backend)"
+description = "Sentinel-X — AI-assisted security investigation and attack-chain reconstruction platform (backend)"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 license = { text = "MIT" }

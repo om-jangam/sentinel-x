@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -107,4 +107,3 @@ class EventPage:
     total_is_lower_bound: bool
     took_ms: int
     next_cursor: EventCursor | None = None
-    facets: Mapping[str, Mapping[str, int]] = field(default_factory=dict)

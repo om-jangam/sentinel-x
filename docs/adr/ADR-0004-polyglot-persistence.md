@@ -1,6 +1,6 @@
 # ADR-0004 · Polyglot persistence
 
-**Status:** Accepted · **Date:** 2026-07
+**Status:** Accepted, amended by [ADR-0014](ADR-0014-lock-scope-security-investigation.md) (PostgreSQL, Redis and OpenSearch only; Qdrant, Neo4j and object storage not adopted) · **Date:** 2026-07
 
 ## Context
 

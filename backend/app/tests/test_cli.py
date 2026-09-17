@@ -1,15 +1,18 @@
-"""Operator CLI: key generation and rotation, migrations, idempotent seeding, audit verification."""
+"""Operator CLI: keys, migrations, idempotent seeding, audit verification, OpenAPI export, demo loading."""
 
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from app import cli
 from app.core.config import get_settings
+from app.modules.ingestion.domain.events import EventDocument, IndexOutcome
 
 
 @pytest.fixture
@@ -66,3 +69,76 @@ def test_export_openapi(tmp_path: Path) -> None:
     assert cli.main(["export-openapi", "--out", str(out)]) == 0
     spec = json.loads(out.read_text(encoding="utf-8"))
     assert {"/api/v1/auth/login", "/api/v1/users", "/api/v1/audit/verify"} <= set(spec["paths"])
+
+
+class RecordingStore:
+    """Stands in for OpenSearch: keeps the first copy of each fingerprint, like `create` does."""
+
+    def __init__(self) -> None:
+        self.documents: dict[str, dict[str, Any]] = {}
+
+    async def ensure_ready(self) -> None:
+        return None
+
+    async def index(self, documents: Sequence[EventDocument]) -> IndexOutcome:
+        new = [document for document in documents if document.id not in self.documents]
+        for document in new:
+            self.documents[document.id] = dict(document.body)
+        return IndexOutcome(indexed=len(new), duplicates=len(documents) - len(new), failed=0)
+
+    async def aclose(self) -> None:
+        return None
+
+
+def _at(document: dict[str, Any]) -> datetime:
+    return datetime.strptime(document["@timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=UTC)
+
+
+def test_load_demo_ingests_the_sample_attack_story(
+    cli_env: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert cli.main(["migrate"]) == 0
+    assert cli.main(["seed"]) == 0
+    store = RecordingStore()
+    monkeypatch.setattr(
+        "app.modules.ingestion.infrastructure.opensearch_store.event_store_from_settings", lambda _settings: store
+    )
+    capsys.readouterr()
+
+    assert cli.main(["load-demo"]) == 0
+    assert "loaded 33 events (1 records skipped)" in capsys.readouterr().out
+    documents = list(store.documents.values())
+    assert len(documents) == 33
+
+    newest = max(map(_at, documents))
+    assert timedelta(minutes=4) < datetime.now(UTC) - newest < timedelta(minutes=6)
+
+    # One shift for all files: the Windows PowerShell launch still precedes the DNS lookup by ~62 s.
+    powershell = next(d for d in documents if d.get("process", {}).get("name") == "powershell.exe")
+    dns = next(d for d in documents if d["class_uid"] == 4003)
+    gap = (_at(dns) - _at(powershell)).total_seconds()
+    assert 62 <= gap <= 63
+
+    # Re-running reuses the demo sources and never stores the same record twice.
+    assert cli.main(["load-demo", "--keep-timestamps"]) == 0
+    stored = len(store.documents)
+    assert cli.main(["load-demo", "--keep-timestamps"]) == 0
+    assert len(store.documents) == stored
+
+
+def test_load_demo_needs_samples_and_an_event_store(
+    cli_env: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert cli.main(["migrate"]) == 0
+    assert cli.main(["seed"]) == 0
+    capsys.readouterr()
+
+    assert cli.main(["load-demo"]) == 1
+    assert "SENTINELX_OPENSEARCH_URL" in capsys.readouterr().err
+
+    monkeypatch.setattr(
+        "app.modules.ingestion.infrastructure.opensearch_store.event_store_from_settings",
+        lambda _settings: RecordingStore(),
+    )
+    assert cli.main(["load-demo", "--samples", str(cli_env / "missing")]) == 1
+    assert "sample telemetry not found" in capsys.readouterr().err

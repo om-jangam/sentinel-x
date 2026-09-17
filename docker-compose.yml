@@ -1,5 +1,4 @@
 # Sentinel-X — `lite` profile (docs/08 §A.4): Postgres, Redis, OpenSearch, API, indexer, web console.
-# Later phases add Qdrant (lite) and Neo4j, Redpanda, MinIO, observability (`--profile full`).
 #
 #   make keys                                  # RS256 signing key → ./.secrets
 #   SENTINELX_BOOTSTRAP_ADMIN_PASSWORD=... docker compose up --build
@@ -138,8 +137,8 @@ services:
     profiles: [collector]
     environment:
       SENTINELX_INGEST_URL: http://api:8000
-      VECTOR_SX_TOKEN_LINUX_AUTH: ${VECTOR_SX_TOKEN_LINUX_AUTH:?create an ingest source and export its token}
-      VECTOR_SX_TOKEN_WINDOWS_SECURITY: ${VECTOR_SX_TOKEN_WINDOWS_SECURITY:?create an ingest source and export its token}
+      VECTOR_SX_TOKEN_LINUX_AUTH: ${VECTOR_SX_TOKEN_LINUX_AUTH:-}   # `:?` would break `docker compose up` for everyone: Compose interpolates inactive profiles too
+      VECTOR_SX_TOKEN_WINDOWS_SECURITY: ${VECTOR_SX_TOKEN_WINDOWS_SECURITY:-}
     volumes:
       - ./pipeline/vector/vector.yaml:/etc/vector/vector.yaml:ro
       - vector-data:/var/lib/vector

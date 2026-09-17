@@ -23,7 +23,7 @@ class Principal:
         return permission in self.permissions
 
     def require(self, permission: str) -> None:
-        """Authorisation lives in the use-case, so no entry point (API, worker, MCP) can skip it."""
+        """Authorisation lives in the use-case, so no entry point (API, worker, CLI) can skip it."""
         if permission not in self.permissions:
             raise PermissionDeniedError(permission)
 

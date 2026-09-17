@@ -1,6 +1,11 @@
 # 09 · Repository & Folder Structure
 
-*Phase 1 · Sentinel-X · covers requested deliverable 9*
+*Reference design, July 2026.*
+
+> **Status — partially current.** The per-module layering in §2 is how the code is built and enforced.
+> Directories that don't exist: `backend/app/agents`, `detections/`, `deploy/`, `observability/`,
+> `scripts/`, top-level `tests/`. The worker is `app/worker.py` (Redis Streams), not ARQ. Actual layout:
+> [architecture.md](architecture.md) §5.
 
 A single monorepo. Layout expresses the **modular monolith + Clean Architecture** decision: each
 module is a self-contained package with the same internal `domain / application / infrastructure /
@@ -14,7 +19,7 @@ interface` layering, so module boundaries are visible in the tree and enforceabl
 Sentinel-X/
 ├── README.md
 ├── docs/                     # Phase 1 analysis (this set) + ongoing ADRs & module docs
-│   ├── 00-executive-summary.md ... 13-interview-value.md
+│   ├── architecture.md, 00-executive-summary.md ... 11-development-roadmap.md, modules/, archive/
 │   └── adr/
 ├── backend/                  # Python: API, modules, workers, agents
 ├── frontend/                 # React + TypeScript SOC console

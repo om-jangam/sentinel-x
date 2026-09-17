@@ -123,7 +123,7 @@ def test_document_shape() -> None:
     assert document["time"] == 1_789_463_642_519
     assert document["@timestamp"] == "2026-09-15T09:14:02.519000Z"
     assert document["class_name"] == EventClass.AUTHENTICATION.caption == "Authentication"
-    assert document["category_name"] == "Iam"
+    assert document["category_name"] == "Identity & Access Management"
     assert document["activity_name"] == "Logon"
     assert document["severity"] == Severity.LOW.name.title()
     assert document["status"] == "Failure"

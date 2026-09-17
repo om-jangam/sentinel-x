@@ -1,6 +1,6 @@
 # ADR-0005 · Sigma detection + owned correlation/risk engine
 
-**Status:** Accepted · **Date:** 2026-07
+**Status:** Accepted, amended by [ADR-0014](ADR-0014-lock-scope-security-investigation.md) (risk-based alerting is not the primary incident mechanism) · **Date:** 2026-07
 
 ## Context
 

@@ -1,7 +1,7 @@
 """An in-memory event store so the suite exercises the whole ingest path without OpenSearch.
 
-The real adapter is covered by `test_opensearch_store.py`, which runs only when a cluster is
-available (SENTINELX_TEST_OPENSEARCH_URL).
+The OpenSearch adapter itself (query building, bulk results, index setup) is covered against a
+stubbed client in `test_opensearch_store.py`; no live cluster is exercised by the suite.
 """
 
 from __future__ import annotations
@@ -28,11 +28,10 @@ class FakeEventStore:
     def __init__(self) -> None:
         self.documents: dict[str, dict[str, Any]] = {}
         self.queries: list[EventQuery] = []
-        self.ready = False
         self.fail_next = False
 
     async def ensure_ready(self) -> None:
-        self.ready = True
+        return None
 
     async def ping(self) -> bool:
         return True

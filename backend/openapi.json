@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Sentinel-X API",
-    "description": "Autonomous AI Security Operations Platform",
+    "description": "AI-assisted security investigation platform: correlates security telemetry, reconstructs attack timelines and entity relationships, and assists analysts with evidence-backed findings.",
     "version": "0.1.0"
   },
   "paths": {

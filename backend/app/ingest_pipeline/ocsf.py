@@ -43,6 +43,17 @@ CATEGORY_SLUGS: Mapping[Category, str] = {
 }
 
 
+# OCSF 1.6 category captions, verbatim (the enum names are identifiers, not display names).
+CATEGORY_CAPTIONS: Mapping[Category, str] = {
+    Category.SYSTEM: "System Activity",
+    Category.FINDINGS: "Findings",
+    Category.IAM: "Identity & Access Management",
+    Category.NETWORK: "Network Activity",
+    Category.DISCOVERY: "Discovery",
+    Category.APPLICATION: "Application Activity",
+}
+
+
 class EventClass(IntEnum):
     FILE_SYSTEM_ACTIVITY = 1001
     PROCESS_ACTIVITY = 1007
@@ -376,7 +387,7 @@ class OcsfEvent(_Object):
         document["time"] = int(self.time.timestamp() * 1000)
         document["@timestamp"] = _rfc3339(self.time)
         document["class_name"] = self.class_uid.caption
-        document["category_name"] = self.class_uid.category.name.replace("_", " ").title()
+        document["category_name"] = CATEGORY_CAPTIONS[self.class_uid.category]
         document["activity_name"] = self.activity_name
         document["severity"] = Severity(self.severity_id).name.title()
         if self.status_id is not None:

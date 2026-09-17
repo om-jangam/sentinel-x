@@ -1,6 +1,12 @@
 # 03 · System & Service Architecture
 
-*Phase 1 · Sentinel-X · covers requested deliverables 6, 7*
+*Reference design, July 2026.*
+
+> **Status — partially superseded by [ADR-0014](adr/ADR-0014-lock-scope-security-investigation.md).**
+> **Still current:** §1 modular monolith, §2 layering, §6 event-bus abstraction, §8 cross-cutting
+> concerns. **Superseded:** the containers and data flow in §3–§5 and §7 that include the agent runtime,
+> MCP server, risk engine, Qdrant, Neo4j, Redpanda and response actions. For the components that actually
+> run, see [architecture.md](architecture.md) §4–§6.
 
 ---
 

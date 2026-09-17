@@ -1,6 +1,13 @@
 # 05 · Database Design
 
-*Phase 1 · Sentinel-X · covers requested deliverable 8*
+*Reference design, July 2026.*
+
+> **Status — partially superseded by [ADR-0014](adr/ADR-0014-lock-scope-security-investigation.md).**
+> **Implemented tables:** `orgs`, `users`, `roles`, `permissions`, `user_roles`, `role_permissions`,
+> `refresh_tokens`, `audit_log`, `ingest_sources`. **Still current:** §2.2 tenancy seam, §2.3 UUID v7
+> keys, §4 audit chain, §8 soft delete. **Not adopted:** §5 Qdrant, §6 Neo4j, object storage, and the
+> risk and agent tables; planned investigation data (findings, incidents, entities, timeline, graph) is
+> defined by [10 · Modules](10-module-breakdown.md). Current stores: [architecture.md](architecture.md) §8.
 
 ---
 
