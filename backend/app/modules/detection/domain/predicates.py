@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Protocol
 
+from app.core.netaddr import is_external_ip
+
 Document = Mapping[str, Any]
 
 
@@ -157,36 +159,10 @@ class Cidr:
             return False
 
 
-# Not reachable from outside an organisation: RFC 1918, CGNAT, loopback, link-local, unique-local,
-# unspecified and multicast. Documentation ranges (RFC 5737) deliberately count as external.
-_INTERNAL_NETWORKS = tuple(
-    ipaddress.ip_network(cidr)
-    for cidr in (
-        "10.0.0.0/8",
-        "172.16.0.0/12",
-        "192.168.0.0/16",
-        "100.64.0.0/10",
-        "127.0.0.0/8",
-        "169.254.0.0/16",
-        "0.0.0.0/8",
-        "224.0.0.0/4",
-        "::1/128",
-        "fc00::/7",
-        "fe80::/10",
-        "::/128",
-        "ff00::/8",
-    )
-)
-
-
 @dataclass(frozen=True, slots=True)
 class ExternalIp:
     def matches(self, value: Any) -> bool:
-        try:
-            address = ipaddress.ip_address(_text(value))
-        except ValueError:
-            return False
-        return not any(address.version == net.version and address in net for net in _INTERNAL_NETWORKS)
+        return is_external_ip(_text(value))
 
 
 @dataclass(frozen=True, slots=True)

@@ -37,7 +37,7 @@ endpoint domains in the OCSF model. The sample spray, the Windows logon burst an
 and the repeated external connections each produce findings that cite their events (12 in total).
 **Remaining:** a findings page in the console; more Sigma coverage as Sysmon-style sources arrive.
 
-## Phase 3 — Correlation & incidents
+## Phase 3 — Correlation & incidents ✅ (backend)
 - Entity extraction: IP, host, user, process, file, hash, domain.
 - Correlation rules: shared entities within a window, failed-then-successful authentication, technique
   chains across events and hosts.
@@ -46,6 +46,15 @@ and the repeated external connections each produce findings that cite their even
 
 **Done when** each sample attack story becomes one incident containing only evidence-backed links, and
 unrelated background events stay out.
+
+**Built** ([ADR-0016](adr/ADR-0016-entity-correlation-into-incidents.md),
+[module doc](modules/correlation.md)): role-aware entity extraction, the `shared-entity` and
+`auth-success-after-failures` rules, and incidents whose links cite their rule, entities and events.
+Technique chains are an incident assessment, not a linking rule: findings spanning three or more ATT&CK
+tactics raise severity and name the links involved. The samples contain **two** stories, not three.
+Nothing in the evidence connects web-01's attacker to WS-FIN-07's, so they stay separate. The Zeek
+beaconing joins the Windows story because both name `WS-FIN-07`. Background activity stays out.
+**Remaining:** an incidents page in the console (with the Phase 4 workspace).
 
 ## Phase 4 — Attack timeline, entity graph & incident workspace
 - Timeline: ordered steps (time, host, user, process, external entity) with supporting events.

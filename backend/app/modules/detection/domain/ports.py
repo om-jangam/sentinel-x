@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable, Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from typing import Protocol
 from uuid import UUID
 
 from app.modules.detection.domain.findings import Finding, FindingPage, FindingQuery
+from app.modules.detection.domain.predicates import Document
 
 
 class FindingRepository(Protocol):
@@ -15,6 +16,8 @@ class FindingRepository(Protocol):
         ...
 
     async def get(self, org_id: UUID, finding_id: UUID) -> Finding | None: ...
+
+    async def get_by_dedupe_key(self, org_id: UUID, dedupe_key: str) -> Finding | None: ...
 
     async def search(self, org_id: UUID, query: FindingQuery) -> FindingPage: ...
 
@@ -29,6 +32,11 @@ class DetectionUnitOfWork(Protocol):
 
 
 UnitOfWorkFactory = Callable[[], AbstractAsyncContextManager[DetectionUnitOfWork]]
+
+# Called after a batch's findings are durable, with the stored findings (including ones a redelivered batch
+# had already created) and the batch's documents. The composition root wires correlation in here, so a
+# downstream failure makes the bus redeliver and the sink sees the same findings again.
+FindingSink = Callable[[UUID, Sequence[Finding], Sequence[Document]], Awaitable[None]]
 
 
 @dataclass(frozen=True, slots=True)

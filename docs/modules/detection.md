@@ -8,6 +8,8 @@ events behind it. Design decision: [ADR-0015](../adr/ADR-0015-in-stream-detectio
 Detection consumes `events.normalized`, the same stream the indexer reads, in its own consumer group
 (`detection`). In a Redis deployment the worker (`sentinelx-worker`) runs both groups. Without Redis the
 API runs both in-process. Rules are loaded once at start-up; **a rule that can't load stops start-up**.
+After each batch's findings are committed, detection hands them, with the batch's events, to
+[correlation](correlation.md) through a sink wired at the composition root.
 
 ## Findings
 
@@ -121,7 +123,7 @@ or late data behaves the same as live data.
 - **Sigma coverage** is the table above; most SigmaHQ Windows rules need Sysmon fields that aren't
   normalised yet (hashes, registry, image loads).
 - **Threshold evidence** is the window at the moment of firing; later events in the same window do not
-  fire again. Grouping them is correlation's job (Phase 3).
+  fire again. Correlation groups findings into incidents, but it doesn't add those later events.
 - **Eventually consistent with the event store:** detection and indexing are separate consumers, so a
   finding can cite an event for a short time before it is searchable.
 - **No retro-hunting:** rules evaluate events as they arrive, not stored history.

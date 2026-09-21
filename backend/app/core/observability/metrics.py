@@ -69,6 +69,12 @@ DETECTION_SECONDS = Histogram(
     buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5),
     registry=REGISTRY,
 )
+CORRELATION_LINKS = Counter(
+    "sentinelx_correlation_links_total",
+    "Findings and events linked into incidents, by the correlation rule that justified the link",
+    ["rule"],
+    registry=REGISTRY,
+)
 
 
 def render_latest() -> tuple[bytes, str]:

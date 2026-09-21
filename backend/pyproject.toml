@@ -135,6 +135,12 @@ forbidden_modules = ["app.modules"]
 [[tool.importlinter.contracts]]
 name = "Modules are independent"
 type = "independence"
-modules = ["app.modules.identity", "app.modules.platform", "app.modules.ingestion", "app.modules.detection"]
+modules = [
+    "app.modules.identity",
+    "app.modules.platform",
+    "app.modules.ingestion",
+    "app.modules.detection",
+    "app.modules.correlation",
+]
 # Tests share the composition-root fixtures; production code may not.
 ignore_imports = ["app.modules.*.tests.* -> app.conftest"]

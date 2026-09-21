@@ -1,7 +1,7 @@
 """RBAC vocabulary (docs/07 §3): `resource:action` permissions and the default system roles.
 
 Permissions are code-defined and synced into the database by `sentinelx seed`; each module adds
-its own permissions here as it is built (e.g. `incident:resolve` lands with the cases module).
+its own permissions here as it is built.
 """
 
 from __future__ import annotations
@@ -23,6 +23,9 @@ class Permission(StrEnum):
     INGEST_WRITE = "ingest:write"
     FINDING_READ = "finding:read"
     RULE_READ = "rule:read"
+    INCIDENT_READ = "incident:read"
+    INCIDENT_UPDATE = "incident:update"
+    INCIDENT_RESOLVE = "incident:resolve"
 
 
 PERMISSION_DESCRIPTIONS: Mapping[Permission, str] = {
@@ -38,6 +41,9 @@ PERMISSION_DESCRIPTIONS: Mapping[Permission, str] = {
     Permission.INGEST_WRITE: "Submit events through the HTTP ingest API",
     Permission.FINDING_READ: "View detection findings and the events they cite",
     Permission.RULE_READ: "View the loaded detection rules",
+    Permission.INCIDENT_READ: "View incidents, their evidence links and entities",
+    Permission.INCIDENT_UPDATE: "Move incidents into investigation",
+    Permission.INCIDENT_RESOLVE: "Close incidents with a resolution, or reopen closed ones",
 }
 
 # Granting these to a machine principal would let a compromised agent escalate itself (docs/07 §3).
@@ -64,14 +70,16 @@ SYSTEM_ROLE_DESCRIPTIONS: Mapping[SystemRole, str] = {
     SystemRole.SERVICE: "Least-privilege machine principal (agents, integrations)",
 }
 
-_READ_ONLY = frozenset({Permission.PLATFORM_READ, Permission.EVENT_READ, Permission.FINDING_READ})
-_SOC = _READ_ONLY | {Permission.SOURCE_READ, Permission.RULE_READ}
+_READ_ONLY = frozenset(
+    {Permission.PLATFORM_READ, Permission.EVENT_READ, Permission.FINDING_READ, Permission.INCIDENT_READ}
+)
+_SOC = _READ_ONLY | {Permission.SOURCE_READ, Permission.RULE_READ, Permission.INCIDENT_UPDATE}
 
 SYSTEM_ROLE_PERMISSIONS: Mapping[SystemRole, frozenset[Permission]] = {
     SystemRole.VIEWER: _READ_ONLY,
     SystemRole.ANALYST: _SOC,
-    SystemRole.SENIOR_ANALYST: _SOC | {Permission.AUDIT_READ},
-    SystemRole.INCIDENT_RESPONDER: _SOC,
+    SystemRole.SENIOR_ANALYST: _SOC | {Permission.AUDIT_READ, Permission.INCIDENT_RESOLVE},
+    SystemRole.INCIDENT_RESPONDER: _SOC | {Permission.INCIDENT_RESOLVE},
     SystemRole.DETECTION_ENGINEER: _SOC | {Permission.SOURCE_MANAGE},
     SystemRole.ADMIN: frozenset(Permission),
     # Integrations push telemetry; they never administer sources or read the audit trail.

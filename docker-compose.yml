@@ -105,8 +105,8 @@ services:
     networks: [data, app]
 
   # Consumes the normalised-event stream twice, in separate consumer groups: `indexer` (into OpenSearch)
-  # and `detection` (rules -> findings). Scale horizontally: replicas share each group, and a message is
-  # redelivered if a replica dies mid-batch.
+  # and `detection` (rules -> findings -> correlation into incidents). Scale horizontally: replicas share
+  # each group, and a message is redelivered if a replica dies mid-batch.
   worker:
     build: ./backend
     command: ["sentinelx-worker"]

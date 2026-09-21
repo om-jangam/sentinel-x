@@ -26,4 +26,7 @@ export type PermissionName =
   | "source:manage"
   | "ingest:write"
   | "finding:read"
-  | "rule:read";
+  | "rule:read"
+  | "incident:read"
+  | "incident:update"
+  | "incident:resolve";

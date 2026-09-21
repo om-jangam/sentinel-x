@@ -23,7 +23,8 @@ security data → ingestion → normalisation → detection → correlation
 | Normalisation: OCSF 1.6 subset for OpenSSH auth logs, Windows Security events, native OCSF | ✅ Built ([mappings](docs/modules/ingestion.md#ocsf-mappings)) |
 | Storage and search: immutable events in OpenSearch, constrained search API | ✅ Built (not yet run against a live cluster) |
 | Detection: Sigma and threshold rules → findings that cite their events | ✅ Built ([rules and coverage](docs/modules/detection.md)) |
-| Correlation → timeline and graph → threat intelligence → AI assistant → workspace | Planned ([roadmap](docs/11-development-roadmap.md)) |
+| Correlation: findings and events → incidents, every link justified by shared entities and cited events | ✅ Built ([rules and entities](docs/modules/correlation.md)) |
+| Timeline and graph → threat intelligence → AI assistant → workspace | Planned ([roadmap](docs/11-development-roadmap.md)) |
 
 Known limitations: [architecture.md §12](docs/architecture.md#12-known-limitations).
 
@@ -75,7 +76,7 @@ SENTINELX_BOOTSTRAP_ADMIN_PASSWORD='choose-a-long-passphrase' docker compose up 
 # console: http://localhost:8080
 ```
 
-Runs PostgreSQL, Redis, OpenSearch, a one-shot migrate/seed job, the API, the worker (indexing and detection) and the
+Runs PostgreSQL, Redis, OpenSearch, a one-shot migrate/seed job, the API, the worker (indexing, detection and correlation) and the
 nginx-served console. To load the demo attack telemetry, mount the samples into a one-off container:
 `docker compose run --rm -v "$PWD/pipeline/samples:/samples:ro" migrate sentinelx load-demo --samples /samples`.
 The Compose stack, including this command, has not yet been run end to end.
@@ -114,7 +115,7 @@ builds.
 | [Executive summary](docs/00-executive-summary.md) | Purpose, principles, scope |
 | [Modules](docs/10-module-breakdown.md) · [Roadmap](docs/11-development-roadmap.md) | Built and planned modules; phases |
 | [AI investigation assistant](docs/04-ai-investigation-assistant.md) | Design of the evidence-grounded assistant |
-| Module docs: [identity](docs/modules/identity.md) · [platform + core](docs/modules/platform.md) · [ingestion](docs/modules/ingestion.md) · [detection](docs/modules/detection.md) | How each built module works |
+| Module docs: [identity](docs/modules/identity.md) · [platform + core](docs/modules/platform.md) · [ingestion](docs/modules/ingestion.md) · [detection](docs/modules/detection.md) · [correlation](docs/modules/correlation.md) | How each built module works |
 | [Architecture decision records](docs/adr/) | Why things are the way they are |
 | Reference design (July 2026): [02](docs/02-technology-selection.md) · [03](docs/03-system-architecture.md) · [05](docs/05-database-design.md) · [06](docs/06-api-design.md) · [07](docs/07-security-architecture.md) · [08](docs/08-deployment-and-cicd.md) · [09](docs/09-folder-structure.md) | Each carries a status banner saying what is current |
 | [Archive](docs/archive/2026-07-initial-design/) | The superseded "autonomous SOC" framing |

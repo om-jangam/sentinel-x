@@ -35,7 +35,15 @@ async def test_admin_creates_user_who_can_log_in(client: httpx.AsyncClient, admi
 
     token = await login(client, "analyst@example.com", PASSWORD)
     me = (await client.get("/api/v1/me", headers=bearer(token))).json()
-    assert me["permissions"] == ["event:read", "finding:read", "platform:read", "rule:read", "source:read"]
+    assert me["permissions"] == [
+        "event:read",
+        "finding:read",
+        "incident:read",
+        "incident:update",
+        "platform:read",
+        "rule:read",
+        "source:read",
+    ]
 
 
 async def test_duplicate_email_conflicts(client: httpx.AsyncClient, admin_token: str, seeded: Seeded) -> None:

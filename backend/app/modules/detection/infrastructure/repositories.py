@@ -80,6 +80,12 @@ class SqlFindingRepository:
         )
         return None if model is None else _to_entity(model)
 
+    async def get_by_dedupe_key(self, org_id: UUID, dedupe_key: str) -> Finding | None:
+        model = await self._session.scalar(
+            select(FindingModel).where(FindingModel.org_id == org_id, FindingModel.dedupe_key == dedupe_key)
+        )
+        return None if model is None else _to_entity(model)
+
     async def search(self, org_id: UUID, query: FindingQuery) -> FindingPage:
         statement = select(FindingModel).where(FindingModel.org_id == org_id)
         if query.time_from is not None:

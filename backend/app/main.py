@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
+from app.analysis import build_analysis
 from app.core.config import Environment, Settings, get_settings
 from app.core.container import build_container
 from app.core.events.bus import InMemoryEventBus
@@ -25,9 +26,8 @@ from app.core.observability.middleware import (
     SecurityHeadersMiddleware,
 )
 from app.core.observability.tracing import configure_tracing
-from app.modules.detection.application.detection_service import DetectionService
+from app.modules.correlation.interface import router as correlation_api
 from app.modules.detection.infrastructure.rule_loader import load_rules
-from app.modules.detection.infrastructure.unit_of_work import sql_uow_factory
 from app.modules.detection.infrastructure.window_store import InMemoryWindowStore, RedisWindowStore
 from app.modules.detection.interface import router as detection_api
 from app.modules.identity.infrastructure.principal_loader import SqlPrincipalLoader
@@ -52,14 +52,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Rules are code: a rule that can't load stops start-up rather than silently never firing.
     detection_rules = load_rules()
 
-    # Without Redis there is no worker to consume the bus, so the API indexes and detects in-process.
+    # Without Redis there is no worker to consume the bus, so the API indexes, detects and correlates in-process.
     if isinstance(container.event_bus, InMemoryEventBus):
         if event_store is not None:
             container.event_bus.subscribe(EVENTS_NORMALIZED, IndexingService(event_store).handle)
-        detection = DetectionService(
+        detection = build_analysis(
             detection_rules,
-            uow_factory=sql_uow_factory(container.database),
-            windows=RedisWindowStore(container.redis) if container.redis is not None else InMemoryWindowStore(),
+            container.database,
+            RedisWindowStore(container.redis) if container.redis is not None else InMemoryWindowStore(),
         )
         container.event_bus.subscribe(EVENTS_NORMALIZED, detection.handle)
 
@@ -106,7 +106,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_production)
     app.add_middleware(RequestContextMiddleware, metrics_enabled=settings.metrics_enabled)
 
-    for router in (*identity_api.routers, *ingestion_api.routers, *detection_api.routers, *platform_api.routers):
+    for router in (
+        *identity_api.routers,
+        *ingestion_api.routers,
+        *detection_api.routers,
+        *correlation_api.routers,
+        *platform_api.routers,
+    ):
         app.include_router(router)
 
     configure_tracing(app, container.database.engine, settings)

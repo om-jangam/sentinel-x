@@ -32,18 +32,24 @@ In-stream evaluation of Sigma rules (parsed by pySigma, translated to predicates
 threshold rules over normalised events; immutable **findings** that cite their events; the rule
 catalogue. → [module doc](modules/detection.md)
 
+### `correlation`
+Entity extraction by role (host, IP, user, domain, hash as linking entities; process and file as
+context); two correlation rules (shared entity within a window, successful logon after brute-force
+failures); **incidents** whose every link records the rule, the shared entities and the events on both
+sides; severity and title derived from named conditions; versioned, audited status changes. Wired after
+detection at the composition root (`app/analysis.py`). → [module doc](modules/correlation.md)
+
 ## Planned (in workflow order)
 
 | Module | Responsibility | Produces | Consumes |
 |--------|----------------|----------|----------|
-| `correlation` | Extract entities (IP, host, user, process, file, hash, domain) and link findings and events that share entities within time windows, including authentication sequences and technique chains | **Incidents** with evidence, plus the correlation rule and entities that justify each link | findings, events |
-| `incidents` | Incident workspace state: summary, severity, status, assignee, analyst notes, evidence set; every change audited | incident records | incidents |
+| `incidents` | Incident workspace state beyond status: summary, assignee, analyst notes; every change audited. Incident records and status live in `correlation` today | workspace records | incidents |
 | `reconstruction` | Ordered attack **timeline** and **entity graph** per incident; each step and edge carries the events that support it | timeline, graph | incident evidence |
 | `threatintel` | Reputation and related indicators for IPs, domains and hashes from configured providers, cached with source and retrieval time | enrichment records | incident entities |
 | `assistant` | Evidence-grounded AI analysis ([04](04-ai-investigation-assistant.md)) | FACT / INFERENCE / UNCERTAINTY statements with citations | evidence bundle |
 
-**Correlation inputs available today:** observables for IPs, hostnames, endpoint domains, users,
-process names, file paths and file hashes. Hashes arrive only through native OCSF sources so far.
+**Entities available to later modules:** each incident's entities with the event_uids they were seen
+in, and each link's matched entities. Hashes arrive only through native OCSF sources so far.
 
 **Evidence rule for every planned module:** a stored relationship (finding → event, incident → finding,
 graph edge, timeline step) must reference at least one existing `event_uid`, and tests must prove it.

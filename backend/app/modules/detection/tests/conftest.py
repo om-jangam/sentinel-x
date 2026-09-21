@@ -34,6 +34,10 @@ class MemoryFindings:
     async def get(self, org_id: UUID, finding_id: UUID) -> Finding | None:
         return next((f for f in self.by_key.values() if f.id == finding_id and f.org_id == org_id), None)
 
+    async def get_by_dedupe_key(self, org_id: UUID, dedupe_key: str) -> Finding | None:
+        finding = self.by_key.get(dedupe_key)
+        return finding if finding is not None and finding.org_id == org_id else None
+
     async def search(self, org_id: UUID, query: FindingQuery) -> FindingPage:
         return FindingPage(items=[f for f in self.by_key.values() if f.org_id == org_id])
 

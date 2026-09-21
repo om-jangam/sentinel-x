@@ -179,3 +179,34 @@ async def test_window_stores_are_idempotent_windowed_and_remember_firing(window_
     assert await window_store.last_fired("k") is None
     await window_store.mark_fired("k", 2_500, window_ms=1_000)
     assert await window_store.last_fired("k") == 2_500
+
+
+class RecordingSink:
+    def __init__(self) -> None:
+        self.calls: list[tuple[list[Any], int]] = []
+
+    async def __call__(self, org_id: Any, findings: Any, documents: Any) -> None:
+        self.calls.append((list(findings), len(documents)))
+
+
+async def test_the_sink_sees_stored_findings_for_every_batch_even_when_redelivered() -> None:
+    findings = MemoryFindings()
+    sink = RecordingSink()
+    detector = DetectionService(
+        load_rules(), uow_factory=memory_uow_factory(findings), windows=InMemoryWindowStore(), on_findings=sink
+    )
+    linux = sample_documents("linux_auth.log", "linux_auth")
+    benign = [doc for doc in linux if (doc.get("user") or {}).get("name") == "alice"]
+
+    await detector.handle(bus_event(linux))
+    await detector.handle(bus_event(linux))  # redelivered after a downstream failure
+    await detector.handle(bus_event(benign))  # no findings, but correlation still reads the events
+
+    first, again, quiet = sink.calls
+    assert len(first[0]) == 7
+    assert first[1] == len(linux)
+    # The redelivery hands over the findings already stored (same ids), including the threshold finding,
+    # so a correlation step that failed the first time gets another chance.
+    assert [f.id for f in again[0]] == [f.id for f in first[0]]
+    assert len(findings.all) == 7
+    assert quiet == ([], len(benign))

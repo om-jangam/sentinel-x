@@ -390,6 +390,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List incidents, most recent activity first */
+        get: operations["list_incidents_api_v1_incidents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incidents/{incident_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch an incident with its links, entities and assessment */
+        get: operations["get_incident_api_v1_incidents__incident_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change the status of an incident (audited) */
+        patch: operations["change_incident_status_api_v1_incidents__incident_id__patch"];
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -645,6 +680,217 @@ export interface components {
             /** Environment */
             environment: string;
         };
+        /** IncidentDetailRead */
+        IncidentDetailRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Severity Id */
+            severity_id: number;
+            /** Severity */
+            severity: string;
+            status: components["schemas"]["IncidentStatus"];
+            resolution: components["schemas"]["Resolution"] | null;
+            /** Techniques */
+            techniques: string[];
+            /** Tactics */
+            tactics: string[];
+            /** Finding Count */
+            finding_count: number;
+            /** Event Count */
+            event_count: number;
+            /**
+             * First Seen
+             * Format: date-time
+             */
+            first_seen: string;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Closed At */
+            closed_at: string | null;
+            /**
+             * Version
+             * @description Send back when changing the status; a stale version is a 409
+             */
+            version: number;
+            /** Assessment */
+            assessment: {
+                [key: string]: unknown;
+            }[];
+            /** Links */
+            links: components["schemas"]["IncidentLinkRead"][];
+            /** Entities */
+            entities: components["schemas"]["IncidentEntityRead"][];
+        };
+        /** IncidentEntityRead */
+        IncidentEntityRead: {
+            /** Key */
+            key: string;
+            /** Type */
+            type: string;
+            /** Value */
+            value: string;
+            /**
+             * Links
+             * @description Whether this entity can join findings into the incident
+             */
+            links: boolean;
+            /**
+             * First Seen
+             * Format: date-time
+             */
+            first_seen: string;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+            /**
+             * Events
+             * @description event_uids it was seen in (at most 20)
+             */
+            events: string[];
+        };
+        /** IncidentLinkRead */
+        IncidentLinkRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @description `finding` or `event`
+             */
+            kind: string;
+            /**
+             * Rule
+             * @description The correlation rule that created the link
+             */
+            rule: string;
+            /** Reason */
+            reason: string;
+            /** Finding Id */
+            finding_id: string | null;
+            /** Event Uid */
+            event_uid: string | null;
+            /**
+             * Evidence
+             * @description event_uids this link brings into the incident
+             */
+            evidence: string[];
+            /** Matched */
+            matched: components["schemas"]["MatchedEntityRead"][];
+            /** Detail */
+            detail: {
+                [key: string]: unknown;
+            };
+            /**
+             * First Seen
+             * Format: date-time
+             */
+            first_seen: string;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** IncidentPageResponse */
+        IncidentPageResponse: {
+            /** Items */
+            items: components["schemas"]["IncidentRead"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** IncidentRead */
+        IncidentRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Severity Id */
+            severity_id: number;
+            /** Severity */
+            severity: string;
+            status: components["schemas"]["IncidentStatus"];
+            resolution: components["schemas"]["Resolution"] | null;
+            /** Techniques */
+            techniques: string[];
+            /** Tactics */
+            tactics: string[];
+            /** Finding Count */
+            finding_count: number;
+            /** Event Count */
+            event_count: number;
+            /**
+             * First Seen
+             * Format: date-time
+             */
+            first_seen: string;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Closed At */
+            closed_at: string | null;
+            /**
+             * Version
+             * @description Send back when changing the status; a stale version is a 409
+             */
+            version: number;
+        };
+        /**
+         * IncidentStatus
+         * @enum {string}
+         */
+        IncidentStatus: "new" | "investigating" | "closed";
+        /** IncidentStatusChange */
+        IncidentStatusChange: {
+            status: components["schemas"]["IncidentStatus"];
+            resolution?: components["schemas"]["Resolution"] | null;
+            /**
+             * Version
+             * @description The version you last read
+             */
+            version: number;
+        };
         /** IngestErrorRead */
         IngestErrorRead: {
             /** Index */
@@ -670,6 +916,24 @@ export interface components {
              * Format: password
              */
             password: string;
+        };
+        /** MatchedEntityRead */
+        MatchedEntityRead: {
+            /**
+             * Key
+             * @description `type:value`, e.g. `ip:203.0.113.45`
+             */
+            key: string;
+            /**
+             * Incident Events
+             * @description event_uids already in the incident that show this entity
+             */
+            incident_events: string[];
+            /**
+             * New Events
+             * @description event_uids of the linked item that show this entity
+             */
+            new_events: string[];
         };
         /** MeResponse */
         MeResponse: {
@@ -748,6 +1012,11 @@ export interface components {
             /** Jwt Signing Kid */
             jwt_signing_kid: string;
         };
+        /**
+         * Resolution
+         * @enum {string}
+         */
+        Resolution: "true_positive" | "benign_positive" | "false_positive";
         /** RoleAssignment */
         RoleAssignment: {
             /** Roles */
@@ -1798,6 +2067,110 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RuleRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_incidents_api_v1_incidents_get: {
+        parameters: {
+            query?: {
+                /** @description Earliest last_seen (inclusive) */
+                time_from?: string | null;
+                /** @description Latest last_seen (inclusive) */
+                time_to?: string | null;
+                status?: components["schemas"]["IncidentStatus"] | null;
+                severity_min?: number | null;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentPageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_incident_api_v1_incidents__incident_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentDetailRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_incident_status_api_v1_incidents__incident_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentStatusChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentRead"];
                 };
             };
             /** @description Validation Error */

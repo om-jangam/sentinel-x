@@ -15,7 +15,7 @@ from app.core.events.bus import Event
 from app.core.ids import uuid7
 from app.core.observability.metrics import DETECTION_FINDINGS, DETECTION_SECONDS
 from app.modules.detection.domain.findings import MAX_ENTITY_VALUES, MAX_EVIDENCE, Finding
-from app.modules.detection.domain.ports import UnitOfWorkFactory, WindowEntry, WindowStore
+from app.modules.detection.domain.ports import FindingSink, UnitOfWorkFactory, WindowEntry, WindowStore
 from app.modules.detection.domain.predicates import Document, values_at
 from app.modules.detection.domain.rules import Rule, RuleSet, SingleEventRule, ThresholdRule
 
@@ -71,11 +71,13 @@ class DetectionService:
         *,
         uow_factory: UnitOfWorkFactory,
         windows: WindowStore,
+        on_findings: FindingSink | None = None,
         clock: Clock = utcnow,
     ) -> None:
         self._rules = rules
         self._uow_factory = uow_factory
         self._windows = windows
+        self._on_findings = on_findings
         self._clock = clock
 
     async def handle(self, event: Event) -> None:
@@ -89,6 +91,7 @@ class DetectionService:
         ]
         if not documents:
             return
+        org_id = event.org_id
 
         started = perf_counter()
         pending: list[tuple[Finding, Fired | None]] = []
@@ -99,12 +102,13 @@ class DetectionService:
                 continue
             for rule in self._rules.single_event:
                 if rule.predicate.evaluate(document):
-                    pending.append((self._single_event_finding(rule, document, identity, event.org_id), None))
+                    pending.append((self._single_event_finding(rule, document, identity, org_id), None))
             for threshold in self._rules.threshold:
-                result = await self._threshold(threshold, document, identity, event.org_id, fired_in_batch)
+                result = await self._threshold(threshold, document, identity, org_id, fired_in_batch)
                 if result is not None:
                     pending.append(result)
 
+        stored: list[Finding] = []
         if pending:
             created = 0
             async with self._uow_factory() as uow:
@@ -114,6 +118,8 @@ class DetectionService:
                     DETECTION_FINDINGS.labels(
                         rule_type=finding.rule_type.value, outcome="created" if added else "duplicate"
                     ).inc()
+                    existing = None if added else await uow.findings.get_by_dedupe_key(org_id, finding.dedupe_key)
+                    stored.append(existing or finding)
                 await uow.commit()
             # Only after the finding is durable: a crash before this point refires into the same dedupe key.
             for _, fired in pending:
@@ -121,8 +127,12 @@ class DetectionService:
                     key, at_ms, window_ms = fired
                     await self._windows.mark_fired(key, at_ms, window_ms=window_ms)
             if created:
-                logger.info("findings created", extra={"findings_created": created, "org_id": str(event.org_id)})
+                logger.info("findings created", extra={"findings_created": created, "org_id": str(org_id)})
         DETECTION_SECONDS.observe(perf_counter() - started)
+        # Every batch, not only ones with findings: correlation also reads events (a successful logon that
+        # follows failures usually arrives in a later batch than the findings it completes).
+        if self._on_findings is not None:
+            await self._on_findings(org_id, stored, documents)
 
     def _finding(
         self,
@@ -202,8 +212,10 @@ class DetectionService:
         last = fired_in_batch.get(key)
         if last is None:
             last = await self._windows.last_fired(key)
-        if last is not None and at_ms - last < rule.window_ms:
-            return None  # this group already fired within the window
+        # Already fired within the window, unless this is the same trigger redelivered: it rebuilds the same
+        # dedupe key, so storage stays idempotent and the sink still sees the finding after a crash.
+        if last is not None and last != at_ms and at_ms - last < rule.window_ms:
+            return None
         fired_in_batch[key] = at_ms
 
         ordered = sorted(entries, key=lambda entry: (entry.at_ms, entry.event_uid))[:MAX_EVIDENCE]
