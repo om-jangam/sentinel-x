@@ -25,5 +25,6 @@ Superseded, Deferred}; an amended ADR keeps its original text and links the ADR 
 | [0012](ADR-0012-determinism-first-ai.md) | Determinism-first AI with human-in-the-loop | Amended by 0014 |
 | [0013](ADR-0013-vector-http-ingest-and-python-ocsf-mapping.md) | Vector → HTTP ingest API, OCSF mapping in Python | Accepted |
 | [0014](ADR-0014-lock-scope-security-investigation.md) | Lock the product scope: security investigation and attack-chain reconstruction | Accepted |
+| [0015](ADR-0015-in-stream-detection.md) | In-stream detection: Sigma via pySigma plus platform threshold rules | Accepted |
 
 New ADRs are added as implementation surfaces new significant decisions (per-phase).

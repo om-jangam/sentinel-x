@@ -62,11 +62,14 @@ minutes after a rejection.
 1. Authenticate the source; check it is enabled; apply the rate limit and size caps.
 2. For each record, run the source's parser and validate the result against the OCSF model. A failure
    rejects that record only.
-3. Stamp `sx.org_id`, `sx.source_id`, `sx.event_uid` (UUID v7), `sx.ingested_at` and `sx.fingerprint`,
+3. Stamp `sx.org_id`, `sx.source_id`, `sx.event_uid` (a UUID v5 of the fingerprint, so every delivery of a
+   record has the same ID), `sx.ingested_at` and `sx.fingerprint`,
    and add `@timestamp` plus OCSF captions.
 4. Publish to Redis Streams (`events.normalized`), 200 documents per message, then update source
    counters. With no Redis, the API indexes in-process.
-5. The indexer bulk-writes with `create` into `events-ocsf-<category>-write`. A failed write raises, so the
+5. Two consumer groups read the stream independently: **detection** evaluates rules and stores findings
+   ([detection module](detection.md)), and the **indexer** bulk-writes with `create` into
+   `events-ocsf-<category>-write`. A failed write raises, so the
    message stays pending and is redelivered.
 
 **Immutability.** `_id` is `SHA-256(org_id ‖ source_id ‖ canonical normalised event)`. Because writes use
@@ -80,6 +83,9 @@ implementation:
 
 - **Classes supported:** File System Activity (1001), Process Activity (1007), Authentication (3002),
   Network Activity (4001), HTTP Activity (4002), DNS Activity (4003). Others are rejected.
+- **File hashes** (`*.file.hashes`, the OCSF fingerprint object) are accepted: MD5, SHA-1, SHA-256 and
+  SHA-512 must be well-formed hex and are lower-cased. Only native OCSF input carries them today; no
+  shipped parser produces hashes.
 - **Attributes outside the model are dropped**, including on native OCSF input. Source-specific leftovers
   go in `unmapped`, which is stored but not indexed.
 - **Validation:** `category_uid` and `type_uid` are derived and checked; `activity_id` must be defined
@@ -162,7 +168,7 @@ total capped at 10,000. `GET /api/v1/events/{event_uid}` returns one event.
 
 ```bash
 sentinelx opensearch-init          # index template, ISM policy, write indices (idempotent)
-sentinelx worker                   # indexer; scale horizontally, replicas share the consumer group
+sentinelx worker                   # indexing + detection; scale horizontally, replicas share each group
 sentinelx load-demo [--samples DIR] [--keep-timestamps]
                                    # demo sources + pipeline/samples; all files shifted by one offset so
                                    # the newest event is ~5 min old and the cross-source story keeps its order

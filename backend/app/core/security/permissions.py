@@ -21,6 +21,8 @@ class Permission(StrEnum):
     SOURCE_READ = "source:read"
     SOURCE_MANAGE = "source:manage"
     INGEST_WRITE = "ingest:write"
+    FINDING_READ = "finding:read"
+    RULE_READ = "rule:read"
 
 
 PERMISSION_DESCRIPTIONS: Mapping[Permission, str] = {
@@ -34,6 +36,8 @@ PERMISSION_DESCRIPTIONS: Mapping[Permission, str] = {
     Permission.SOURCE_READ: "View ingest sources and their health",
     Permission.SOURCE_MANAGE: "Register ingest sources, rotate their tokens, enable or disable them",
     Permission.INGEST_WRITE: "Submit events through the HTTP ingest API",
+    Permission.FINDING_READ: "View detection findings and the events they cite",
+    Permission.RULE_READ: "View the loaded detection rules",
 }
 
 # Granting these to a machine principal would let a compromised agent escalate itself (docs/07 §3).
@@ -60,8 +64,8 @@ SYSTEM_ROLE_DESCRIPTIONS: Mapping[SystemRole, str] = {
     SystemRole.SERVICE: "Least-privilege machine principal (agents, integrations)",
 }
 
-_READ_ONLY = frozenset({Permission.PLATFORM_READ, Permission.EVENT_READ})
-_SOC = _READ_ONLY | {Permission.SOURCE_READ}
+_READ_ONLY = frozenset({Permission.PLATFORM_READ, Permission.EVENT_READ, Permission.FINDING_READ})
+_SOC = _READ_ONLY | {Permission.SOURCE_READ, Permission.RULE_READ}
 
 SYSTEM_ROLE_PERMISSIONS: Mapping[SystemRole, frozenset[Permission]] = {
     SystemRole.VIEWER: _READ_ONLY,

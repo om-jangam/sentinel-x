@@ -1,0 +1,23 @@
+title: SSH authentication attempt for a user that does not exist
+id: 9a3d5f07-2b64-4c1e-b8d9-4e7f0a6c2d15
+status: test
+description: >
+  sshd reports attempts against accounts that don't exist on the host. One is noise; many, from one
+  source, are guessing (see the threshold rules and correlation).
+author: Sentinel-X
+references:
+  - https://attack.mitre.org/techniques/T1110/
+logsource:
+  product: linux
+  service: sshd
+detection:
+  keywords:
+    - 'Invalid user'
+    - 'for invalid user'
+  condition: keywords
+falsepositives:
+  - Typos in usernames
+level: low
+tags:
+  - attack.credential_access
+  - attack.t1110

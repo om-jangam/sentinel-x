@@ -44,6 +44,7 @@ def test_migrate_seed_verify(
     cli_env: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert cli.main(["migrate"]) == 0
+    assert "sentinelx seed" in capsys.readouterr().out, "migrate points at the permission sync"
 
     assert cli.main(["seed", "--admin-email", "ops@example.com"]) == 1, "no password available"
 

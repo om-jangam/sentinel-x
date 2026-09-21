@@ -1,0 +1,28 @@
+title: net.exe lists the Domain Admins group
+id: e1f4a7c2-93b8-4d16-8a0f-2c6b5d9e3a71
+status: test
+description: >
+  Enumerating members of privileged domain groups with net.exe helps an attacker choose which accounts to
+  target for privilege escalation or lateral movement.
+author: Sentinel-X
+references:
+  - https://attack.mitre.org/techniques/T1069/002/
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  image:
+    Image|endswith:
+      - '\net.exe'
+      - '\net1.exe'
+  query:
+    CommandLine|contains|all:
+      - ' group'
+      - 'domain admins'
+  condition: image and query
+falsepositives:
+  - Administrators auditing group membership
+level: medium
+tags:
+  - attack.discovery
+  - attack.t1069.002

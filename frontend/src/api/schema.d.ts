@@ -322,6 +322,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List findings, newest first */
+        get: operations["list_findings_api_v1_findings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/findings/{finding_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch one finding with its evidence event ids */
+        get: operations["get_finding_api_v1_findings__finding_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/detection/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the loaded detection rules */
+        get: operations["list_rules_api_v1_detection_rules_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/detection/rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inspect one detection rule */
+        get: operations["get_rule_api_v1_detection_rules__rule_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -502,6 +570,60 @@ export interface components {
             /** Cursor */
             cursor?: string | null;
         };
+        /** FindingPageResponse */
+        FindingPageResponse: {
+            /** Items */
+            items: components["schemas"]["FindingRead"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** FindingRead */
+        FindingRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Rule Id */
+            rule_id: string;
+            /** Rule Title */
+            rule_title: string;
+            /** Rule Type */
+            rule_type: string;
+            /** Rule Version */
+            rule_version: string;
+            /** Severity Id */
+            severity_id: number;
+            /** Severity */
+            severity: string;
+            /** Techniques */
+            techniques: string[];
+            /** Tactics */
+            tactics: string[];
+            /** Entities */
+            entities: {
+                [key: string]: string[];
+            };
+            /** Evidence */
+            evidence: string[];
+            /** Evidence Count */
+            evidence_count: number;
+            /**
+             * First Seen
+             * Format: date-time
+             */
+            first_seen: string;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -666,6 +788,36 @@ export interface components {
             /** Permissions */
             permissions?: string[] | null;
         };
+        /** RuleRead */
+        RuleRead: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Type */
+            type: string;
+            /** Level */
+            level: string;
+            /** Severity Id */
+            severity_id: number;
+            /** Techniques */
+            techniques: string[];
+            /** Tactics */
+            tactics: string[];
+            /** Version */
+            version: string;
+            /** Path */
+            path: string;
+            /** References */
+            references: string[];
+            /** False Positives */
+            false_positives: string[];
+            /** Logsource */
+            logsource?: string | null;
+            threshold?: components["schemas"]["ThresholdSettings"] | null;
+        };
         /** SourceCreate */
         SourceCreate: {
             /**
@@ -741,6 +893,17 @@ export interface components {
             source: components["schemas"]["SourceRead"];
             /** Token */
             token: string;
+        };
+        /** ThresholdSettings */
+        ThresholdSettings: {
+            /** Group By */
+            group_by: string[];
+            /** Count Distinct */
+            count_distinct: string | null;
+            /** Threshold */
+            threshold: number;
+            /** Window Seconds */
+            window_seconds: number;
         };
         /** TokenResponse */
         TokenResponse: {
@@ -1514,6 +1677,127 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_findings_api_v1_findings_get: {
+        parameters: {
+            query?: {
+                /** @description Earliest last_seen (inclusive) */
+                time_from?: string | null;
+                /** @description Latest last_seen (inclusive) */
+                time_to?: string | null;
+                severity_min?: number | null;
+                rule_id?: string | null;
+                technique?: string | null;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindingPageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_finding_api_v1_findings__finding_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindingRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_rules_api_v1_detection_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleRead"][];
+                };
+            };
+        };
+    };
+    get_rule_api_v1_detection_rules__rule_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleRead"];
                 };
             };
             /** @description Validation Error */

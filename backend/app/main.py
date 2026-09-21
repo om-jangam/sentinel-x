@@ -25,6 +25,11 @@ from app.core.observability.middleware import (
     SecurityHeadersMiddleware,
 )
 from app.core.observability.tracing import configure_tracing
+from app.modules.detection.application.detection_service import DetectionService
+from app.modules.detection.infrastructure.rule_loader import load_rules
+from app.modules.detection.infrastructure.unit_of_work import sql_uow_factory
+from app.modules.detection.infrastructure.window_store import InMemoryWindowStore, RedisWindowStore
+from app.modules.detection.interface import router as detection_api
 from app.modules.identity.infrastructure.principal_loader import SqlPrincipalLoader
 from app.modules.identity.interface import router as identity_api
 from app.modules.ingestion.application.indexing_service import IndexingService
@@ -44,9 +49,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     container.principal_loader = SqlPrincipalLoader()
     event_store = event_store_from_settings(settings)
 
-    # Without Redis there is no worker to consume the bus, so the API indexes in-process.
-    if event_store is not None and isinstance(container.event_bus, InMemoryEventBus):
-        container.event_bus.subscribe(EVENTS_NORMALIZED, IndexingService(event_store).handle)
+    # Rules are code: a rule that can't load stops start-up rather than silently never firing.
+    detection_rules = load_rules()
+
+    # Without Redis there is no worker to consume the bus, so the API indexes and detects in-process.
+    if isinstance(container.event_bus, InMemoryEventBus):
+        if event_store is not None:
+            container.event_bus.subscribe(EVENTS_NORMALIZED, IndexingService(event_store).handle)
+        detection = DetectionService(
+            detection_rules,
+            uow_factory=sql_uow_factory(container.database),
+            windows=RedisWindowStore(container.redis) if container.redis is not None else InMemoryWindowStore(),
+        )
+        container.event_bus.subscribe(EVENTS_NORMALIZED, detection.handle)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -76,6 +91,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.container = container
     app.state.event_store = event_store
+    app.state.detection_rules = detection_rules
     install_exception_handlers(app)
 
     # Starlette runs the last-added middleware outermost.
@@ -90,7 +106,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_production)
     app.add_middleware(RequestContextMiddleware, metrics_enabled=settings.metrics_enabled)
 
-    for router in (*identity_api.routers, *ingestion_api.routers, *platform_api.routers):
+    for router in (*identity_api.routers, *ingestion_api.routers, *detection_api.routers, *platform_api.routers):
         app.include_router(router)
 
     configure_tracing(app, container.database.engine, settings)

@@ -1,0 +1,23 @@
+id: 6c1f3e8a-5d92-4a07-b4e6-0f2a8c7d9e13
+title: Repeated connections from one host to the same external destination
+description: >
+  Many connections from one internal host to the same external address and port within minutes. This is
+  consistent with command-and-control beaconing, but also with normal polling software: the rule does not
+  measure periodicity, so treat it as a lead to investigate.
+level: low
+tags:
+  - attack.command_and_control
+  - attack.t1071
+references:
+  - https://attack.mitre.org/techniques/T1071/
+falsepositives:
+  - Update checkers, telemetry agents and other legitimate polling clients
+match:
+  class_uid: 4001
+  dst_endpoint.ip|external: true
+group_by:
+  - src_endpoint.ip
+  - dst_endpoint.ip
+  - dst_endpoint.port
+threshold: 5
+window: 10m

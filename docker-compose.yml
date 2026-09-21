@@ -1,4 +1,4 @@
-# Sentinel-X — `lite` profile (docs/08 §A.4): Postgres, Redis, OpenSearch, API, indexer, web console.
+# Sentinel-X — `lite` profile (docs/08 §A.4): Postgres, Redis, OpenSearch, API, worker, web console.
 #
 #   make keys                                  # RS256 signing key → ./.secrets
 #   SENTINELX_BOOTSTRAP_ADMIN_PASSWORD=... docker compose up --build
@@ -104,9 +104,10 @@ services:
       retries: 12
     networks: [data, app]
 
-  # Consumes the normalised-event stream into OpenSearch. Scale horizontally: each replica joins the
-  # same consumer group, so messages are shared and redelivered if a replica dies mid-batch.
-  indexer:
+  # Consumes the normalised-event stream twice, in separate consumer groups: `indexer` (into OpenSearch)
+  # and `detection` (rules -> findings). Scale horizontally: replicas share each group, and a message is
+  # redelivered if a replica dies mid-batch.
+  worker:
     build: ./backend
     command: ["sentinelx-worker"]
     environment: *backend-env

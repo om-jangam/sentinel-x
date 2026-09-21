@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from uuid import UUID
 
 import pytest
 from pydantic import ValidationError
 
-from app.ingest_pipeline.ocsf import Category, EventClass, ObservableType, OcsfEvent, Severity
+from app.ingest_pipeline.ocsf import Category, EventClass, ObservableType, OcsfEvent, Severity, event_uid_for
 
 
 def _auth(**overrides: Any) -> dict[str, Any]:
@@ -142,3 +143,55 @@ def test_document_shape() -> None:
 def test_class_captions() -> None:
     assert EventClass.DNS_ACTIVITY.caption == "DNS Activity"
     assert EventClass.HTTP_ACTIVITY.caption == "HTTP Activity"
+
+
+def test_event_uid_is_deterministic_per_fingerprint() -> None:
+    first = event_uid_for("a" * 64)
+    assert first == event_uid_for("a" * 64), "every delivery of a record must cite the same id"
+    assert first != event_uid_for("b" * 64)
+    assert UUID(first).version == 5
+
+
+def _process(**file: Any) -> dict[str, Any]:
+    return {
+        "class_uid": 1007,
+        "activity_id": 1,
+        "severity_id": 1,
+        "time": "2026-09-15T09:42:37Z",
+        "metadata": {"product": {"name": "EDR"}},
+        "process": {"name": "evil.exe", "file": {"path": r"C:\evil.exe", **file}},
+    }
+
+
+def test_file_hashes_are_validated_normalised_and_observable() -> None:
+    sha256 = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    event = OcsfEvent.model_validate(_process(hashes=[{"algorithm_id": 3, "value": sha256}]))
+
+    assert event.process is not None
+    assert event.process.file is not None
+    assert event.process.file.hashes is not None
+    assert event.process.file.hashes[0].value == sha256.lower()
+    assert ("process.file.hashes.value", ObservableType.HASH, sha256.lower()) in {
+        (o.name, o.type_id, o.value) for o in event.observables
+    }
+
+
+@pytest.mark.parametrize(
+    ("fingerprint", "message"),
+    [
+        ({"algorithm_id": 3, "value": "abc"}, "SHA256 hash must be 64 hex"),
+        ({"algorithm_id": 1, "value": "z" * 32}, "MD5 hash must be 32 hex"),
+        ({"algorithm_id": 42, "value": "x"}, "algorithm_id"),
+    ],
+)
+def test_malformed_hashes_are_rejected(fingerprint: dict[str, Any], message: str) -> None:
+    with pytest.raises(ValidationError, match=message):
+        OcsfEvent.model_validate(_process(hashes=[fingerprint]))
+
+
+def test_non_cryptographic_hashes_are_kept_as_given() -> None:
+    event = OcsfEvent.model_validate(_process(hashes=[{"algorithm_id": 6, "value": "T1A2b3"}]))
+    assert event.process is not None
+    assert event.process.file is not None
+    assert event.process.file.hashes
+    assert event.process.file.hashes[0].value == "T1A2b3"

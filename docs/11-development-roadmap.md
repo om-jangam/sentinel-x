@@ -5,7 +5,7 @@
 docs and a demo that works on the shipped sample telemetry.*
 
 ```
-0 Foundation ✅ → 1 Ingestion ✅ → 2 Detection → 3 Correlation & incidents
+0 Foundation ✅ → 1 Ingestion ✅ → 2 Detection ✅ → 3 Correlation & incidents
   → 4 Timeline, graph & workspace → 5 Threat intelligence → 6 AI investigation → 7 Hardening & demo
 ```
 
@@ -29,15 +29,13 @@ and records agent heartbeats. Decisions needed:
 
 Sentinel-X does not depend on this; every later phase works with the existing sources.
 
-## Phase 2 — Detection
-- Extend the OCSF model with file hashes and domains, and map them in the parsers.
-- Evaluate a curated Sigma subset plus platform rules over normalised events. The ADR at phase start
-  decides between in-stream evaluation and compiling to OpenSearch queries.
-- `findings` in PostgreSQL: rule, severity, ATT&CK techniques and evidence `event_uid`s.
-- Rule tests driven by `pipeline/samples`.
-
-**Done when** the sample SSH password spray, the Windows logon failures followed by encoded PowerShell,
-and the beaconing traffic each produce findings that cite their events.
+## Phase 2 — Detection ✅ (backend)
+In-stream evaluation ([ADR-0015](adr/ADR-0015-in-stream-detection.md)): Sigma rules translated from
+pySigma into OCSF predicates, platform threshold rules with event-time windows, immutable findings in
+PostgreSQL citing deterministic `event_uid`s, findings and rule-catalogue APIs, file hashes and
+endpoint domains in the OCSF model. The sample spray, the Windows logon burst and encoded PowerShell,
+and the repeated external connections each produce findings that cite their events (12 in total).
+**Remaining:** a findings page in the console; more Sigma coverage as Sysmon-style sources arrive.
 
 ## Phase 3 — Correlation & incidents
 - Entity extraction: IP, host, user, process, file, hash, domain.

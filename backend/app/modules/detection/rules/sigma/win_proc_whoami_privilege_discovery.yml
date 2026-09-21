@@ -1,0 +1,27 @@
+title: whoami used to list privileges or groups
+id: 7c2e41b9-0d85-4f3a-a6c8-5b1e9d27f604
+status: test
+description: >
+  whoami with /all, /priv or /groups enumerates the current account's groups and privileges, a common
+  first step after gaining access to a host.
+author: Sentinel-X
+references:
+  - https://attack.mitre.org/techniques/T1033/
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  image:
+    Image|endswith: '\whoami.exe'
+  switches:
+    CommandLine|windash|contains:
+      - ' /all'
+      - ' /priv'
+      - ' /groups'
+  condition: image and switches
+falsepositives:
+  - Administrators troubleshooting permissions
+level: medium
+tags:
+  - attack.discovery
+  - attack.t1033

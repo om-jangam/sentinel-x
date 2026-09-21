@@ -15,8 +15,8 @@ from app.core.clock import Clock, utcnow
 from app.core.errors import ConflictError, ValidationFailedError
 from app.core.events.bus import Event, EventBus
 from app.core.events.topics import EVENTS_NORMALIZED
-from app.core.ids import uuid7
 from app.core.observability.metrics import INGEST_EVENTS
+from app.ingest_pipeline.ocsf import event_uid_for
 from app.ingest_pipeline.parsers import ParseError, normalize
 from app.modules.ingestion.domain.entities import IngestSource
 from app.modules.ingestion.domain.events import EventDocument
@@ -77,11 +77,14 @@ class IngestService:
                 errors.append(IngestError(position, _describe(exc)))
                 continue
 
+            fingerprint = event.fingerprint(org_id=org_id, source_id=source_id)
             documents.append(
                 EventDocument(
                     stream=event.data_stream,
-                    id=event.fingerprint(org_id=org_id, source_id=source_id),
-                    body=event.to_document(org_id=org_id, source_id=source_id, event_uid=str(uuid7()), ingested_at=now),
+                    id=fingerprint,
+                    body=event.to_document(
+                        org_id=org_id, source_id=source_id, event_uid=event_uid_for(fingerprint), ingested_at=now
+                    ),
                 )
             )
             latest_event_at = event.time if latest_event_at is None else max(latest_event_at, event.time)

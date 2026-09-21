@@ -47,7 +47,13 @@ _ENDPOINT = {
     }
 }
 _USER = {"properties": {"name": _KEYWORD, "uid": _KEYWORD, "domain": _KEYWORD}}
-_FILE = {"properties": {"path": _KEYWORD, "name": _KEYWORD}}
+_FILE = {
+    "properties": {
+        "path": _KEYWORD,
+        "name": _KEYWORD,
+        "hashes": {"properties": {"algorithm_id": {"type": "integer"}, "value": {"type": "keyword"}}},
+    }
+}
 _PROCESS_FIELDS: dict[str, Any] = {
     "pid": {"type": "long"},
     "name": _KEYWORD,

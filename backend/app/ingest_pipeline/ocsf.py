@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import uuid
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from enum import IntEnum
@@ -22,6 +24,14 @@ OCSF_VERSION = "1.6.0"
 MAX_RAW_DATA_CHARS = 32_768
 MAX_UNMAPPED_CHARS = 16_384
 MAX_FUTURE_SKEW = timedelta(hours=24)
+
+# Namespace for event_uid: a UUID v5 of the content fingerprint, so every delivery of the same record
+# carries the id the event store keeps (ADR-0015). Never change it: stored evidence cites these ids.
+EVENT_UID_NAMESPACE = uuid.UUID("5b6f1c2e-9d4a-4f3b-8e21-7c0d9a3b6e14")
+
+
+def event_uid_for(fingerprint: str) -> str:
+    return str(uuid.uuid5(EVENT_UID_NAMESPACE, fingerprint))
 
 
 class Category(IntEnum):
@@ -185,9 +195,49 @@ class User(_Object):
     domain: S255 | None = None
 
 
+class HashAlgorithm(IntEnum):
+    UNKNOWN = 0
+    MD5 = 1
+    SHA1 = 2
+    SHA256 = 3
+    SHA512 = 4
+    CTPH = 5
+    TLSH = 6
+    QUICKXOR = 7
+    OTHER = 99
+
+
+_HEX_DIGEST_LENGTHS: Mapping[HashAlgorithm, int] = {
+    HashAlgorithm.MD5: 32,
+    HashAlgorithm.SHA1: 40,
+    HashAlgorithm.SHA256: 64,
+    HashAlgorithm.SHA512: 128,
+}
+_HEX = re.compile(r"[0-9a-f]+")
+
+
+class Fingerprint(_Object):
+    """OCSF `fingerprint`: a file hash. Cryptographic digests are validated and lower-cased."""
+
+    algorithm_id: HashAlgorithm
+    algorithm: S64 | None = None
+    value: S1024
+
+    @model_validator(mode="after")
+    def _digest_shape(self) -> Fingerprint:
+        expected = _HEX_DIGEST_LENGTHS.get(self.algorithm_id)
+        if expected is not None:
+            value = self.value.lower()
+            if len(value) != expected or not _HEX.fullmatch(value):
+                raise ValueError(f"{self.algorithm_id.name} hash must be {expected} hex characters")
+            self.value = value
+        return self
+
+
 class File(_Object):
     path: S4096 | None = None
     name: S255 | None = None
+    hashes: Annotated[list[Fingerprint], Field(max_length=10)] | None = None
 
 
 class ParentProcess(_Object):
@@ -423,6 +473,7 @@ def derive_observables(event: OcsfEvent) -> list[Observable]:
         if endpoint is not None:
             add(f"{prefix}.ip", ObservableType.IP_ADDRESS, endpoint.ip)
             add(f"{prefix}.hostname", ObservableType.HOSTNAME, endpoint.hostname)
+            add(f"{prefix}.domain", ObservableType.HOSTNAME, endpoint.domain)
     if event.device is not None:
         add("device.hostname", ObservableType.HOSTNAME, event.device.hostname)
         add("device.ip", ObservableType.IP_ADDRESS, event.device.ip)
@@ -433,12 +484,21 @@ def derive_observables(event: OcsfEvent) -> list[Observable]:
             add("actor.user.name", ObservableType.USER_NAME, event.actor.user.name)
         if event.actor.process is not None:
             add("actor.process.name", ObservableType.PROCESS_NAME, event.actor.process.name)
+
+    def add_hashes(name: str, file: File | None) -> None:
+        for fingerprint in (file.hashes or []) if file is not None else []:
+            add(name, ObservableType.HASH, fingerprint.value)
+
     if event.process is not None:
         add("process.name", ObservableType.PROCESS_NAME, event.process.name)
         if event.process.file is not None:
             add("process.file.path", ObservableType.FILE_NAME, event.process.file.path)
+        add_hashes("process.file.hashes.value", event.process.file)
+        if event.process.parent_process is not None:
+            add_hashes("process.parent_process.file.hashes.value", event.process.parent_process.file)
     if event.file is not None:
         add("file.path", ObservableType.FILE_NAME, event.file.path)
+        add_hashes("file.hashes.value", event.file)
     if event.query is not None:
         add("query.hostname", ObservableType.HOSTNAME, event.query.hostname)
     if event.http_request is not None and event.http_request.url is not None:

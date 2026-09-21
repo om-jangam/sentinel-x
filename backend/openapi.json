@@ -1022,6 +1022,290 @@
         }
       }
     },
+    "/api/v1/findings": {
+      "get": {
+        "tags": [
+          "detection"
+        ],
+        "summary": "List findings, newest first",
+        "operationId": "list_findings_api_v1_findings_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "time_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Earliest last_seen (inclusive)",
+              "title": "Time From"
+            },
+            "description": "Earliest last_seen (inclusive)"
+          },
+          {
+            "name": "time_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Latest last_seen (inclusive)",
+              "title": "Time To"
+            },
+            "description": "Latest last_seen (inclusive)"
+          },
+          {
+            "name": "severity_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 5,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity Min"
+            }
+          },
+          {
+            "name": "rule_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rule Id"
+            }
+          },
+          {
+            "name": "technique",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 16
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "examples": [
+                "T1110.003"
+              ],
+              "title": "Technique"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingPageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/findings/{finding_id}": {
+      "get": {
+        "tags": [
+          "detection"
+        ],
+        "summary": "Fetch one finding with its evidence event ids",
+        "operationId": "get_finding_api_v1_findings__finding_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "finding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Finding Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/detection/rules": {
+      "get": {
+        "tags": [
+          "detection"
+        ],
+        "summary": "List the loaded detection rules",
+        "operationId": "list_rules_api_v1_detection_rules_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RuleRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Rules Api V1 Detection Rules Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/detection/rules/{rule_id}": {
+      "get": {
+        "tags": [
+          "detection"
+        ],
+        "summary": "Inspect one detection rule",
+        "operationId": "get_rule_api_v1_detection_rules__rule_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Rule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -1572,6 +1856,135 @@
         ],
         "title": "EventSearchRequest"
       },
+      "FindingPageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FindingRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "FindingPageResponse"
+      },
+      "FindingRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "rule_title": {
+            "type": "string",
+            "title": "Rule Title"
+          },
+          "rule_type": {
+            "type": "string",
+            "title": "Rule Type"
+          },
+          "rule_version": {
+            "type": "string",
+            "title": "Rule Version"
+          },
+          "severity_id": {
+            "type": "integer",
+            "title": "Severity Id"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "techniques": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Techniques"
+          },
+          "tactics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tactics"
+          },
+          "entities": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Entities"
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "evidence_count": {
+            "type": "integer",
+            "title": "Evidence Count"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Seen"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rule_id",
+          "rule_title",
+          "rule_type",
+          "rule_version",
+          "severity_id",
+          "severity",
+          "techniques",
+          "tactics",
+          "entities",
+          "evidence",
+          "evidence_count",
+          "first_seen",
+          "last_seen",
+          "created_at"
+        ],
+        "title": "FindingRead"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2021,6 +2434,107 @@
         "type": "object",
         "title": "RoleUpdate"
       },
+      "RuleRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "severity_id": {
+            "type": "integer",
+            "title": "Severity Id"
+          },
+          "techniques": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Techniques"
+          },
+          "tactics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tactics"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "references": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "References"
+          },
+          "false_positives": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "False Positives"
+          },
+          "logsource": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logsource"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThresholdSettings"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "type",
+          "level",
+          "severity_id",
+          "techniques",
+          "tactics",
+          "version",
+          "path",
+          "references",
+          "false_positives"
+        ],
+        "title": "RuleRead"
+      },
       "SourceCreate": {
         "properties": {
           "name": {
@@ -2199,6 +2713,44 @@
         ],
         "title": "SourceWithToken",
         "description": "Returned only by create and rotate: the token is never retrievable afterwards."
+      },
+      "ThresholdSettings": {
+        "properties": {
+          "group_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Group By"
+          },
+          "count_distinct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count Distinct"
+          },
+          "threshold": {
+            "type": "integer",
+            "title": "Threshold"
+          },
+          "window_seconds": {
+            "type": "integer",
+            "title": "Window Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "group_by",
+          "count_distinct",
+          "threshold",
+          "window_seconds"
+        ],
+        "title": "ThresholdSettings"
       },
       "TokenResponse": {
         "properties": {

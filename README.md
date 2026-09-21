@@ -22,7 +22,8 @@ security data → ingestion → normalisation → detection → correlation
 | Ingestion: per-source tokens, limits, validation, audited source management | ✅ Built |
 | Normalisation: OCSF 1.6 subset for OpenSSH auth logs, Windows Security events, native OCSF | ✅ Built ([mappings](docs/modules/ingestion.md#ocsf-mappings)) |
 | Storage and search: immutable events in OpenSearch, constrained search API | ✅ Built (not yet run against a live cluster) |
-| Detection → correlation → timeline and graph → threat intelligence → AI assistant → workspace | Planned ([roadmap](docs/11-development-roadmap.md)) |
+| Detection: Sigma and threshold rules → findings that cite their events | ✅ Built ([rules and coverage](docs/modules/detection.md)) |
+| Correlation → timeline and graph → threat intelligence → AI assistant → workspace | Planned ([roadmap](docs/11-development-roadmap.md)) |
 
 Known limitations: [architecture.md §12](docs/architecture.md#12-known-limitations).
 
@@ -59,6 +60,10 @@ uv run uvicorn app.main:create_app --factory --reload   # http://127.0.0.1:8000/
 cd frontend && npm install && npm run dev              # http://localhost:5173 (proxies /api to :8000)
 ```
 
+**Upgrading:** run `sentinelx migrate` and then `sentinelx seed`. Permissions and system roles are defined
+in code and only `seed` syncs them, so new features stay forbidden (403) until it runs. Docker Compose
+runs both on every start.
+
 Every setting is documented in [`.env.example`](.env.example). Without `SENTINELX_OPENSEARCH_URL`,
 ingestion still authenticates and validates events but doesn't store them, and event search returns 503.
 
@@ -70,7 +75,7 @@ SENTINELX_BOOTSTRAP_ADMIN_PASSWORD='choose-a-long-passphrase' docker compose up 
 # console: http://localhost:8080
 ```
 
-Runs PostgreSQL, Redis, OpenSearch, a one-shot migrate/seed job, the API, the indexer worker and the
+Runs PostgreSQL, Redis, OpenSearch, a one-shot migrate/seed job, the API, the worker (indexing and detection) and the
 nginx-served console. To load the demo attack telemetry, mount the samples into a one-off container:
 `docker compose run --rm -v "$PWD/pipeline/samples:/samples:ro" migrate sentinelx load-demo --samples /samples`.
 The Compose stack, including this command, has not yet been run end to end.
@@ -109,7 +114,7 @@ builds.
 | [Executive summary](docs/00-executive-summary.md) | Purpose, principles, scope |
 | [Modules](docs/10-module-breakdown.md) · [Roadmap](docs/11-development-roadmap.md) | Built and planned modules; phases |
 | [AI investigation assistant](docs/04-ai-investigation-assistant.md) | Design of the evidence-grounded assistant |
-| Module docs: [identity](docs/modules/identity.md) · [platform + core](docs/modules/platform.md) · [ingestion](docs/modules/ingestion.md) | How each built module works |
+| Module docs: [identity](docs/modules/identity.md) · [platform + core](docs/modules/platform.md) · [ingestion](docs/modules/ingestion.md) · [detection](docs/modules/detection.md) | How each built module works |
 | [Architecture decision records](docs/adr/) | Why things are the way they are |
 | Reference design (July 2026): [02](docs/02-technology-selection.md) · [03](docs/03-system-architecture.md) · [05](docs/05-database-design.md) · [06](docs/06-api-design.md) · [07](docs/07-security-architecture.md) · [08](docs/08-deployment-and-cicd.md) · [09](docs/09-folder-structure.md) | Each carries a status banner saying what is current |
 | [Archive](docs/archive/2026-07-initial-design/) | The superseded "autonomous SOC" framing |
@@ -121,10 +126,11 @@ builds.
 | Backend | Python 3.12, FastAPI, SQLAlchemy 2 (async), Pydantic 2, Alembic |
 | Stores | PostgreSQL 16 (system of record), Redis 7 (bus, rate limits, token revocation), OpenSearch 2 (events) |
 | Collection | HTTP ingest API; Vector configuration for log files and syslog |
+| Detection | Sigma rules parsed with pySigma and evaluated in-stream; platform threshold rules ([ADR-0015](docs/adr/ADR-0015-in-stream-detection.md)) |
 | Frontend | React 19, TypeScript, Vite, Tailwind 4, TanStack Router and Query |
 | Delivery | Docker Compose, GitHub Actions |
 
-Detection, threat-intelligence and model-provider choices are made by ADRs at the start of their phases.
+Threat-intelligence and model-provider choices are made by ADRs at the start of their phases.
 
 ## Intent
 

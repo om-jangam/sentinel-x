@@ -27,19 +27,23 @@ Source registry with per-source tokens; the ingest API with limits; parsers for 
 and native OCSF; an OCSF 1.6 subset model; immutable OpenSearch storage; the indexer worker; constrained
 event search. → [module doc](modules/ingestion.md)
 
+### `detection`
+In-stream evaluation of Sigma rules (parsed by pySigma, translated to predicates over OCSF paths) and
+threshold rules over normalised events; immutable **findings** that cite their events; the rule
+catalogue. → [module doc](modules/detection.md)
+
 ## Planned (in workflow order)
 
 | Module | Responsibility | Produces | Consumes |
 |--------|----------------|----------|----------|
-| `detection` | Evaluate Sigma and platform rules over normalised events | **Findings**: rule, severity, ATT&CK techniques, evidence `event_uid`s | normalised events |
 | `correlation` | Extract entities (IP, host, user, process, file, hash, domain) and link findings and events that share entities within time windows, including authentication sequences and technique chains | **Incidents** with evidence, plus the correlation rule and entities that justify each link | findings, events |
 | `incidents` | Incident workspace state: summary, severity, status, assignee, analyst notes, evidence set; every change audited | incident records | incidents |
 | `reconstruction` | Ordered attack **timeline** and **entity graph** per incident; each step and edge carries the events that support it | timeline, graph | incident evidence |
 | `threatintel` | Reputation and related indicators for IPs, domains and hashes from configured providers, cached with source and retrieval time | enrichment records | incident entities |
 | `assistant` | Evidence-grounded AI analysis ([04](04-ai-investigation-assistant.md)) | FACT / INFERENCE / UNCERTAINTY statements with citations | evidence bundle |
 
-**Prerequisite for correlation:** the OCSF model does not yet carry file hashes or a general domain
-attribute. Adding them (and mapping them in parsers) is the first task of the detection phase.
+**Correlation inputs available today:** observables for IPs, hostnames, endpoint domains, users,
+process names, file paths and file hashes. Hashes arrive only through native OCSF sources so far.
 
 **Evidence rule for every planned module:** a stored relationship (finding → event, incident → finding,
 graph edge, timeline step) must reference at least one existing `event_uid`, and tests must prove it.

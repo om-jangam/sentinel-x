@@ -57,6 +57,19 @@ EVENT_AGE = Histogram(
     registry=REGISTRY,
 )
 
+DETECTION_FINDINGS = Counter(
+    "sentinelx_detection_findings_total",
+    "Findings produced by detection, by rule type and whether they were new or a redelivered duplicate",
+    ["rule_type", "outcome"],
+    registry=REGISTRY,
+)
+DETECTION_SECONDS = Histogram(
+    "sentinelx_detection_batch_seconds",
+    "Time to evaluate one batch of normalised events against every rule",
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5),
+    registry=REGISTRY,
+)
+
 
 def render_latest() -> tuple[bytes, str]:
     return generate_latest(REGISTRY), CONTENT_TYPE_LATEST

@@ -3,7 +3,7 @@
 *Reference design, July 2026.*
 
 > **Status — partially current.** **Built:** the Compose `lite` profile (§A.4, now with OpenSearch and the
-> indexer), hardened images (§A.5), and the GitHub Actions pipeline. **Not built:** Kubernetes/Helm and the
+> worker), hardened images (§A.5), and the GitHub Actions pipeline. **Not built:** Kubernetes/Helm and the
 > `full` profile. **Not adopted** ([ADR-0014](adr/ADR-0014-lock-scope-security-investigation.md)): Qdrant,
 > Neo4j, Redpanda, MinIO and agent-runtime services. Nothing in this document has been run against Docker
 > on the development machine.

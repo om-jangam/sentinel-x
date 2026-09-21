@@ -1,6 +1,6 @@
 # Sentinel-X architecture
 
-*Current as of Phase 1 (September 2026). This document describes what is **built**. Planned work is in
+*Current as of Phase 2 (September 2026). This document describes what is **built**. Planned work is in
 [11 · Roadmap](11-development-roadmap.md); the product scope is fixed by
 [ADR-0014](adr/ADR-0014-lock-scope-security-investigation.md).*
 
@@ -20,7 +20,7 @@ connected, and what evidence should an analyst investigate?*
 | Ingestion | Authenticated, rate-limited intake of security telemetry from registered sources | **Built** (API, worker, source registry) |
 | Normalisation | Map source records to a documented OCSF 1.6 subset; reject what can't be mapped, with a reason | **Built** for 3 parsers and 6 event classes ([mappings](modules/ingestion.md#ocsf-mappings)) |
 | Storage | Immutable, org-scoped event documents in OpenSearch; constrained search | **Built**; adapter tested against a stubbed client only |
-| Detection | Sigma and rule logic over normalised events → structured findings | Not built (Phase 2) |
+| Detection | Sigma and threshold rules over normalised events → findings that cite their events | **Built**: 4 Sigma and 3 threshold rules, evaluated in-stream ([module doc](modules/detection.md)) |
 | Correlation | Group findings and events by shared entities and time → incidents | Not built (Phase 3) |
 | Attack reconstruction | Evidence-linked timeline and entity graph per incident | Not built (Phase 4) |
 | Threat intelligence | Reputation and related indicators as investigation context | Not built (Phase 5) |
@@ -51,9 +51,9 @@ Sentinel-X works without Aegis. Aegis is not connected yet ([§12](#12-known-lim
 | Component | Role | If absent |
 |-----------|------|-----------|
 | `api` (FastAPI) | REST API, authentication, ingestion, search, audit | — |
-| `indexer` (`sentinelx-worker`) | Consumes normalised events from Redis Streams into OpenSearch | Without Redis the API indexes in-process |
-| PostgreSQL | System of record: identity, RBAC, audit chain, ingest sources | Dev and tests use SQLite; production refuses SQLite |
-| Redis | Event bus (Streams), token blocklist, rate limits | Dev falls back to in-memory implementations; production requires Redis |
+| `worker` (`sentinelx-worker`) | Two Redis Streams consumer groups: `indexer` (events into OpenSearch) and `detection` (rules → findings) | Without Redis the API indexes and detects in-process |
+| PostgreSQL | System of record: identity, RBAC, audit chain, ingest sources, findings | Dev and tests use SQLite; production refuses SQLite |
+| Redis | Event bus (Streams), threshold-rule windows, token blocklist, rate limits | Dev falls back to in-memory implementations; production requires Redis |
 | OpenSearch | Normalised event storage and search | Ingestion still authenticates and validates, but events are not stored; search returns `503` |
 | `web` (nginx) | Serves the React console; same-origin proxy for `/api` | — |
 | `vector` (optional, Compose profile `collector`) | Tails log files and syslog, posts to the ingest API | Sources can post directly |
@@ -74,8 +74,9 @@ no module, and modules don't import each other.
 | `app/modules/identity` | Login, rotating refresh tokens with reuse detection, users, roles, live RBAC |
 | `app/modules/platform` | Liveness and readiness, metrics, non-secret config, audit read and verification |
 | `app/modules/ingestion` | Source registry, ingest API, indexing service, OpenSearch adapter, event search |
+| `app/modules/detection` | Rule loading (Sigma via pySigma, threshold YAML), in-stream evaluation, findings and the rule catalogue |
 | `app/ingest_pipeline` | Framework-free OCSF model and source parsers, shared by every ingest path |
-| `app/cli.py`, `app/worker.py` | Operator CLI and the indexer worker entry point |
+| `app/cli.py`, `app/worker.py` | Operator CLI and the worker entry point (indexing and detection) |
 | `frontend/src` | React 19 console with an OpenAPI-generated typed client |
 
 ## 6. Ingestion data flow
@@ -88,12 +89,14 @@ producer ──Bearer sxi_…──▶ POST /api/v1/ingest/events
        (bad records are reported by index; they never block good ones)
     4. stamp sx.{org_id, source_id, event_uid, ingested_at, fingerprint}
     5. publish to Redis Streams "events.normalized"          → 202 {accepted, rejected, errors}
-indexer worker ──▶ OpenSearch bulk `create` into events-ocsf-<category>-write
+worker, group "indexer"   ──▶ OpenSearch bulk `create` into events-ocsf-<category>-write
+worker, group "detection" ──▶ Sigma + threshold rules ──▶ findings in PostgreSQL (citing event_uids)
 ```
 
 **Evidence identity.** A document's `_id` is a SHA-256 fingerprint of its org, source and canonical
-normalised content, and every write uses `create`. A redelivered record is a duplicate, so the stored
-copy and its `sx.event_uid` never change. Later stages (findings, incidents, timelines, graph edges)
+normalised content, and every write uses `create`. `sx.event_uid` is a UUID v5 of that fingerprint, so
+every delivery of the same record carries the same ID and the stored copy never changes
+([ADR-0015](adr/ADR-0015-in-stream-detection.md)). Later stages (findings, incidents, timelines, graph edges)
 reference events by `sx.event_uid`.
 
 ## 7. Security controls
@@ -114,7 +117,8 @@ reference events by `sx.event_uid`.
 |------------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | `platform:read` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `event:read` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `source:read` | | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| `finding:read` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| `source:read`, `rule:read` | | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | `audit:read` | | | ✓ | | | ✓ | |
 | `source:manage` | | | | | ✓ | ✓ | |
 | `ingest:write` | | | | | | ✓ | ✓ |
@@ -124,8 +128,8 @@ reference events by `sx.event_uid`.
 
 | Store | Contents |
 |-------|----------|
-| PostgreSQL | `orgs`, `users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `refresh_tokens`, `audit_log` (migration 0001); `ingest_sources` (0002) |
-| Redis | `sx:events:*` streams with the `indexer` consumer group; token blocklist entries; rate-limit counters (hashed keys) |
+| PostgreSQL | `orgs`, `users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `refresh_tokens`, `audit_log` (migration 0001); `ingest_sources` (0002); `findings`, `finding_techniques` (0003) |
+| Redis | `sx:events:*` streams with the `indexer` and `detection` consumer groups; `sx:det:*` threshold windows (hashed keys); token blocklist entries; rate-limit counters (hashed keys) |
 | OpenSearch | Rolling indices `events-ocsf-<category>-NNNNNN` behind write aliases; index template `sentinelx-events` (`dynamic: false`, `unmapped` not indexed); ISM policy rolls over at 20 GB or 1 day and deletes after the retention period (90 days by default) |
 
 ## 9. API surface
@@ -138,6 +142,7 @@ reference events by `sx.event_uid`.
 | Platform | `GET /api/v1/health`, `GET /api/v1/config`, `GET /api/v1/audit`, `GET /api/v1/audit/verify` |
 | Ingestion | `POST /api/v1/ingest/events`; `GET /api/v1/ingest/parsers`; `GET, POST /api/v1/ingest/sources`; `GET, PATCH /api/v1/ingest/sources/{id}`; `POST /api/v1/ingest/sources/{id}/rotate-token` |
 | Events | `POST /api/v1/events/search`, `GET /api/v1/events/{event_uid}` |
+| Detection | `GET /api/v1/findings`, `GET /api/v1/findings/{id}`, `GET /api/v1/detection/rules`, `GET /api/v1/detection/rules/{id}` |
 
 The OpenAPI document is committed (`backend/openapi.json`); CI fails if it or the generated TypeScript
 client drifts from the code.
@@ -146,9 +151,12 @@ client drifts from the code.
 
 ```bash
 sentinelx generate-keys | migrate | seed | verify-audit      # platform
-sentinelx opensearch-init | load-demo | worker               # ingestion
+sentinelx opensearch-init | load-demo | worker               # ingestion and detection
 sentinelx export-openapi                                     # API contract
 ```
+
+After an upgrade run `migrate` **and then** `seed`: migrations change the schema, while `seed` syncs the
+code-defined permissions and system roles. Until it runs, endpoints guarded by new permissions return 403.
 
 ## 11. Quality gates (CI)
 
@@ -159,8 +167,12 @@ image scans, and API and web image builds.
 
 ## 12. Known limitations
 
-- **No detection, correlation, reconstruction, threat intelligence or AI yet.** Today Sentinel-X is a
-  secure ingestion, normalisation and search foundation.
+- **No correlation, reconstruction, threat intelligence or AI yet.** Detection produces findings, but
+  nothing yet groups them into incidents.
+- **Detection limits** (details in the [module doc](modules/detection.md#limitations)): rules ship with
+  the code and can't be edited at runtime; Sigma coverage is the mapped logsources and fields only; a
+  threshold finding cites the events in its window when it fires, not later ones; a finding can briefly
+  cite an event that is still being indexed.
 - **OCSF coverage is partial:** a trimmed subset of 6 classes; attributes outside it are dropped when
   passed through, not preserved. See [mappings](modules/ingestion.md#ocsf-mappings).
 - **Not verified against live services on the development machine:** OpenSearch, the Vector
@@ -171,7 +183,9 @@ image scans, and API and web image builds.
   endpoint are awaiting decisions.
 - **Single organisation.** `org_id` is threaded through every table and query, but there is no
   organisation management API.
-- **Console:** no pages for sources, event search or investigation yet.
+- **Console:** no pages for sources, event search, findings or investigation yet.
+- **Worker glue untested:** the stream → detection → database path is tested; the worker process's
+  signal handling and its running of both consumer loops together are not.
 
 ## 13. Documentation map
 

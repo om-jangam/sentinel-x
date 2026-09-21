@@ -1,0 +1,33 @@
+title: PowerShell started with an encoded command
+id: 3b0a8d1e-6f2c-4b7a-9e15-0c4d2a7f8b31
+status: test
+description: >
+  PowerShell launched with -EncodedCommand (or an abbreviation) runs Base64-encoded script text,
+  commonly used to hide what a script does from command-line logging.
+author: Sentinel-X
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://attack.mitre.org/techniques/T1027/
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  image:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+  encoded:
+    CommandLine|windash|contains:
+      - ' -e '
+      - ' -en '
+      - ' -enc '
+      - ' -encodedcommand '
+  condition: image and encoded
+falsepositives:
+  - Management and deployment tools that pass scripts as encoded commands
+level: high
+tags:
+  - attack.execution
+  - attack.t1059.001
+  - attack.defense_evasion
+  - attack.t1027

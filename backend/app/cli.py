@@ -61,6 +61,8 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     from alembic import command
 
     command.upgrade(_alembic_config(), args.revision)  # type: ignore[arg-type]
+    # Permissions and system roles are defined in code and synced by `seed`, not by migrations.
+    print("schema migrated; run `sentinelx seed` to sync permissions and system roles after an upgrade")
     return 0
 
 

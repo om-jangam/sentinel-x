@@ -21,6 +21,7 @@ dependencies = [
     "prometheus-client>=0.21",
     "httpx>=0.28",
     "opensearch-py[async]>=2.8",
+    "pysigma>=1.0",
 ]
 
 [project.optional-dependencies]
@@ -117,7 +118,7 @@ include_external_packages = true
 name = "Domain layers stay framework-free"
 type = "forbidden"
 source_modules = ["app.modules.*.domain"]
-forbidden_modules = ["fastapi", "sqlalchemy", "redis", "httpx", "app.core.db"]
+forbidden_modules = ["fastapi", "sqlalchemy", "redis", "httpx", "opensearchpy", "sigma", "yaml", "app.core.db"]
 
 [[tool.importlinter.contracts]]
 name = "Application layers do not import infrastructure or interface"
@@ -134,6 +135,6 @@ forbidden_modules = ["app.modules"]
 [[tool.importlinter.contracts]]
 name = "Modules are independent"
 type = "independence"
-modules = ["app.modules.identity", "app.modules.platform"]
+modules = ["app.modules.identity", "app.modules.platform", "app.modules.ingestion", "app.modules.detection"]
 # Tests share the composition-root fixtures; production code may not.
 ignore_imports = ["app.modules.*.tests.* -> app.conftest"]
