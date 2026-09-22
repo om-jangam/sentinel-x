@@ -43,6 +43,7 @@ def stub_client(**overrides: Any) -> SimpleNamespace:
         transport=SimpleNamespace(perform_request=AsyncMock()),
         indices=SimpleNamespace(
             put_index_template=AsyncMock(),
+            put_mapping=AsyncMock(),
             exists_alias=AsyncMock(return_value=False),
             create=AsyncMock(),
         ),
@@ -216,6 +217,8 @@ async def test_setup_creates_only_missing_write_indices() -> None:
     assert len(created) == len(CATEGORY_SLUGS) - 1
     network = next(call for call in client.indices.create.await_args_list if "network" in call.kwargs["index"])
     assert network.kwargs["body"]["aliases"] == {"events-ocsf-network-write": {"is_write_index": True}}
+    # Existing indices get fields added since they were created (for example Sysmon's registry fields).
+    client.indices.put_mapping.assert_awaited_once_with(index="events-ocsf-*", body=MAPPINGS)
 
 
 async def test_setup_tolerates_a_missing_ism_plugin_and_concurrent_index_creation() -> None:
@@ -248,6 +251,15 @@ def test_mappings_are_bounded() -> None:
     assert properties["sx"]["properties"]["org_id"] == {"type": "keyword"}
     for endpoint in ("src_endpoint", "dst_endpoint", "device"):
         assert properties[endpoint]["properties"]["ip"] == {"type": "ip"}
+
+
+def test_sysmon_fields_are_searchable() -> None:
+    properties = MAPPINGS["properties"]
+    assert properties["reg_value"]["properties"]["path"] == {"type": "keyword"}
+    assert properties["reg_key"]["properties"]["path"] == {"type": "keyword"}
+    assert properties["module"]["properties"]["file"]["properties"]["path"] == {"type": "keyword"}
+    assert properties["process"]["properties"]["uid"] == {"type": "keyword"}
+    assert properties["process"]["properties"]["integrity"] == {"type": "keyword"}
 
 
 def test_no_store_without_a_configured_cluster() -> None:

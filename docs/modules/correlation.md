@@ -98,13 +98,17 @@ step lists its `event_uid`s, and the findings and correlation links citing them.
 | Event | Edges |
 |-------|-------|
 | Logon, success or failure (3002, activity 1) | source IP → host (`logon` / `failed_logon`); host → user (`logon_as` / `failed_logon_as`) |
-| Process activity (1007) | host → user (`ran_as`); user → process (`started`), or host → process with no user; parent → process (`spawned`); process → file (`image`); file → hash (`hash`) |
-| Network / HTTP (4001, 4002) | host → remote (`connected_to`, with ports); the remote is the external address, else the destination host or IP. Remote → domain (`named`) when the record names it |
-| DNS (4003) | host → domain (`queried`); domain → answer IP (`resolved_to`) |
-| File activity (1001) | host → file (`file_activity`); file → hash (`hash`) |
+| Process launch (1007, activity 1) | host → user (`ran_as`); user → process (`started`), or host → process with no user; parent → process (`spawned`); process → file (`image`); file → hash (`hash`) |
+| Process terminate (1007, activity 2) | host → user (`ran_as`); process → file; file → hash. Never `started` |
+| Process open (1007, activity 3; Sysmon 10) | acting process → target process (`opened`), e.g. a tool reading `lsass.exe` |
+| Process inject (1007, activity 4; Sysmon 8) | acting process → target process (`injected_into`) |
+| Network / HTTP (4001, 4002) | host → remote (`connected_to`, with ports); the remote is the external address, else the destination host or IP. When the record names the program (Sysmon 3 does, a firewall log doesn't), also program → remote (`connected_to`). Remote → domain (`named`) when the record names it |
+| DNS (4003) | host → domain (`queried`), and program → domain when the record names it; domain → answer IP (`resolved_to`) |
+| File activity (1001) | host → file (`file_activity`), and program → file when the record names it; file → hash (`hash`) |
 
-Each node and edge lists the events it appears in (up to 20, with a full count). Logoffs and other events
-state no relationship and add no edge.
+Each node and edge lists the events it appears in (up to 20, with a full count). Logoffs, module loads,
+registry changes and other events that state no relationship between entities add no edge; they still
+appear in the timeline.
 
 **Notes** are analyst statements, not evidence: append-only, with no edit or delete API. Each one is audited
 as `incident.note_added` with its length and SHA-256, and the author's email is kept as it was when

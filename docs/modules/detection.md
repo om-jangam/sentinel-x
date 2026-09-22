@@ -63,11 +63,19 @@ the tables below is **refused at load with the reason**, never loaded half-worki
 
 | Sigma logsource | Matches normalised events where | Fields |
 |-----------------|--------------------------------|--------|
-| `category: process_creation` | `class_uid` 1007 and `activity_id` 1 | `Image` → `process.file.path` · `CommandLine` → `process.cmd_line` · `ParentImage` → `process.parent_process.file.path` · `ParentCommandLine` · `ProcessId` · `ParentProcessId` · `User` → `actor.user.name`, `process.user.name` · `Computer` → `device.hostname` |
+| `category: process_creation` | `class_uid` 1007 and `activity_id` 1 (Security 4688 and Sysmon 1) | `Image` → `process.file.path` · `CommandLine` → `process.cmd_line` · `ParentImage` → `process.parent_process.file.path` · `ParentCommandLine` · `ProcessId` · `ParentProcessId` · `ProcessGuid`, `ParentProcessGuid` → `…uid` · `User` → `actor.user.name`, `process.user.name`, `unmapped.user` (Sysmon's `DOMAIN\name`) · `ParentUser` · `IntegrityLevel` → `process.integrity` · `CurrentDirectory` → `process.working_directory` · `Company`, `Description`, `Product`, `FileVersion` → `process.file.*` · `OriginalFileName`, `Hashes`, `LogonId` → `unmapped.*` · `Computer` → `device.hostname` |
 | `product: windows, service: security` | `metadata.product.name` "Microsoft Windows" and `metadata.log_name` "Security" | `EventID` → `unmapped.event_id` · `TargetUserName`/`TargetDomainName`/`TargetUserSid` → `user.*` · `SubjectUserName`/`SubjectDomainName` → `actor.user.*` · `IpAddress`, `IpPort`, `WorkstationName` → `src_endpoint.*` · `LogonType` → `logon_type_id` · `AuthenticationPackageName` → `auth_protocol` · `NewProcessName`, `CommandLine`, `ParentProcessName` → `process.*` · `Status`, `SubStatus`, `FailureReason` → `unmapped.*` · `Computer` |
 | `product: linux, service: auth` or `sshd` | `metadata.log_name` "auth.log" | keywords only |
 | `category: network_connection` | `class_uid` 4001 | `SourceIp`, `SourcePort`, `SourceHostname`, `DestinationIp`, `DestinationPort`, `DestinationHostname`, `Protocol`; no keywords |
-| `category: dns_query` or `dns` | `class_uid` 4003 | `QueryName` → `query.hostname` · `QueryType` → `query.type` · `QueryResults` → `answers.rdata` · `SourceIp` |
+| `category: dns_query` or `dns` | `class_uid` 4003 | `QueryName` → `query.hostname` · `QueryType` → `query.type` · `QueryResults` → `answers.rdata` · `SourceIp` · `QueryStatus` · `Image` → `actor.process.file.path` |
+| `category: process_termination` | `class_uid` 1007, `activity_id` 2 | `Image`, `ProcessId`, `ProcessGuid`, `User` |
+| `category: process_access` | `class_uid` 1007, `activity_id` 3 | `SourceImage` → `actor.process.file.path` · `TargetImage` → `process.file.path` · `…ProcessId` · `…ProcessGuid`/`GUID` · `SourceUser`, `TargetUser` · `GrantedAccess`, `CallTrace` → `unmapped.*` |
+| `category: create_remote_thread` | `class_uid` 1007, `activity_id` 4 | as `process_access`, plus `StartAddress` → `module.start_address` · `StartFunction` → `module.function_name` · `StartModule` |
+| `category: image_load` | `class_uid` 1005, `activity_id` 1 | `ImageLoaded` → `module.file.path` · `Image` → `actor.process.file.path` · `Company`, `Description`, `Product`, `FileVersion` → `module.file.*` · `OriginalFileName`, `Hashes`, `Signed`, `Signature`, `SignatureStatus` → `unmapped.*` |
+| `category: file_event` / `file_delete` | `class_uid` 1001, `activity_id` 1 / 4 | `TargetFilename` → `file.path` · `Image` → `actor.process.file.path` · `Hashes` · `User` |
+| `category: registry_add` / `registry_delete` / `registry_set` / `registry_rename` | Sysmon events whose `EventType` is CreateKey / DeleteKey or DeleteValue / SetValue / RenameKey or RenameValue | `TargetObject` → `reg_key.path`, `reg_value.path`, `prev_reg_key.path` · `Details` → `reg_value.data` · `NewName` · `EventType` · `Image` |
+| `category: registry_event` | `class_uid` 201001 or 201002 | as above |
+| `product: windows, service: sysmon` | `metadata.log_name` "Microsoft-Windows-Sysmon/Operational" | every Sysmon field above, plus `EventID` → `unmapped.event_id`; `Image` is the event's own process (event 1) or the acting process |
 
 Keyword searches look in `message` and `raw_data` (for `process_creation`: `process.cmd_line` and
 `raw_data`). A plain keyword matches anywhere in those fields, as full-text search does.
@@ -120,8 +128,9 @@ or late data behaves the same as live data.
 ## Limitations
 
 - **Rules are code:** no runtime enabling, disabling or editing; changes ship through git and review.
-- **Sigma coverage** is the table above; most SigmaHQ Windows rules need Sysmon fields that aren't
-  normalised yet (hashes, registry, image loads).
+- **Sigma coverage** is the table above. Sysmon events 1, 3, 5, 7, 8, 10–14, 22, 23 and 26 are
+  normalised; named pipes (17, 18), WMI (19–21), `pipe_created`, `wmi_event`, `ps_script` and other
+  Windows logs are not, so rules for them are refused.
 - **Threshold evidence** is the window at the moment of firing; later events in the same window do not
   fire again. Correlation groups findings into incidents, but it doesn't add those later events.
 - **Eventually consistent with the event store:** detection and indexing are separate consumers, so a

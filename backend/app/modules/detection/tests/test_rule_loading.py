@@ -122,10 +122,10 @@ def test_metadata_is_captured() -> None:
 @pytest.mark.parametrize(
     ("text", "reason"),
     [
-        (sigma("  sel:\n    Hashes|contains: 'abc'\n  condition: sel"), "field 'Hashes' is not mapped"),
+        (sigma("  sel:\n    TerminalSessionId: 1\n  condition: sel"), "field 'TerminalSessionId' is not mapped"),
         (sigma("  sel:\n    Image: x\n  condition: sel", "{product: windows}"), "unsupported logsource"),
         (
-            sigma("  sel:\n    Image: x\n  condition: sel", "{category: registry_set, product: windows}"),
+            sigma("  sel:\n    Image: x\n  condition: sel", "{category: pipe_created, product: windows}"),
             "unsupported logsource",
         ),
         (sigma("  keywords:\n    - x\n  condition: keywords", "{category: network_connection}"), "keyword searches"),

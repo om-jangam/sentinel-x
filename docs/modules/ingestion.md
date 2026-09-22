@@ -150,6 +150,61 @@ Input: one event object with `EventID`, `TimeCreated` (or `@timestamp` / `timest
 `-` and empty values are treated as absent. Rejected: any other `EventID`, a missing `EventID` or
 time, non-object `EventData`, and a 4688 without `NewProcessName`.
 
+### `windows_sysmon` — Sysmon Operational log JSON
+
+Input: the same shape as `windows_security` (`EventID`, `TimeCreated` or Sysmon's `UtcTime`, `Computer`,
+`EventRecordID`, `EventData`). `metadata.product.name` is "Sysmon" and `metadata.log_name` is
+"Microsoft-Windows-Sysmon/Operational".
+
+| EventID | Sysmon | OCSF |
+|---------|--------|------|
+| 1 | Process creation | Process Activity · Launch |
+| 3 | Network connection | Network Activity · Open |
+| 5 | Process terminated | Process Activity · Terminate |
+| 7 | Image loaded | Module Activity (1005) · Load |
+| 8 | CreateRemoteThread | Process Activity · Inject (`injection_type` "Remote Thread") |
+| 10 | ProcessAccess | Process Activity · Open |
+| 11 | FileCreate | File System Activity · Create |
+| 12 | Registry object created / deleted | Registry Key Activity (201001) · Create / Delete, Registry Value Activity (201002) · Delete |
+| 13 | Registry value set | Registry Value Activity · Set |
+| 14 | Registry object renamed | Registry Key Activity · Rename (`prev_reg_key` holds the old path) |
+| 22 | DNS query | DNS Activity · Query |
+| 23, 26 | File deleted | File System Activity · Delete |
+
+The registry classes come from the OCSF Windows extension. Their numbers are
+`extension_uid × 100000 + class`, and they belong to category 1 (System Activity).
+
+| Source | OCSF field |
+|--------|------------|
+| `Image`, `ProcessId`, `ProcessGuid` (event 1) | `process.file.path`, `.name`, `.pid`, `.uid` |
+| `CommandLine`, `IntegrityLevel`, `CurrentDirectory` | `process.cmd_line`, `.integrity`, `.working_directory` |
+| `User` (`DOMAIN\name`) | `process.user.domain` / `.name` (event 1); `actor.user.*` otherwise |
+| `ParentImage`, `ParentProcessId`, `ParentProcessGuid`, `ParentCommandLine`, `ParentUser` | `process.parent_process.*` |
+| `Company`, `Description`, `Product`, `FileVersion` | `…file.company_name`, `.desc`, `.product.name`, `.version` |
+| `Hashes` (`MD5=…,SHA256=…,IMPHASH=…`) | `…file.hashes` (MD5, SHA-1 and SHA-256 validated; IMPHASH as algorithm "other"). Malformed entries are skipped |
+| `Image` (every event except 1) | `actor.process.*`: the program that acted |
+| `SourceImage` / `TargetImage` (8, 10) | `actor.process.*` / `process.*`; both `…ProcessGuid` and Sysmon 10's `…ProcessGUID` spelling |
+| `GrantedAccess` (10) | `actual_permissions` (the mask as a number) |
+| `SourceIp`, `SourcePort`, `SourceHostname`, `Destination…` | `src_endpoint.*`, `dst_endpoint.*` |
+| `Protocol`, `Initiated` | `connection_info.protocol_name`, `.direction_id` (2 outbound, 1 inbound) |
+| `ImageLoaded` (7) | `module.file.*` |
+| `StartAddress`, `StartFunction` (8) | `module.start_address`, `.function_name` |
+| `TargetFilename` (11, 23, 26) | `file.path`, `.name` |
+| `TargetObject`, `Details` (12–14) | `reg_key.path`, or `reg_value.path`, `.name`, `.data` |
+| `QueryName`, `QueryResults`, `QueryStatus` (22) | `query.hostname`, `answers[].rdata` (addresses; CNAME entries skipped), `status_id` |
+
+Kept as written under `unmapped`, because OCSF has no attribute for them and Sigma rules match them
+literally: `original_file_name`, `hashes`, `user`, `logon_id`, `initiated`, `granted_access`,
+`call_trace`, `signed`, `signature`, `signature_status`, `query_status`, `event_type`, `start_module`,
+`rule_name` and `event_id`.
+
+In event 1 the parent is recorded once, as `process.parent_process`, not again as `actor.process`. That
+way a rule on `Image` can never match the parent's path.
+
+Rejected with a reason: any other `EventID` (for example 15, 17, 18 and 25), a missing time, non-object
+`EventData`, and events without their key field (`Image`, `TargetImage`, `TargetFilename`,
+`TargetObject`, `QueryName`, or both endpoints).
+
 ### `ocsf` — already-normalised events
 
 Passes the record to OCSF validation unchanged. It must contain `class_uid`; everything in *Coverage

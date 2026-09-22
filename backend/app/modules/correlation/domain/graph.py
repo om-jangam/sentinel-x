@@ -24,6 +24,7 @@ from app.modules.correlation.domain.evidence import (
 )
 
 MAX_EDGE_EVENTS = 20
+PROCESS_LAUNCH, PROCESS_OPEN, PROCESS_INJECT = 1, 3, 4
 
 RELATION_LABELS = {
     "failed_logon": "failed logon to",
@@ -40,6 +41,8 @@ RELATION_LABELS = {
     "queried": "queried",
     "resolved_to": "resolved to",
     "file_activity": "file activity",
+    "opened": "opened",
+    "injected_into": "injected a thread into",
 }
 
 # Left-to-right layout order: where an attack usually starts to where it ends.
@@ -94,22 +97,33 @@ def relations(event: EvidenceEvent) -> list[tuple[str, str, str]]:
         prefix = "logon" if event.outcome == "success" else "failed_logon"
         add(prefix, _pairs(r("src_ip"), r("host")))
         add(f"{prefix}_as", _pairs(r("host"), r("user")))
+    elif event.class_uid == PROCESS_ACTIVITY and event.activity_id == PROCESS_OPEN:
+        # One process opened another (Sysmon 10), e.g. a tool reading lsass.exe memory.
+        add("opened", _pairs(r("actor_process"), r("process")))
+    elif event.class_uid == PROCESS_ACTIVITY and event.activity_id == PROCESS_INJECT:
+        add("injected_into", _pairs(r("actor_process"), r("process")))
     elif event.class_uid == PROCESS_ACTIVITY:
         add("ran_as", _pairs(r("host"), r("user")))
-        add("started", _pairs(r("user") or r("host"), r("process")))
-        add("spawned", _pairs(r("parent_process"), r("process")))
+        if event.activity_id in (None, PROCESS_LAUNCH):
+            add("started", _pairs(r("user") or r("host"), r("process")))
+            add("spawned", _pairs(r("parent_process"), r("process")))
         add("image", _pairs(r("process"), r("file")))
         add("hash", _pairs(r("file"), r("hash")))
     elif event.class_uid in (NETWORK_ACTIVITY, HTTP_ACTIVITY):
         addresses = r("dst_ip") + r("src_ip")
         remote = [key for key in addresses if is_external_ip(key.split(":", 1)[1])] or r("dst_host") or r("dst_ip")
         add("connected_to", _pairs(r("host"), remote))
+        # Only when the event itself names the process that made the connection (Sysmon 3 does; a
+        # firewall log doesn't), so "which program connected out" is stated, not inferred.
+        add("connected_to", _pairs(r("actor_process"), remote))
         add("named", _pairs(remote, r("domain")))
     elif event.class_uid == DNS_ACTIVITY:
         add("queried", _pairs(r("host"), r("domain")))
+        add("queried", _pairs(r("actor_process"), r("domain")))
         add("resolved_to", _pairs(r("domain"), r("answer")))
     elif event.class_uid == FILE_ACTIVITY:
         add("file_activity", _pairs(r("host"), r("file")))
+        add("file_activity", _pairs(r("actor_process"), r("file")))
         add("hash", _pairs(r("file"), r("hash")))
     return found
 

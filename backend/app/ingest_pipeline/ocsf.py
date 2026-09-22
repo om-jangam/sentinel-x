@@ -66,15 +66,19 @@ CATEGORY_CAPTIONS: Mapping[Category, str] = {
 
 class EventClass(IntEnum):
     FILE_SYSTEM_ACTIVITY = 1001
+    MODULE_ACTIVITY = 1005
     PROCESS_ACTIVITY = 1007
     AUTHENTICATION = 3002
     NETWORK_ACTIVITY = 4001
     HTTP_ACTIVITY = 4002
     DNS_ACTIVITY = 4003
+    # The OCSF Windows extension (uid 2): extension classes are numbered extension_uid * 100000 + class.
+    REGISTRY_KEY_ACTIVITY = 201001
+    REGISTRY_VALUE_ACTIVITY = 201002
 
     @property
     def category(self) -> Category:
-        return Category(self.value // 1000)
+        return Category((self.value % 100_000) // 1000)
 
     @property
     def caption(self) -> str:
@@ -90,6 +94,7 @@ ACTIVITY_NAMES: Mapping[EventClass, Mapping[int, str]] = {
         7: "Set Security", 8: "Get Attributes", 9: "Get Security", 10: "Encrypt", 11: "Decrypt",
         12: "Mount", 13: "Unmount", 14: "Open",
     },
+    EventClass.MODULE_ACTIVITY: {1: "Load", 2: "Unload"},
     EventClass.PROCESS_ACTIVITY: {1: "Launch", 2: "Terminate", 3: "Open", 4: "Inject", 5: "Set User ID"},
     EventClass.AUTHENTICATION: {
         1: "Logon", 2: "Logoff", 3: "Authentication Ticket", 4: "Service Ticket Request",
@@ -100,6 +105,11 @@ ACTIVITY_NAMES: Mapping[EventClass, Mapping[int, str]] = {
         1: "Connect", 2: "Delete", 3: "Get", 4: "Head", 5: "Options", 6: "Post", 7: "Put", 8: "Trace", 9: "Patch",
     },
     EventClass.DNS_ACTIVITY: {1: "Query", 2: "Response", 6: "Traffic"},
+    EventClass.REGISTRY_KEY_ACTIVITY: {
+        1: "Create", 2: "Read", 3: "Modify", 4: "Delete", 5: "Rename", 6: "Set Security", 7: "Restore",
+        8: "Import", 9: "Export",
+    },
+    EventClass.REGISTRY_VALUE_ACTIVITY: {1: "Get", 2: "Set", 3: "Modify", 4: "Delete"},
 }  # fmt: skip
 
 
@@ -234,25 +244,40 @@ class Fingerprint(_Object):
         return self
 
 
+class FileProduct(_Object):
+    """OCSF `product` on a file: the product named in its version information."""
+
+    name: S255 | None = None
+
+
 class File(_Object):
     path: S4096 | None = None
     name: S255 | None = None
     hashes: Annotated[list[Fingerprint], Field(max_length=10)] | None = None
+    company_name: S255 | None = None
+    desc: S1024 | None = None
+    product: FileProduct | None = None
+    version: S64 | None = None
 
 
 class ParentProcess(_Object):
     pid: Count | None = None
-    name: S255 | None = None
-    cmd_line: S4096 | None = None
-    file: File | None = None
-
-
-class Process(_Object):
-    pid: Count | None = None
+    uid: S255 | None = None
     name: S255 | None = None
     cmd_line: S4096 | None = None
     file: File | None = None
     user: User | None = None
+
+
+class Process(_Object):
+    pid: Count | None = None
+    uid: S255 | None = None
+    name: S255 | None = None
+    cmd_line: S4096 | None = None
+    file: File | None = None
+    user: User | None = None
+    integrity: S64 | None = None
+    working_directory: S4096 | None = None
     parent_process: ParentProcess | None = None
 
 
@@ -322,6 +347,30 @@ class Traffic(_Object):
     packets_out: Count | None = None
 
 
+class Module(_Object):
+    """OCSF `module`: a DLL or shared object loaded into a process, or the start of an injected thread."""
+
+    file: File | None = None
+    load_type: S64 | None = None
+    function_name: S255 | None = None
+    start_address: S64 | None = None
+
+
+class RegKey(_Object):
+    """OCSF Windows `reg_key`."""
+
+    path: S4096
+
+
+class RegValue(_Object):
+    """OCSF Windows `reg_value`. `data` keeps the value as the source reported it."""
+
+    path: S4096
+    name: S1024 | None = None
+    data: S4096 | None = None
+    type: S64 | None = None
+
+
 class Observable(_Object):
     name: S255
     type_id: ObservableType
@@ -336,6 +385,9 @@ _REQUIRED_CONTEXT: Mapping[EventClass, tuple[tuple[str, ...], str]] = {
     EventClass.PROCESS_ACTIVITY: (("process",), "process"),
     EventClass.HTTP_ACTIVITY: (("http_request",), "http_request"),
     EventClass.FILE_SYSTEM_ACTIVITY: (("file",), "file"),
+    EventClass.MODULE_ACTIVITY: (("module",), "module"),
+    EventClass.REGISTRY_KEY_ACTIVITY: (("reg_key",), "reg_key"),
+    EventClass.REGISTRY_VALUE_ACTIVITY: (("reg_value",), "reg_value"),
 }
 
 
@@ -363,6 +415,12 @@ class OcsfEvent(_Object):
     http_response: HttpResponse | None = None
     connection_info: ConnectionInfo | None = None
     traffic: Traffic | None = None
+    module: Module | None = None
+    reg_key: RegKey | None = None
+    prev_reg_key: RegKey | None = None
+    reg_value: RegValue | None = None
+    actual_permissions: Count | None = None
+    injection_type: S64 | None = None
 
     auth_protocol: S64 | None = None
     logon_type: S64 | None = None
@@ -496,6 +554,9 @@ def derive_observables(event: OcsfEvent) -> list[Observable]:
         add_hashes("process.file.hashes.value", event.process.file)
         if event.process.parent_process is not None:
             add_hashes("process.parent_process.file.hashes.value", event.process.parent_process.file)
+    if event.module is not None and event.module.file is not None:
+        add("module.file.path", ObservableType.FILE_NAME, event.module.file.path)
+        add_hashes("module.file.hashes.value", event.module.file)
     if event.file is not None:
         add("file.path", ObservableType.FILE_NAME, event.file.path)
         add_hashes("file.hashes.value", event.file)

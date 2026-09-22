@@ -87,6 +87,18 @@ def _eq(path: str, value: Any) -> Predicate:
     return FieldMatch((path,), Equals(value))
 
 
+SYSMON_LOG_NAME = "Microsoft-Windows-Sysmon/Operational"
+
+# Sysmon's own field names, used by most SigmaHQ Windows rules. Where OCSF has no attribute, the Sysmon
+# parser keeps the value as written under `unmapped` (see parsers/windows_sysmon.py).
+_ACTOR_IMAGE_FIELDS: Mapping[str, tuple[str, ...]] = {
+    "Image": ("actor.process.file.path",),
+    "ProcessId": ("actor.process.pid",),
+    "ProcessGuid": ("actor.process.uid",),
+    "User": ("unmapped.user",),
+    "Computer": ("device.hostname",),
+}
+
 PROCESS_CREATION_FIELDS: Mapping[str, tuple[str, ...]] = {
     "Image": ("process.file.path",),
     "CommandLine": ("process.cmd_line",),
@@ -94,8 +106,84 @@ PROCESS_CREATION_FIELDS: Mapping[str, tuple[str, ...]] = {
     "ParentCommandLine": ("process.parent_process.cmd_line",),
     "ProcessId": ("process.pid",),
     "ParentProcessId": ("process.parent_process.pid",),
-    "User": ("actor.user.name", "process.user.name"),
+    "ProcessGuid": ("process.uid",),
+    "ParentProcessGuid": ("process.parent_process.uid",),
+    # Security 4688 has the user name only; Sysmon writes DOMAIN\name, kept as written in unmapped.user.
+    "User": ("actor.user.name", "process.user.name", "unmapped.user"),
+    "ParentUser": ("process.parent_process.user.name",),
+    "IntegrityLevel": ("process.integrity",),
+    "CurrentDirectory": ("process.working_directory",),
+    "OriginalFileName": ("unmapped.original_file_name",),
+    "Hashes": ("unmapped.hashes",),
+    "Company": ("process.file.company_name",),
+    "Description": ("process.file.desc",),
+    "Product": ("process.file.product.name",),
+    "FileVersion": ("process.file.version",),
+    "LogonId": ("unmapped.logon_id",),
     "Computer": ("device.hostname",),
+}
+
+PROCESS_TERMINATION_FIELDS: Mapping[str, tuple[str, ...]] = {
+    "Image": ("process.file.path",),
+    "ProcessId": ("process.pid",),
+    "ProcessGuid": ("process.uid",),
+    "User": ("unmapped.user",),
+    "Computer": ("device.hostname",),
+}
+
+CROSS_PROCESS_FIELDS: Mapping[str, tuple[str, ...]] = {
+    "SourceImage": ("actor.process.file.path",),
+    "SourceProcessId": ("actor.process.pid",),
+    "SourceProcessGuid": ("actor.process.uid",),
+    "SourceProcessGUID": ("actor.process.uid",),  # Sysmon 10 capitalises GUID; Sysmon 8 does not
+    "SourceUser": ("actor.user.name",),
+    "TargetImage": ("process.file.path",),
+    "TargetProcessId": ("process.pid",),
+    "TargetProcessGuid": ("process.uid",),
+    "TargetProcessGUID": ("process.uid",),
+    "TargetUser": ("process.user.name",),
+    "Computer": ("device.hostname",),
+}
+
+PROCESS_ACCESS_FIELDS: Mapping[str, tuple[str, ...]] = {
+    **CROSS_PROCESS_FIELDS,
+    "GrantedAccess": ("unmapped.granted_access",),
+    "CallTrace": ("unmapped.call_trace",),
+}
+
+CREATE_REMOTE_THREAD_FIELDS: Mapping[str, tuple[str, ...]] = {
+    **CROSS_PROCESS_FIELDS,
+    "StartAddress": ("module.start_address",),
+    "StartModule": ("unmapped.start_module",),
+    "StartFunction": ("module.function_name",),
+}
+
+IMAGE_LOAD_FIELDS: Mapping[str, tuple[str, ...]] = {
+    **_ACTOR_IMAGE_FIELDS,
+    "ImageLoaded": ("module.file.path",),
+    "OriginalFileName": ("unmapped.original_file_name",),
+    "Hashes": ("unmapped.hashes",),
+    "Company": ("module.file.company_name",),
+    "Description": ("module.file.desc",),
+    "Product": ("module.file.product.name",),
+    "FileVersion": ("module.file.version",),
+    "Signed": ("unmapped.signed",),
+    "Signature": ("unmapped.signature",),
+    "SignatureStatus": ("unmapped.signature_status",),
+}
+
+FILE_EVENT_FIELDS: Mapping[str, tuple[str, ...]] = {
+    **_ACTOR_IMAGE_FIELDS,
+    "TargetFilename": ("file.path",),
+    "Hashes": ("unmapped.hashes",),
+}
+
+REGISTRY_FIELDS: Mapping[str, tuple[str, ...]] = {
+    **_ACTOR_IMAGE_FIELDS,
+    "TargetObject": ("reg_key.path", "reg_value.path", "prev_reg_key.path"),
+    "Details": ("reg_value.data",),
+    "EventType": ("unmapped.event_type",),
+    "NewName": ("reg_key.path",),
 }
 
 WINDOWS_SECURITY_FIELDS: Mapping[str, tuple[str, ...]] = {
@@ -120,6 +208,8 @@ WINDOWS_SECURITY_FIELDS: Mapping[str, tuple[str, ...]] = {
 }
 
 NETWORK_CONNECTION_FIELDS: Mapping[str, tuple[str, ...]] = {
+    **_ACTOR_IMAGE_FIELDS,
+    "Initiated": ("unmapped.initiated",),
     "SourceIp": ("src_endpoint.ip",),
     "SourcePort": ("src_endpoint.port",),
     "SourceHostname": ("src_endpoint.hostname",),
@@ -130,11 +220,41 @@ NETWORK_CONNECTION_FIELDS: Mapping[str, tuple[str, ...]] = {
 }
 
 DNS_FIELDS: Mapping[str, tuple[str, ...]] = {
+    **_ACTOR_IMAGE_FIELDS,
+    "QueryStatus": ("unmapped.query_status",),
     "QueryName": ("query.hostname",),
     "QueryType": ("query.type",),
     "QueryResults": ("answers.rdata",),
     "SourceIp": ("src_endpoint.ip",),
 }
+
+# `product: windows, service: sysmon` rules select by EventID and may use any Sysmon field.
+SYSMON_FIELDS: Mapping[str, tuple[str, ...]] = {
+    **IMAGE_LOAD_FIELDS,
+    **FILE_EVENT_FIELDS,
+    **REGISTRY_FIELDS,
+    **{name: paths for name, paths in NETWORK_CONNECTION_FIELDS.items() if name not in _ACTOR_IMAGE_FIELDS},
+    **{name: paths for name, paths in DNS_FIELDS.items() if name not in _ACTOR_IMAGE_FIELDS},
+    **PROCESS_ACCESS_FIELDS,
+    **CREATE_REMOTE_THREAD_FIELDS,
+    # Event 1 calls its own new process `Image`; every other Sysmon event calls the acting process `Image`.
+    "Image": ("process.file.path", "actor.process.file.path"),
+    "CommandLine": ("process.cmd_line",),
+    "ParentImage": ("process.parent_process.file.path",),
+    "ParentCommandLine": ("process.parent_process.cmd_line",),
+    "IntegrityLevel": ("process.integrity",),
+    "CurrentDirectory": ("process.working_directory",),
+    "EventID": ("unmapped.event_id",),
+}
+
+
+def _sysmon(scope: Predicate) -> Predicate:
+    return AllOf((_eq("metadata.log_name", SYSMON_LOG_NAME), scope))
+
+
+def _event_type(*names: str) -> Predicate:
+    return _sysmon(AnyOf(tuple(_eq("unmapped.event_type", name) for name in names)))
+
 
 LOGSOURCES: tuple[LogsourceMapping, ...] = (
     LogsourceMapping(
@@ -174,6 +294,92 @@ LOGSOURCES: tuple[LogsourceMapping, ...] = (
     ),
     LogsourceMapping(name="dns_query", category="dns_query", scope=_eq("class_uid", 4003), fields=DNS_FIELDS),
     LogsourceMapping(name="dns", category="dns", scope=_eq("class_uid", 4003), fields=DNS_FIELDS),
+    LogsourceMapping(
+        name="process_termination",
+        category="process_termination",
+        scope=AllOf((_eq("class_uid", 1007), _eq("activity_id", 2))),
+        fields=PROCESS_TERMINATION_FIELDS,
+        keyword_paths=(),
+    ),
+    LogsourceMapping(
+        name="process_access",
+        category="process_access",
+        scope=AllOf((_eq("class_uid", 1007), _eq("activity_id", 3))),
+        fields=PROCESS_ACCESS_FIELDS,
+        keyword_paths=(),
+    ),
+    LogsourceMapping(
+        name="create_remote_thread",
+        category="create_remote_thread",
+        scope=AllOf((_eq("class_uid", 1007), _eq("activity_id", 4))),
+        fields=CREATE_REMOTE_THREAD_FIELDS,
+        keyword_paths=(),
+    ),
+    LogsourceMapping(
+        name="image_load",
+        category="image_load",
+        scope=AllOf((_eq("class_uid", 1005), _eq("activity_id", 1))),
+        fields=IMAGE_LOAD_FIELDS,
+        keyword_paths=(),
+    ),
+    LogsourceMapping(
+        name="file_event",
+        category="file_event",
+        scope=AllOf((_eq("class_uid", 1001), _eq("activity_id", 1))),
+        fields=FILE_EVENT_FIELDS,
+        keyword_paths=(),
+    ),
+    LogsourceMapping(
+        name="file_delete",
+        category="file_delete",
+        scope=AllOf((_eq("class_uid", 1001), _eq("activity_id", 4))),
+        fields=FILE_EVENT_FIELDS,
+        keyword_paths=(),
+    ),
+    # Sigma's registry categories follow Sysmon's event types: add is a key created, delete a key or value
+    # deleted, set a value set, rename a key or value renamed, and event any of them.
+    LogsourceMapping(
+        name="registry_add",
+        category="registry_add",
+        scope=_event_type("CreateKey"),
+        fields=REGISTRY_FIELDS,
+        keyword_paths=(),
+    ),
+    LogsourceMapping(
+        name="registry_delete",
+        category="registry_delete",
+        scope=_event_type("DeleteKey", "DeleteValue"),
+        fields=REGISTRY_FIELDS,
+        keyword_paths=(),
+    ),
+    LogsourceMapping(
+        name="registry_set",
+        category="registry_set",
+        scope=_event_type("SetValue"),
+        fields=REGISTRY_FIELDS,
+        keyword_paths=(),
+    ),
+    LogsourceMapping(
+        name="registry_rename",
+        category="registry_rename",
+        scope=_event_type("RenameKey", "RenameValue"),
+        fields=REGISTRY_FIELDS,
+        keyword_paths=(),
+    ),
+    LogsourceMapping(
+        name="registry_event",
+        category="registry_event",
+        scope=AnyOf((_eq("class_uid", 201001), _eq("class_uid", 201002))),
+        fields=REGISTRY_FIELDS,
+        keyword_paths=(),
+    ),
+    LogsourceMapping(
+        name="windows/sysmon",
+        product="windows",
+        service="sysmon",
+        scope=_eq("metadata.log_name", SYSMON_LOG_NAME),
+        fields=SYSMON_FIELDS,
+    ),
 )
 
 _COMPARISONS = {"LT": Comparison.LT, "LTE": Comparison.LTE, "GT": Comparison.GT, "GTE": Comparison.GTE}

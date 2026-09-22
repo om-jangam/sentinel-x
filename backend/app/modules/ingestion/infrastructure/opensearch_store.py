@@ -54,10 +54,15 @@ _FILE = {
         "path": _KEYWORD,
         "name": _KEYWORD,
         "hashes": {"properties": {"algorithm_id": {"type": "integer"}, "value": {"type": "keyword"}}},
+        "company_name": _KEYWORD,
+        "desc": _KEYWORD,
+        "product": {"properties": {"name": _KEYWORD}},
+        "version": _KEYWORD,
     }
 }
 _PROCESS_FIELDS: dict[str, Any] = {
     "pid": {"type": "long"},
+    "uid": _KEYWORD,
     "name": _KEYWORD,
     "cmd_line": {"type": "text", "fields": {"keyword": {"type": "keyword", "ignore_above": 1024}}},
     "file": _FILE,
@@ -106,7 +111,9 @@ MAPPINGS: dict[str, Any] = {
             "properties": {
                 **_PROCESS_FIELDS,
                 "user": _USER,
-                "parent_process": {"properties": _PROCESS_FIELDS},
+                "integrity": _KEYWORD,
+                "working_directory": _KEYWORD,
+                "parent_process": {"properties": {**_PROCESS_FIELDS, "user": _USER}},
             }
         },
         "file": _FILE,
@@ -139,6 +146,19 @@ MAPPINGS: dict[str, Any] = {
                 "packets_out": {"type": "long"},
             }
         },
+        "module": {
+            "properties": {
+                "file": _FILE,
+                "load_type": _KEYWORD,
+                "function_name": _KEYWORD,
+                "start_address": _KEYWORD,
+            }
+        },
+        "reg_key": {"properties": {"path": _KEYWORD}},
+        "prev_reg_key": {"properties": {"path": _KEYWORD}},
+        "reg_value": {"properties": {"path": _KEYWORD, "name": _KEYWORD, "data": _KEYWORD, "type": _KEYWORD}},
+        "actual_permissions": {"type": "long"},
+        "injection_type": _KEYWORD,
         "auth_protocol": _KEYWORD,
         "logon_type": _KEYWORD,
         "logon_type_id": _INT,
@@ -186,6 +206,9 @@ class OpenSearchEventStore:
         await self._put_index_template()
         for slug in CATEGORY_SLUGS.values():
             await self._ensure_write_index(f"{INDEX_PREFIX}-{slug}")
+        # The template only shapes indices created later. Fields added since an index was created (new
+        # attributes only; a changed type would be refused) are added to the existing indices too.
+        await self._client.indices.put_mapping(index=INDEX_PATTERN, body=MAPPINGS)
 
     async def _put_ism_policy(self) -> None:
         policy = {

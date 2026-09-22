@@ -65,10 +65,22 @@ def _capped(value: Any, limit: int) -> str | None:
     return value[:limit] if isinstance(value, str) and value.strip() else None
 
 
+MODULE_ACTIVITY, REGISTRY_KEY_ACTIVITY, REGISTRY_VALUE_ACTIVITY = 1005, 201001, 201002
+
 _ACTIVITIES = {
     (AUTHENTICATION, 2): "Logged off",
     (PROCESS_ACTIVITY, 1): "Process started",
     (PROCESS_ACTIVITY, 2): "Process terminated",
+    (PROCESS_ACTIVITY, 3): "Process opened another process",
+    (PROCESS_ACTIVITY, 4): "Thread injected into another process",
+    (FILE_ACTIVITY, 1): "File created",
+    (FILE_ACTIVITY, 4): "File deleted",
+    (MODULE_ACTIVITY, 1): "Module loaded",
+    (REGISTRY_KEY_ACTIVITY, 1): "Registry key created",
+    (REGISTRY_KEY_ACTIVITY, 4): "Registry key deleted",
+    (REGISTRY_KEY_ACTIVITY, 5): "Registry key renamed",
+    (REGISTRY_VALUE_ACTIVITY, 2): "Registry value set",
+    (REGISTRY_VALUE_ACTIVITY, 4): "Registry value deleted",
 }
 _CLASSES = {
     AUTHENTICATION: "Authentication",
@@ -77,6 +89,9 @@ _CLASSES = {
     HTTP_ACTIVITY: "HTTP request",
     DNS_ACTIVITY: "DNS query",
     FILE_ACTIVITY: "File activity",
+    MODULE_ACTIVITY: "Module activity",
+    REGISTRY_KEY_ACTIVITY: "Registry key activity",
+    REGISTRY_VALUE_ACTIVITY: "Registry value activity",
 }
 
 

@@ -162,7 +162,7 @@ def roles(document: Document) -> list[tuple[str, Entity]]:
             add(EntityType.IP, address, field, links=is_external_ip(address))
 
     # Users are scoped: `root` on web-01 and `root` on db-02 are different accounts.
-    for prefix in ("user", "actor.user"):
+    for prefix in ("user", "actor.user", "process.user"):
         name = _text(_get(document, f"{prefix}.name"))
         if not name or name.lower() in _JUNK_USERS or name.endswith("$"):
             continue

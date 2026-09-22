@@ -20,7 +20,7 @@ security data → ingestion → normalisation → detection → correlation
 |-------|-------|
 | Platform: identity, RBAC, hash-chained audit trail, console shell, CI | ✅ Built |
 | Ingestion: per-source tokens, limits, validation, audited source management | ✅ Built |
-| Normalisation: OCSF 1.6 subset for OpenSSH auth logs, Windows Security events, native OCSF | ✅ Built ([mappings](docs/modules/ingestion.md#ocsf-mappings)) |
+| Normalisation: OCSF 1.6 subset for OpenSSH auth logs, Windows Security events, Sysmon (13 event types), native OCSF | ✅ Built ([mappings](docs/modules/ingestion.md#ocsf-mappings)) |
 | Storage and search: immutable events in OpenSearch, constrained search API | ✅ Built (not yet run against a live cluster) |
 | Detection: Sigma and threshold rules → findings that cite their events | ✅ Built ([rules and coverage](docs/modules/detection.md)) |
 | Correlation: findings and events → incidents, every link justified by shared entities and cited events | ✅ Built ([rules and entities](docs/modules/correlation.md)) |

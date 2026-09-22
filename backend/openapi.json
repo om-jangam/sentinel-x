@@ -2641,7 +2641,7 @@
               "type": "integer"
             },
             "type": "array",
-            "maxItems": 6,
+            "maxItems": 9,
             "title": "Class Uids"
           },
           "severity_min": {
