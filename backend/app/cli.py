@@ -1,7 +1,7 @@
 """Operator CLI.
 
-`sentinelx {generate-keys,migrate,seed,verify-audit,opensearch-init,load-demo,demo,evaluate-assistant,worker,
-export-openapi}`
+`sentinelx {generate-keys,migrate,seed,verify-audit,opensearch-init,load-demo,demo,pull-splunk,
+evaluate-assistant,fetch-detection-datasets,evaluate-detection,worker,export-openapi}`
 """
 
 from __future__ import annotations
@@ -432,6 +432,94 @@ def cmd_evaluate_assistant(_: argparse.Namespace) -> int:
     return asyncio.run(_evaluate_assistant())
 
 
+def cmd_pull_splunk(args: argparse.Namespace) -> int:
+    """Search a Splunk server and ingest what it returns. Both tokens come from the environment."""
+    import httpx
+
+    from app.core.config import get_settings
+    from app.splunk_collector import SplunkError, pull, splunk_client
+
+    settings = get_settings()
+    url = args.splunk_url or settings.splunk_url
+    token = os.environ.get("SENTINELX_SPLUNK_TOKEN") or (
+        settings.splunk_token.get_secret_value() if settings.splunk_token else None
+    )
+    ingest_token = os.environ.get("SENTINELX_INGEST_TOKEN")
+    if not url or not token:
+        print("set SENTINELX_SPLUNK_URL and SENTINELX_SPLUNK_TOKEN", file=sys.stderr)
+        return 2
+    if not ingest_token:
+        print(
+            "set SENTINELX_INGEST_TOKEN to the token of the ingest source these events belong to "
+            "(POST /api/v1/ingest/sources returns it once)",
+            file=sys.stderr,
+        )
+        return 2
+
+    print(f"searching {url} for {args.earliest} .. {args.latest}")
+    splunk = splunk_client(url, token, verify=settings.splunk_verify_certs, timeout=settings.splunk_timeout_seconds)
+    api = httpx.Client(base_url=args.api_url.rstrip("/"), timeout=httpx.Timeout(60.0))
+    try:
+        outcome = pull(
+            splunk,
+            api,
+            search=args.search,
+            earliest=args.earliest,
+            latest=args.latest,
+            ingest_token=ingest_token,
+            parser=args.parser,
+            limit=args.limit,
+        )
+    except SplunkError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    finally:
+        splunk.close()
+        api.close()
+
+    print(f"{outcome.results} results, {outcome.mapped} for parser '{args.parser}'")
+    print(f"ingested: accepted {outcome.accepted}, rejected {outcome.rejected}")
+    for reason, count in sorted(outcome.unmapped.items(), key=lambda item: -item[1])[:10]:
+        print(f"  not sent ({count}): {reason}")
+    for reason in outcome.ingest_errors:
+        print(f"  rejected: {reason}")
+    return 0
+
+
+def cmd_fetch_detection_datasets(args: argparse.Namespace) -> int:
+    from app.detection_eval import DATASETS, DatasetIntegrityError, fetch
+
+    total = sum(file.size for dataset in DATASETS for file in dataset.files)
+    print(f"{len(DATASETS)} recordings, {total / 1_000_000:.1f} MB from splunk/attack_data into {args.cache}")
+    try:
+        outcomes = asyncio.run(fetch(DATASETS, Path(args.cache)))
+    except DatasetIntegrityError as exc:
+        print(f"refused: {exc}", file=sys.stderr)
+        return 1
+    for file, outcome in outcomes:
+        print(f"{outcome:>10}  {file.path}")
+    return 0
+
+
+def cmd_evaluate_detection(args: argparse.Namespace) -> int:
+    from app.detection_eval import DATASETS, evaluate, render_report
+    from app.modules.detection.infrastructure.rule_loader import load_rules
+
+    try:
+        results = asyncio.run(evaluate(DATASETS, Path(args.cache)))
+    except FileNotFoundError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    report = render_report(results, rule_count=len(load_rules().all()), generated=datetime.now().astimezone())
+    if args.report:
+        Path(args.report).write_text(report, encoding="utf-8")
+        print(f"report written to {args.report}")
+    for result in results:
+        mark = "detected" if result.detected else "missed"
+        print(f"{result.dataset.technique:<10} {mark:<9} parsed {result.accepted:>6,} of {result.events:>6,} events")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="sentinelx")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -485,6 +573,34 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser(
         "evaluate-assistant", help="score the configured AI model on the labelled sample incidents"
     ).set_defaults(func=cmd_evaluate_assistant)
+
+    splunk = sub.add_parser("pull-splunk", help="search a Splunk server and ingest the results")
+    splunk.add_argument(
+        "--search", required=True, help="the Splunk search, e.g. index=windows sourcetype=XmlWinEventLog*"
+    )
+    splunk.add_argument("--parser", required=True, help="the ingest source's parser; other sourcetypes are skipped")
+    splunk.add_argument("--earliest", default="-24h", help="Splunk earliest_time (default -24h)")
+    splunk.add_argument("--latest", default="now", help="Splunk latest_time (default now)")
+    splunk.add_argument("--limit", type=int, default=10_000, help="maximum results to pull (default 10000)")
+    splunk.add_argument("--api-url", default="http://localhost:8080", help="the Sentinel-X API")
+    splunk.add_argument("--splunk-url", help="overrides SENTINELX_SPLUNK_URL")
+    splunk.set_defaults(func=cmd_pull_splunk)
+
+    # Kept in step with app.detection_eval.DEFAULT_CACHE (not imported here, so `--help` stays light).
+    dataset_cache = str(BACKEND_ROOT / ".cache" / "detection-datasets")
+
+    fetch_datasets = sub.add_parser(
+        "fetch-detection-datasets", help="download the public attack recordings (verified by SHA-256)"
+    )
+    fetch_datasets.add_argument("--cache", default=dataset_cache)
+    fetch_datasets.set_defaults(func=cmd_fetch_detection_datasets)
+
+    evaluate_detection = sub.add_parser(
+        "evaluate-detection", help="replay the public attack recordings through the shipped rules"
+    )
+    evaluate_detection.add_argument("--cache", default=dataset_cache)
+    evaluate_detection.add_argument("--report", help="write the Markdown report here")
+    evaluate_detection.set_defaults(func=cmd_evaluate_detection)
 
     openapi = sub.add_parser("export-openapi", help="write the OpenAPI document")
     openapi.add_argument("--out", default=str(BACKEND_ROOT / "openapi.json"))

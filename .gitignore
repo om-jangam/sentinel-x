@@ -42,3 +42,6 @@ Thumbs.db
 # Local dev server logs
 *.log
 !pipeline/samples/*.log
+
+# Downloaded evaluation datasets (public attack recordings; never committed)
+.cache/

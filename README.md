@@ -20,6 +20,8 @@ security data → ingestion → normalisation → detection → correlation
 |-------|-------|
 | Platform: identity, RBAC, hash-chained audit trail, console shell, CI | ✅ Built |
 | Ingestion: per-source tokens, limits, validation, audited source management | ✅ Built |
+| Ingest from an existing Splunk deployment (pull, on demand) | ✅ Built ([how](docs/modules/ingestion.md#pulling-from-splunk)) |
+| Detection measured on public attack recordings (splunk/attack_data) | ✅ Built ([baseline](docs/evaluation/detection-baseline.md)) |
 | Normalisation: OCSF 1.6 subset for OpenSSH auth logs, Windows Security events, Sysmon (13 event types), native OCSF | ✅ Built ([mappings](docs/modules/ingestion.md#ocsf-mappings)) |
 | Storage and search: immutable events in OpenSearch, constrained search API | ✅ Built (not yet run against a live cluster) |
 | Detection: Sigma and threshold rules → findings that cite their events | ✅ Built ([rules and coverage](docs/modules/detection.md)) |

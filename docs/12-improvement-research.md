@@ -28,7 +28,14 @@ to OCSF, and read Windows EVTX exported as XML or JSON. Sigma already translates
 Sysmon event 1 through processing pipelines ([pySigma pipelines](https://sigmahq-pysigma.readthedocs.io/en/latest/Processing_Pipelines.html)),
 so each mapped event type unlocks a whole category of community rules.
 
-### 2. Measure detection on public attack recordings
+### 2. Measure detection on public attack recordings ✅ built
+*Done:* `sentinelx fetch-detection-datasets` and `sentinelx evaluate-detection`
+([`app/detection_eval.py`](../backend/app/detection_eval.py), Windows XML reader
+[`app/ingest_pipeline/winxml.py`](../backend/app/ingest_pipeline/winxml.py)). Baseline with 7 rules:
+2 of 5 priority techniques and 1 of 3 claimed techniques, 99.6% of events parsed
+([results](evaluation/detection-baseline.md), [what they mean](evaluation/README.md)).
+*Not yet:* Splunk's classic key-value Security logs and `Microsoft-Windows-NTLM/Operational` are unread.
+
 Replay public datasets and publish per-technique results: which rules fired, which techniques were
 missed, and false positives on the benign background events.
 - [Splunk attack_data](https://github.com/splunk/attack_data): Apache 2.0, organised by ATT&CK technique,

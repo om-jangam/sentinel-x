@@ -125,12 +125,22 @@ or late data behaves the same as live data.
 `sentinelx_detection_findings_total{rule_type,outcome}` (`created` or `duplicate`) and
 `sentinelx_detection_batch_seconds`.
 
+## Measured on public recordings
+
+`sentinelx evaluate-detection` replays attack recordings from
+[splunk/attack_data](https://github.com/splunk/attack_data) through these rules and reports, per ATT&CK
+technique, whether any rule flagged it: [results](../evaluation/detection-baseline.md),
+[what they mean](../evaluation/README.md). Findings on the recording lab's own automation are reported
+separately and never counted as detections.
+
 ## Limitations
 
 - **Rules are code:** no runtime enabling, disabling or editing; changes ship through git and review.
 - **Sigma coverage** is the table above. Sysmon events 1, 3, 5, 7, 8, 10–14, 22, 23 and 26 are
   normalised; named pipes (17, 18), WMI (19–21), `pipe_created`, `wmi_event`, `ps_script` and other
   Windows logs are not, so rules for them are refused.
+- **`whoami used to list privileges or groups` is tagged T1033 but narrower than the technique:** it needs
+  `/all`, `/priv` or `/groups`, so plain `whoami` (what the public T1033 recording runs) does not fire it.
 - **Threshold evidence** is the window at the moment of firing; later events in the same window do not
   fire again. Correlation groups findings into incidents, but it doesn't add those later events.
 - **Eventually consistent with the event store:** detection and indexing are separate consumers, so a
