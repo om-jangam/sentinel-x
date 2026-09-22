@@ -107,7 +107,11 @@ Recent work checks each claim against typed evidence rather than just its citati
 
 This targets the measured weakness in [the assistant results](modules/assistant.md#results-on-the-development-machine-gtx-1650-4-gb).
 
-### 8. Incident report export
+### 8. Incident report export ✅ built
+*Done:* `GET /api/v1/incidents/{id}/exports/report.md` and a download button in the workspace. Every
+section cites its events, findings name the rule's author, and notes are marked as statements by people.
+*Not yet:* PDF (Markdown converts cleanly, so this is a deployment choice, not a feature).
+
 A Markdown or PDF report of an incident: summary, timeline, findings, techniques, intel as context, and
 the analyst's notes, with every line citing event_uids. It is the equivalent of Timesketch's
 [stories](https://timesketch.org/guides/user/basic-concepts/), and is what analysts hand over.

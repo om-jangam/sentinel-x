@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import utcnow
@@ -15,6 +16,7 @@ from app.core.security.principal import Principal
 from app.modules.correlation.application.incident_service import IncidentService
 from app.modules.correlation.domain.exports import attack_flow, navigator_layer
 from app.modules.correlation.domain.incidents import MAX_PAGE_SIZE, IncidentCursor, IncidentQuery, IncidentStatus
+from app.modules.correlation.domain.report import render_markdown
 from app.modules.correlation.infrastructure.unit_of_work import SqlCorrelationUnitOfWork
 from app.modules.correlation.interface.schemas import (
     EvidenceResponse,
@@ -121,6 +123,24 @@ async def get_attack_flow(
     detail = await service.detail(principal, incident_id)
     steps, _ = await service.timeline(principal, incident_id)
     return attack_flow(detail, steps, generated=utcnow())
+
+
+@router.get(
+    "/{incident_id}/exports/report.md",
+    summary="The incident as a Markdown report: timeline, findings, entities and notes, all citing events",
+    response_class=PlainTextResponse,
+    responses={200: {"content": {"text/markdown": {}}}},
+)
+async def get_report(
+    incident_id: UUID,
+    principal: Principal = Depends(require_permission(Permission.INCIDENT_READ)),
+    service: IncidentService = Depends(get_incident_service),
+) -> PlainTextResponse:
+    detail = await service.detail(principal, incident_id)
+    steps, _ = await service.timeline(principal, incident_id)
+    notes = await service.notes(principal, incident_id)
+    markdown = render_markdown(detail, steps, notes, generated=utcnow())
+    return PlainTextResponse(markdown, media_type="text/markdown; charset=utf-8")
 
 
 @router.get("/{incident_id}/graph", summary="The entity graph: every edge cites the events that state it")

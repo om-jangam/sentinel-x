@@ -102,3 +102,35 @@ async def test_exports_are_stable_between_runs(client: httpx.AsyncClient, admin_
 async def test_exports_need_incident_read(client: httpx.AsyncClient, export: str, seeded: Seeded) -> None:
     uid = "01a0a000-0000-7000-8000-000000000001"
     assert (await client.get(f"/api/v1/incidents/{uid}/exports/{export}")).status_code == 401
+
+
+async def test_the_report_carries_the_evidence_and_marks_notes_as_statements(
+    client: httpx.AsyncClient, admin_token: str, seeded: Seeded
+) -> None:
+    uid = await incident_id(client, admin_token)
+    await client.post(
+        f"/api/v1/incidents/{uid}/notes",
+        headers=bearer(admin_token),
+        json={"body": "Contained the host and reset the account."},
+    )
+    timeline = (await client.get(f"/api/v1/incidents/{uid}/timeline", headers=bearer(admin_token))).json()
+
+    response = await client.get(f"/api/v1/incidents/{uid}/exports/report.md", headers=bearer(admin_token))
+    assert response.status_code == 200, response.text
+    assert response.headers["content-type"].startswith("text/markdown")
+    report = response.text
+
+    for heading in ("# ", "## Why this severity", "## What happened", "## Findings", "## Entities", "## Analyst notes"):
+        assert heading in report
+    assert "Statements by people, not evidence." in report
+    assert "Contained the host and reset the account." in report
+    # Every timeline step appears with the events that show it.
+    for step in timeline["steps"]:
+        assert step["action"] in report
+        assert f"`{step['events'][0]}`" in report
+    assert "GET /api/v1/events/{event_uid}" in report, "the reader is told how to check a citation"
+
+
+async def test_the_report_needs_incident_read(client: httpx.AsyncClient, seeded: Seeded) -> None:
+    uid = "01a0a000-0000-7000-8000-000000000001"
+    assert (await client.get(f"/api/v1/incidents/{uid}/exports/report.md")).status_code == 401

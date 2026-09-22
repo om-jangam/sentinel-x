@@ -1742,6 +1742,55 @@
         }
       }
     },
+    "/api/v1/incidents/{incident_id}/exports/report.md": {
+      "get": {
+        "tags": [
+          "incidents"
+        ],
+        "summary": "The incident as a Markdown report: timeline, findings, entities and notes, all citing events",
+        "operationId": "get_report_api_v1_incidents__incident_id__exports_report_md_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/markdown": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/incidents/{incident_id}/graph": {
       "get": {
         "tags": [

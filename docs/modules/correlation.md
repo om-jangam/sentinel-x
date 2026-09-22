@@ -136,6 +136,7 @@ written.
 | `GET /api/v1/incidents/{id}/graph`: nodes and edges, each with its events | `incident:read` |
 | `GET /api/v1/incidents/{id}/exports/attack-navigator`: the incident as an ATT&CK Navigator layer (v4.5) | `incident:read` |
 | `GET /api/v1/incidents/{id}/exports/attack-flow`: the incident as a STIX 2.1 Attack Flow bundle | `incident:read` |
+| `GET /api/v1/incidents/{id}/exports/report.md`: the incident as a Markdown report | `incident:read` |
 | `GET /api/v1/incidents/{id}/evidence`: digests, each with the links citing it, plus `unresolved_events` | `incident:read`; the `raw` excerpt of the original record also needs `event:read` |
 | `GET, POST /api/v1/incidents/{id}/notes`: `{body}` (1–10,000 characters) | read: `incident:read`; write: `incident:update` |
 
@@ -157,6 +158,11 @@ timeline step does.
 |--------|---------------|
 | **ATT&CK Navigator layer** ([v4.5](https://github.com/mitre-attack/attack-navigator/blob/master/layers/spec/v4.5/layerformat.md)) | every technique the incident's findings named, scored by how many events show it, commented with the rules that fired |
 | **Attack Flow** ([STIX 2.1 extension](https://center-for-threat-informed-defense.github.io/attack-flow/language/)) | one `attack-action` per timeline step, chained by `effect_refs` in the order they happened, with hosts, users, addresses and domains as `attack-asset`s |
+| **Incident report** (Markdown) | the handover document: severity reasoning, the timeline step by step, findings with the rule author, entities, and analyst notes — every section citing its `event_uid`s |
+
+The report deliberately leaves out threat intel and AI analyses: intel is another party's claim and an
+analysis is the model's, while a handover carries the evidence. Notes are included but labelled as
+statements by people.
 
 Attack Flow actions keep Sentinel-X's evidence in STIX custom properties: `x_sentinelx_event_uids` (the
 events that show the action), `x_sentinelx_rules` and `x_sentinelx_outcome`. Object ids are a UUID v5 of
