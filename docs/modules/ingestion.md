@@ -168,10 +168,12 @@ total capped at 10,000. `GET /api/v1/events/{event_uid}` returns one event.
 
 ```bash
 sentinelx opensearch-init          # index template, ISM policy, write indices (idempotent)
-sentinelx worker                   # indexing + detection; scale horizontally, replicas share each group
+sentinelx worker                   # indexing + detection + correlation; replicas share each group
 sentinelx load-demo [--samples DIR] [--keep-timestamps]
                                    # demo sources + pipeline/samples; all files shifted by one offset so
-                                   # the newest event is ~5 min old and the cross-source story keeps its order
+                                   # the newest event is ~5 min old and the cross-source story keeps its order.
+                                   # With Redis it publishes to the bus for the worker; without, it indexes
+                                   # (if OpenSearch is set) and runs detection and correlation in-process
 ```
 
 Metrics: `sentinelx_ingest_events_total{parser,outcome}`, `sentinelx_indexed_events_total{outcome}`,

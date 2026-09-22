@@ -75,7 +75,9 @@ async def run_worker(settings: Settings | None = None) -> int:
             )
         )
     # Correlation runs after detection in the same consumer group, so it sees each batch's findings once stored.
-    detection = build_analysis(rules, database, RedisWindowStore(redis))
+    detection = build_analysis(
+        rules, database, RedisWindowStore(redis), lookup=None if store is None else store.get_many
+    )
     loops.append(
         bus.run(EVENTS_NORMALIZED, group=DETECTION_GROUP, consumer=consumer, handler=detection.handle, stop=stop)
     )

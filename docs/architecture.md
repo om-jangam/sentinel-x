@@ -1,6 +1,6 @@
 # Sentinel-X architecture
 
-*Current as of Phase 3 (September 2026). This document describes what is **built**. Planned work is in
+*Current as of Phase 4 (September 2026). This document describes what is **built**. Planned work is in
 [11 · Roadmap](11-development-roadmap.md); the product scope is fixed by
 [ADR-0014](adr/ADR-0014-lock-scope-security-investigation.md).*
 
@@ -22,10 +22,10 @@ connected, and what evidence should an analyst investigate?*
 | Storage | Immutable, org-scoped event documents in OpenSearch; constrained search | **Built**; adapter tested against a stubbed client only |
 | Detection | Sigma and threshold rules over normalised events → findings that cite their events | **Built**: 4 Sigma and 3 threshold rules, evaluated in-stream ([module doc](modules/detection.md)) |
 | Correlation | Group findings and events by shared entities and time → incidents | **Built**: entity extraction by role, 2 correlation rules, severity from named conditions, audited triage ([module doc](modules/correlation.md)) |
-| Attack reconstruction | Evidence-linked timeline and entity graph per incident | Not built (Phase 4) |
+| Attack reconstruction | Evidence-linked timeline and entity graph per incident | **Built**: computed from evidence digests; every step and edge lists its events ([ADR-0017](adr/ADR-0017-evidence-digests-timeline-graph.md)) |
 | Threat intelligence | Reputation and related indicators as investigation context | Not built (Phase 5) |
 | AI investigation | Evidence-grounded assistant: FACT / INFERENCE / UNCERTAINTY | Not built (Phase 6); design in [04](04-ai-investigation-assistant.md) |
-| Incident workspace | Incident summary, timeline, graph, evidence, notes, status | Not built. The console today covers login, overview, users, roles and the audit log |
+| Incident workspace | Incident summary, timeline, graph, evidence, notes, status | **Built**: incidents list and workspace with an evidence inspector; append-only, audited notes |
 
 ## 3. Scope
 
@@ -131,7 +131,7 @@ reference events by `sx.event_uid`.
 
 | Store | Contents |
 |-------|----------|
-| PostgreSQL | `orgs`, `users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `refresh_tokens`, `audit_log` (migration 0001); `ingest_sources` (0002); `findings`, `finding_techniques` (0003); `incidents`, `incident_links`, `incident_entities` (0004) |
+| PostgreSQL | `orgs`, `users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `refresh_tokens`, `audit_log` (migration 0001); `ingest_sources` (0002); `findings`, `finding_techniques` (0003); `incidents`, `incident_links`, `incident_entities` (0004); `incident_events` (evidence digests), `incident_notes` (0005) |
 | Redis | `sx:events:*` streams with the `indexer` and `detection` consumer groups; `sx:det:*` threshold windows (hashed keys); token blocklist entries; rate-limit counters (hashed keys) |
 | OpenSearch | Rolling indices `events-ocsf-<category>-NNNNNN` behind write aliases; index template `sentinelx-events` (`dynamic: false`, `unmapped` not indexed); ISM policy rolls over at 20 GB or 1 day and deletes after the retention period (90 days by default) |
 
@@ -146,7 +146,7 @@ reference events by `sx.event_uid`.
 | Ingestion | `POST /api/v1/ingest/events`; `GET /api/v1/ingest/parsers`; `GET, POST /api/v1/ingest/sources`; `GET, PATCH /api/v1/ingest/sources/{id}`; `POST /api/v1/ingest/sources/{id}/rotate-token` |
 | Events | `POST /api/v1/events/search`, `GET /api/v1/events/{event_uid}` |
 | Detection | `GET /api/v1/findings`, `GET /api/v1/findings/{id}`, `GET /api/v1/detection/rules`, `GET /api/v1/detection/rules/{id}` |
-| Incidents | `GET /api/v1/incidents`, `GET /api/v1/incidents/{id}`, `PATCH /api/v1/incidents/{id}` (status only, versioned) |
+| Incidents | `GET /api/v1/incidents`, `GET /api/v1/incidents/{id}`, `PATCH /api/v1/incidents/{id}` (status only, versioned); `GET /api/v1/incidents/{id}/timeline`, `/graph`, `/evidence`; `GET, POST /api/v1/incidents/{id}/notes` |
 
 The OpenAPI document is committed (`backend/openapi.json`); CI fails if it or the generated TypeScript
 client drifts from the code.
@@ -155,7 +155,7 @@ client drifts from the code.
 
 ```bash
 sentinelx generate-keys | migrate | seed | verify-audit      # platform
-sentinelx opensearch-init | load-demo | worker               # ingestion and detection
+sentinelx opensearch-init | load-demo | worker               # ingestion, detection, correlation
 sentinelx export-openapi                                     # API contract
 ```
 
@@ -171,8 +171,11 @@ image scans, and API and web image builds.
 
 ## 12. Known limitations
 
-- **No reconstruction, threat intelligence or AI yet.** Incidents list their links and entities, but
-  there is no ordered timeline or entity graph view yet (Phase 4).
+- **No threat intelligence or AI yet** (Phases 5 and 6).
+- **Workspace limits** (details in the [module doc](modules/correlation.md#limitations)):
+  - Incidents from before Phase 4 have no evidence digests.
+  - Events the event store couldn't return while they were being linked stay unresolved.
+  - The graph only shows relationships that a single event states.
 - **Correlation limits** (details in the [module doc](modules/correlation.md#limitations)): incidents are
   never merged; a successful logon that arrives before the failures it completes is not linked; short
   host names can collide across domains; rules and windows are code, not configuration; findings created
@@ -191,7 +194,7 @@ image scans, and API and web image builds.
   endpoint are awaiting decisions.
 - **Single organisation.** `org_id` is threaded through every table and query, but there is no
   organisation management API.
-- **Console:** no pages for sources, event search, findings or incidents yet.
+- **Console:** incidents have a list and a workspace; sources, event search and findings have no pages yet.
 - **Worker glue untested:** the stream → detection → database path and the detection → correlation composition are tested; the worker process's
   signal handling and its running of both consumer loops together are not.
 

@@ -27,5 +27,6 @@ Superseded, Deferred}; an amended ADR keeps its original text and links the ADR 
 | [0014](ADR-0014-lock-scope-security-investigation.md) | Lock the product scope: security investigation and attack-chain reconstruction | Accepted |
 | [0015](ADR-0015-in-stream-detection.md) | In-stream detection: Sigma via pySigma plus platform threshold rules | Accepted |
 | [0016](ADR-0016-entity-correlation-into-incidents.md) | Entity correlation into incidents, run after detection in the same consumer | Accepted |
+| [0017](ADR-0017-evidence-digests-timeline-graph.md) | Timeline and entity graph derived from evidence digests in PostgreSQL | Accepted |
 
 New ADRs are added as implementation surfaces new significant decisions (per-phase).

@@ -12,6 +12,7 @@ from uuid import UUID
 from app.core.db.session import Database
 from app.modules.correlation.application.correlation_service import CorrelationService
 from app.modules.correlation.domain.incidents import FindingSignal
+from app.modules.correlation.domain.ports import EvidenceLookup
 from app.modules.correlation.infrastructure.unit_of_work import sql_uow_factory as correlation_uow_factory
 from app.modules.detection.application.detection_service import DetectionService
 from app.modules.detection.domain.findings import Finding
@@ -35,8 +36,11 @@ def signal(finding: Finding) -> FindingSignal:
     )
 
 
-def build_analysis(rules: RuleSet, database: Database, windows: WindowStore) -> DetectionService:
-    correlation = CorrelationService(uow_factory=correlation_uow_factory(database))
+def build_analysis(
+    rules: RuleSet, database: Database, windows: WindowStore, *, lookup: EvidenceLookup | None = None
+) -> DetectionService:
+    """`lookup` fetches stored events (the event store's `get_many`), for evidence from earlier batches."""
+    correlation = CorrelationService(uow_factory=correlation_uow_factory(database), lookup=lookup)
 
     async def correlate(org_id: UUID, findings: Sequence[Finding], documents: Sequence[Document]) -> None:
         await correlation.handle(org_id, [signal(finding) for finding in findings], documents)

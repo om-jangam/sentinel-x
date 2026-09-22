@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, SmallInteger, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, SmallInteger, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db.base import Base, JsonType, UUIDPrimaryKeyMixin
@@ -77,3 +77,37 @@ class IncidentEntityModel(Base):
     first_seen: Mapped[datetime]
     last_seen: Mapped[datetime]
     events: Mapped[list[str]] = mapped_column(JsonType)
+
+
+class IncidentEventModel(Base):
+    """A digest of one evidence event: the facts timelines and graphs are built from. Written once."""
+
+    __tablename__ = "incident_events"
+
+    incident_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("incidents.id", ondelete="CASCADE"), primary_key=True)
+    event_uid: Mapped[str] = mapped_column(String(64), primary_key=True)
+    org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orgs.id", ondelete="RESTRICT"))
+    time: Mapped[datetime]
+    class_uid: Mapped[int] = mapped_column(Integer)
+    activity_id: Mapped[int | None] = mapped_column(Integer)
+    status_id: Mapped[int | None] = mapped_column(SmallInteger)
+    action: Mapped[str] = mapped_column(String(64))
+    outcome: Mapped[str | None] = mapped_column(String(16))
+    message: Mapped[str | None] = mapped_column(String(512))
+    raw: Mapped[str | None] = mapped_column(String(2048))
+    roles: Mapped[dict[str, Any]] = mapped_column(JsonType)
+    detail: Mapped[dict[str, Any]] = mapped_column(JsonType)
+
+
+class IncidentNoteModel(UUIDPrimaryKeyMixin, Base):
+    """Analyst notes: append-only, never updated or deleted through the application."""
+
+    __tablename__ = "incident_notes"
+    __table_args__ = (Index("ix_incident_notes_incident_id_created_at", "incident_id", "created_at"),)
+
+    org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orgs.id", ondelete="RESTRICT"))
+    incident_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("incidents.id", ondelete="CASCADE"))
+    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    author_email: Mapped[str] = mapped_column(String(320))
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime]

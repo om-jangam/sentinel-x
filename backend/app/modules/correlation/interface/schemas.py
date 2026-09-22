@@ -7,15 +7,20 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.pagination import encode_cursor
+from app.modules.correlation.application.incident_service import IncidentEvidence
+from app.modules.correlation.domain.graph import EntityGraph
 from app.modules.correlation.domain.incidents import (
+    MAX_NOTE_LENGTH,
     Incident,
     IncidentDetail,
     IncidentEntity,
     IncidentLink,
+    IncidentNote,
     IncidentPage,
     IncidentStatus,
     Resolution,
 )
+from app.modules.correlation.domain.timeline import TimelineStep
 
 
 class IncidentRead(BaseModel):
@@ -154,3 +159,191 @@ class IncidentStatusChange(BaseModel):
     status: IncidentStatus
     resolution: Resolution | None = None
     version: int = Field(ge=1, description="The version you last read")
+
+
+class StepCitationRead(BaseModel):
+    link_id: UUID
+    rule: str
+    title: str
+    techniques: list[str]
+
+
+class TimelineStepRead(BaseModel):
+    id: str = Field(description="event_uid of the first event in the step")
+    first_seen: datetime
+    last_seen: datetime
+    action: str
+    outcome: str | None
+    host: str | None
+    users: list[str]
+    process: str | None
+    parent_process: str | None
+    command_lines: list[str]
+    remote: str | None = Field(description="The other side: the client of a logon, or the far end of a connection")
+    remote_ports: list[int]
+    domains: list[str]
+    citations: list[StepCitationRead] = Field(description="Findings and correlation links citing these events")
+    events: list[str] = Field(description="event_uids this step stands for, in time order")
+    entities: list[str]
+
+    @classmethod
+    def from_step(cls, step: TimelineStep) -> TimelineStepRead:
+        return cls(
+            id=step.id,
+            first_seen=step.first_seen,
+            last_seen=step.last_seen,
+            action=step.action,
+            outcome=step.outcome,
+            host=step.host,
+            users=list(step.users),
+            process=step.process,
+            parent_process=step.parent_process,
+            command_lines=list(step.command_lines),
+            remote=step.remote,
+            remote_ports=list(step.remote_ports),
+            domains=list(step.domains),
+            citations=[
+                StepCitationRead(link_id=UUID(c.link_id), rule=c.rule, title=c.title, techniques=list(c.techniques))
+                for c in step.citations
+            ],
+            events=list(step.events),
+            entities=list(step.entities),
+        )
+
+
+class TimelineResponse(BaseModel):
+    steps: list[TimelineStepRead]
+    unresolved_events: list[str] = Field(
+        description="Evidence event_uids with no recorded digest, so absent from the timeline and graph"
+    )
+
+
+class GraphNodeRead(BaseModel):
+    key: str
+    type: str
+    value: str
+    external: bool
+    first_seen: datetime
+    last_seen: datetime
+    event_count: int
+    events: list[str] = Field(description="event_uids it appears in (at most 20)")
+
+
+class GraphEdgeRead(BaseModel):
+    id: str
+    source: str
+    target: str
+    relation: str
+    label: str
+    first_seen: datetime
+    last_seen: datetime
+    event_count: int
+    events: list[str] = Field(description="event_uids stating this relationship (at most 20)")
+    detail: dict[str, Any]
+
+
+class GraphResponse(BaseModel):
+    nodes: list[GraphNodeRead]
+    edges: list[GraphEdgeRead]
+
+    @classmethod
+    def from_graph(cls, graph: EntityGraph) -> GraphResponse:
+        return cls(
+            nodes=[
+                GraphNodeRead(
+                    key=n.key,
+                    type=n.type,
+                    value=n.value,
+                    external=n.external,
+                    first_seen=n.first_seen,
+                    last_seen=n.last_seen,
+                    event_count=n.event_count,
+                    events=n.events,
+                )
+                for n in graph.nodes
+            ],
+            edges=[
+                GraphEdgeRead(
+                    id=e.id,
+                    source=e.source,
+                    target=e.target,
+                    relation=e.relation,
+                    label=e.label,
+                    first_seen=e.first_seen,
+                    last_seen=e.last_seen,
+                    event_count=e.event_count,
+                    events=e.events,
+                    detail=e.detail,
+                )
+                for e in graph.edges
+            ],
+        )
+
+
+class EvidenceEventRead(BaseModel):
+    event_uid: str
+    time: datetime
+    class_uid: int
+    activity_id: int | None
+    status_id: int | None
+    action: str
+    outcome: str | None
+    message: str | None
+    raw: str | None = Field(
+        description="Excerpt of the original record (at most 2,048 characters); null without event:read"
+    )
+    roles: dict[str, list[str]]
+    detail: dict[str, Any]
+    cited_by: list[UUID] = Field(description="Links that cite this event")
+
+
+class EvidenceResponse(BaseModel):
+    events: list[EvidenceEventRead]
+    unresolved_events: list[str]
+
+    @classmethod
+    def from_evidence(cls, evidence: IncidentEvidence) -> EvidenceResponse:
+        return cls(
+            events=[
+                EvidenceEventRead(
+                    event_uid=e.event_uid,
+                    time=e.time,
+                    class_uid=e.class_uid,
+                    activity_id=e.activity_id,
+                    status_id=e.status_id,
+                    action=e.action,
+                    outcome=e.outcome,
+                    message=e.message,
+                    raw=e.raw,
+                    roles=e.roles,
+                    detail=e.detail,
+                    cited_by=[UUID(link) for link in evidence.cited_by.get(e.event_uid, [])],
+                )
+                for e in evidence.events
+            ],
+            unresolved_events=evidence.unresolved,
+        )
+
+
+class NoteRead(BaseModel):
+    id: UUID
+    author_id: UUID
+    author_email: str
+    body: str
+    created_at: datetime
+
+    @classmethod
+    def from_note(cls, note: IncidentNote) -> NoteRead:
+        return cls(
+            id=note.id,
+            author_id=note.author_id,
+            author_email=note.author_email,
+            body=note.body,
+            created_at=note.created_at,
+        )
+
+
+class NoteCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    body: str = Field(min_length=1, max_length=MAX_NOTE_LENGTH)

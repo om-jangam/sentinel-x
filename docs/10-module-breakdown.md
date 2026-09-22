@@ -37,14 +37,19 @@ Entity extraction by role (host, IP, user, domain, hash as linking entities; pro
 context); two correlation rules (shared entity within a window, successful logon after brute-force
 failures); **incidents** whose every link records the rule, the shared entities and the events on both
 sides; severity and title derived from named conditions; versioned, audited status changes. Wired after
-detection at the composition root (`app/analysis.py`). → [module doc](modules/correlation.md)
+detection at the composition root (`app/analysis.py`). Since Phase 4 it also holds what the planned
+`reconstruction` and `incidents` modules were for:
+- evidence digests;
+- the timeline and entity graph, computed from the digests;
+- append-only analyst notes.
+
+They share incident storage and transactions, and splitting them would only move code across a boundary.
+→ [module doc](modules/correlation.md)
 
 ## Planned (in workflow order)
 
 | Module | Responsibility | Produces | Consumes |
 |--------|----------------|----------|----------|
-| `incidents` | Incident workspace state beyond status: summary, assignee, analyst notes; every change audited. Incident records and status live in `correlation` today | workspace records | incidents |
-| `reconstruction` | Ordered attack **timeline** and **entity graph** per incident; each step and edge carries the events that support it | timeline, graph | incident evidence |
 | `threatintel` | Reputation and related indicators for IPs, domains and hashes from configured providers, cached with source and retrieval time | enrichment records | incident entities |
 | `assistant` | Evidence-grounded AI analysis ([04](04-ai-investigation-assistant.md)) | FACT / INFERENCE / UNCERTAINTY statements with citations | evidence bundle |
 

@@ -16,6 +16,8 @@ import { UsersPage } from "@/features/admin/UsersPage";
 import { ensureSession, safeRedirect } from "@/features/auth/auth";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { IncidentPage } from "@/features/incidents/IncidentPage";
+import { IncidentsPage } from "@/features/incidents/IncidentsPage";
 
 import { queryClient } from "./query";
 
@@ -74,6 +76,19 @@ const rolesRoute = createRoute({
   path: "/admin/roles",
   component: RolesPage,
 });
+const incidentsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/incidents",
+  component: IncidentsPage,
+});
+const incidentRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/incidents/$incidentId",
+  component: function IncidentRoute() {
+    const { incidentId } = incidentRoute.useParams();
+    return <IncidentPage key={incidentId} incidentId={incidentId} />;
+  },
+});
 const auditRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/admin/audit",
@@ -82,7 +97,7 @@ const auditRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([dashboardRoute, usersRoute, rolesRoute, auditRoute]),
+  appRoute.addChildren([dashboardRoute, incidentsRoute, incidentRoute, usersRoute, rolesRoute, auditRoute]),
 ]);
 
 export const router = createRouter({

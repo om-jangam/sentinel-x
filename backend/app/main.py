@@ -60,6 +60,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             detection_rules,
             container.database,
             RedisWindowStore(container.redis) if container.redis is not None else InMemoryWindowStore(),
+            lookup=None if event_store is None else event_store.get_many,
         )
         container.event_bus.subscribe(EVENTS_NORMALIZED, detection.handle)
 

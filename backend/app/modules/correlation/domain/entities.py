@@ -117,17 +117,27 @@ def _is_internal_side(document: Document, endpoint: str) -> bool:
 
 
 def extract(document: Document) -> list[Sighting]:
+    """One sighting per distinct entity in the event (the first field it appeared in)."""
     identity = event_identity(document)
     if identity is None:
         return []
     uid, at_ms = identity
-    class_uid = document.get("class_uid")
     sightings: dict[str, Sighting] = {}
+    for field, entity in roles(document):
+        sightings.setdefault(entity.key, Sighting(entity, uid, at_ms, field))
+    return list(sightings.values())
+
+
+def roles(document: Document) -> list[tuple[str, Entity]]:
+    """Every (field, entity) pair in the event, so one entity can hold several roles (parent and child)."""
+    class_uid = document.get("class_uid")
+    found: list[tuple[str, Entity]] = []
 
     def add(entity_type: EntityType, value: str | None, field: str, *, links: bool) -> None:
         if value:
-            entity = Entity(entity_type, value[:MAX_ENTITY_LENGTH], links)
-            sightings.setdefault(entity.key, Sighting(entity, uid, at_ms, field))
+            pair = (field, Entity(entity_type, value[:MAX_ENTITY_LENGTH], links))
+            if pair not in found:
+                found.append(pair)
 
     # Hosts: the device that logged the event, plus our own side of a network connection.
     host_fields = ["device.hostname"]
@@ -171,7 +181,14 @@ def extract(document: Document) -> list[Sighting]:
         raw = _text(_get(document, field))
         add(EntityType.DOMAIN, normalise_domain(raw) if raw else None, field, links=True)
 
-    for field in ("process.name", "actor.process.name"):
+    answers = document.get("answers")
+    for answer in answers if isinstance(answers, list) else []:
+        raw = _text(answer.get("rdata")) if isinstance(answer, Mapping) else None
+        address = _ip(raw) if raw else None
+        if address:
+            add(EntityType.IP, address, "answers.rdata", links=is_external_ip(address))
+
+    for field in ("process.name", "process.parent_process.name", "actor.process.name"):
         raw = _text(_get(document, field))
         add(EntityType.PROCESS, raw.lower() if raw else None, field, links=False)
     for field in ("process.file.path", "file.path"):
@@ -182,7 +199,7 @@ def extract(document: Document) -> list[Sighting]:
         for fingerprint in hashes if isinstance(hashes, list) else []:
             value = _text(fingerprint.get("value")) if isinstance(fingerprint, Mapping) else None
             add(EntityType.HASH, value.lower() if value else None, f"{field}.value", links=True)
-    return list(sightings.values())
+    return found
 
 
 def is_successful_logon(document: Document) -> bool:

@@ -24,7 +24,8 @@ security data → ingestion → normalisation → detection → correlation
 | Storage and search: immutable events in OpenSearch, constrained search API | ✅ Built (not yet run against a live cluster) |
 | Detection: Sigma and threshold rules → findings that cite their events | ✅ Built ([rules and coverage](docs/modules/detection.md)) |
 | Correlation: findings and events → incidents, every link justified by shared entities and cited events | ✅ Built ([rules and entities](docs/modules/correlation.md)) |
-| Timeline and graph → threat intelligence → AI assistant → workspace | Planned ([roadmap](docs/11-development-roadmap.md)) |
+| Incident workspace: attack timeline, entity graph, evidence inspector, audited notes and status | ✅ Built ([ADR-0017](docs/adr/ADR-0017-evidence-digests-timeline-graph.md)) |
+| Threat intelligence → AI assistant | Planned ([roadmap](docs/11-development-roadmap.md)) |
 
 Known limitations: [architecture.md §12](docs/architecture.md#12-known-limitations).
 
@@ -67,6 +68,11 @@ runs both on every start.
 
 Every setting is documented in [`.env.example`](.env.example). Without `SENTINELX_OPENSEARCH_URL`,
 ingestion still authenticates and validates events but doesn't store them, and event search returns 503.
+
+To see the pipeline end to end, run `uv run sentinelx load-demo` after seeding. It loads the sample attack
+stories through detection and correlation, producing 12 findings and 2 incidents. Open **Incidents** in
+the console to explore each timeline and graph. It needs no OpenSearch; the event store only adds the raw
+stored event.
 
 ### Docker Compose
 

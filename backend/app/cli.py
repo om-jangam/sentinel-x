@@ -205,15 +205,20 @@ def _shift(record: dict[str, object], delta: timedelta) -> dict[str, object]:
 async def _load_demo(samples: Path, *, rebase: bool) -> int:
     import secrets
 
+    from redis.asyncio import Redis
     from sqlalchemy import select
 
+    from app.analysis import build_analysis
     from app.core.audit.port import AuditEvent
     from app.core.clock import utcnow
     from app.core.db.session import Database
-    from app.core.events.bus import InMemoryEventBus
+    from app.core.events.bus import EventBus, InMemoryEventBus
+    from app.core.events.redis_streams import RedisStreamsEventBus
     from app.core.events.topics import EVENTS_NORMALIZED
     from app.core.ids import uuid7
     from app.core.security.tokens import hash_opaque_token
+    from app.modules.detection.infrastructure.rule_loader import load_rules
+    from app.modules.detection.infrastructure.window_store import InMemoryWindowStore
     from app.modules.identity.infrastructure.models import OrgModel
     from app.modules.ingestion.application.indexing_service import IndexingService
     from app.modules.ingestion.application.ingest_service import IngestService
@@ -239,15 +244,29 @@ async def _load_demo(samples: Path, *, rebase: bool) -> int:
             datasets = [(n, p, d, [_shift(r, delta) for r in records]) for n, p, d, records in datasets]
 
     store = event_store_from_settings(settings)
-    if store is None:
-        print("set SENTINELX_OPENSEARCH_URL before loading demo telemetry", file=sys.stderr)
-        return 1
-
-    bus = InMemoryEventBus()
-    bus.subscribe(EVENTS_NORMALIZED, IndexingService(store).handle)
     database = Database(settings.database_url)
+    redis = Redis.from_url(settings.redis_url) if settings.redis_url else None
+    bus: EventBus
+    if redis is not None:
+        # The same path as live sources: the worker indexes, detects and correlates what is published.
+        bus = RedisStreamsEventBus(redis)
+    else:
+        in_process = InMemoryEventBus()
+        if store is not None:
+            in_process.subscribe(EVENTS_NORMALIZED, IndexingService(store).handle)
+        lookup = None if store is None else store.get_many
+        analysis = build_analysis(load_rules(), database, InMemoryWindowStore(), lookup=lookup)
+        in_process.subscribe(EVENTS_NORMALIZED, analysis.handle)
+        bus = in_process
+    if store is None:
+        print(
+            "warning: SENTINELX_OPENSEARCH_URL is not set, so the events are not stored or searchable; "
+            "detection and correlation still run",
+            file=sys.stderr,
+        )
     try:
-        await store.ensure_ready()
+        if store is not None:
+            await store.ensure_ready()
         async with database.sessionmaker() as session:
             org = await session.scalar(select(OrgModel).order_by(OrgModel.created_at))
             if org is None:
@@ -299,8 +318,15 @@ async def _load_demo(samples: Path, *, rebase: bool) -> int:
                 print(f"{name}: accepted {result.accepted}, rejected {result.rejected}")
 
             print(f"loaded {total_accepted} events ({total_rejected} records skipped)")
+            if redis is not None:
+                print("published to the event bus: the worker indexes, detects and correlates them")
+            else:
+                print("detection and correlation ran in-process")
     finally:
-        await store.aclose()
+        if store is not None:
+            await store.aclose()
+        if redis is not None:
+            await redis.aclose()
         await database.dispose()
     return 0
 

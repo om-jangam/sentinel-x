@@ -8,6 +8,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.correlation.domain.entities import Sighting
+from app.modules.correlation.domain.evidence import EvidenceEvent
 from app.modules.correlation.domain.incidents import (
     MAX_ENTITY_SIGHTINGS,
     CorrelationRule,
@@ -15,6 +16,7 @@ from app.modules.correlation.domain.incidents import (
     IncidentCursor,
     IncidentEntity,
     IncidentLink,
+    IncidentNote,
     IncidentPage,
     IncidentQuery,
     IncidentStatus,
@@ -22,7 +24,13 @@ from app.modules.correlation.domain.incidents import (
     MatchedEntity,
     Resolution,
 )
-from app.modules.correlation.infrastructure.models import IncidentEntityModel, IncidentLinkModel, IncidentModel
+from app.modules.correlation.infrastructure.models import (
+    IncidentEntityModel,
+    IncidentEventModel,
+    IncidentLinkModel,
+    IncidentModel,
+    IncidentNoteModel,
+)
 
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 _MICROSECOND = timedelta(microseconds=1)
@@ -284,3 +292,82 @@ class SqlIncidentRepository:
             if sighting.event_uid not in model.events and len(model.events) < MAX_ENTITY_SIGHTINGS:
                 model.events = [*model.events, sighting.event_uid]  # a new list, so the JSON change is persisted
         await self._session.flush()
+
+    async def record_evidence(self, org_id: UUID, incident_id: UUID, events: Iterable[EvidenceEvent]) -> None:
+        for event in events:
+            if await self._session.get(IncidentEventModel, (incident_id, event.event_uid)) is not None:
+                continue  # digests are projections of immutable events: the first one stands
+            self._session.add(
+                IncidentEventModel(
+                    incident_id=incident_id,
+                    event_uid=event.event_uid,
+                    org_id=org_id,
+                    time=event.time,
+                    class_uid=event.class_uid,
+                    activity_id=event.activity_id,
+                    status_id=event.status_id,
+                    action=event.action[:64],
+                    outcome=event.outcome,
+                    message=event.message,
+                    raw=event.raw,
+                    roles={role: list(keys) for role, keys in event.roles.items()},
+                    detail=dict(event.detail),
+                )
+            )
+            await self._session.flush()
+
+    async def evidence(self, incident_id: UUID) -> list[EvidenceEvent]:
+        rows = await self._session.scalars(
+            select(IncidentEventModel)
+            .where(IncidentEventModel.incident_id == incident_id)
+            .order_by(IncidentEventModel.time, IncidentEventModel.event_uid)
+        )
+        return [
+            EvidenceEvent(
+                event_uid=row.event_uid,
+                time=row.time,
+                class_uid=row.class_uid,
+                activity_id=row.activity_id,
+                status_id=row.status_id,
+                action=row.action,
+                outcome=row.outcome,
+                message=row.message,
+                raw=row.raw,
+                roles={role: list(keys) for role, keys in row.roles.items()},
+                detail=dict(row.detail),
+            )
+            for row in rows
+        ]
+
+    async def add_note(self, note: IncidentNote) -> None:
+        self._session.add(
+            IncidentNoteModel(
+                id=note.id,
+                org_id=note.org_id,
+                incident_id=note.incident_id,
+                author_id=note.author_id,
+                author_email=note.author_email,
+                body=note.body,
+                created_at=note.created_at,
+            )
+        )
+        await self._session.flush()
+
+    async def notes(self, incident_id: UUID) -> list[IncidentNote]:
+        rows = await self._session.scalars(
+            select(IncidentNoteModel)
+            .where(IncidentNoteModel.incident_id == incident_id)
+            .order_by(IncidentNoteModel.created_at, IncidentNoteModel.id)
+        )
+        return [
+            IncidentNote(
+                id=row.id,
+                org_id=row.org_id,
+                incident_id=row.incident_id,
+                author_id=row.author_id,
+                author_email=row.author_email,
+                body=row.body,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]

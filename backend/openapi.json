@@ -1548,6 +1548,258 @@
         }
       }
     },
+    "/api/v1/incidents/{incident_id}/timeline": {
+      "get": {
+        "tags": [
+          "incidents"
+        ],
+        "summary": "The attack timeline: evidence events in order, grouped into steps",
+        "operationId": "get_timeline_api_v1_incidents__incident_id__timeline_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelineResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{incident_id}/graph": {
+      "get": {
+        "tags": [
+          "incidents"
+        ],
+        "summary": "The entity graph: every edge cites the events that state it",
+        "operationId": "get_graph_api_v1_incidents__incident_id__graph_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{incident_id}/evidence": {
+      "get": {
+        "tags": [
+          "incidents"
+        ],
+        "summary": "Digests of the evidence events and the links that cite them",
+        "operationId": "get_evidence_api_v1_incidents__incident_id__evidence_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{incident_id}/notes": {
+      "get": {
+        "tags": [
+          "incidents"
+        ],
+        "summary": "Analyst notes, oldest first",
+        "operationId": "list_notes_api_v1_incidents__incident_id__notes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NoteRead"
+                  },
+                  "title": "Response List Notes Api V1 Incidents  Incident Id  Notes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "incidents"
+        ],
+        "summary": "Add an analyst note (audited)",
+        "operationId": "add_note_api_v1_incidents__incident_id__notes_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -2098,6 +2350,147 @@
         ],
         "title": "EventSearchRequest"
       },
+      "EvidenceEventRead": {
+        "properties": {
+          "event_uid": {
+            "type": "string",
+            "title": "Event Uid"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time"
+          },
+          "class_uid": {
+            "type": "integer",
+            "title": "Class Uid"
+          },
+          "activity_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Id"
+          },
+          "status_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Id"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "raw": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw",
+            "description": "Excerpt of the original record (at most 2,048 characters); null without event:read"
+          },
+          "roles": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Roles"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Detail"
+          },
+          "cited_by": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Cited By",
+            "description": "Links that cite this event"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_uid",
+          "time",
+          "class_uid",
+          "activity_id",
+          "status_id",
+          "action",
+          "outcome",
+          "message",
+          "raw",
+          "roles",
+          "detail",
+          "cited_by"
+        ],
+        "title": "EvidenceEventRead"
+      },
+      "EvidenceResponse": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceEventRead"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "unresolved_events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unresolved Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "events",
+          "unresolved_events"
+        ],
+        "title": "EvidenceResponse"
+      },
       "FindingPageResponse": {
         "properties": {
           "items": {
@@ -2226,6 +2619,149 @@
           "created_at"
         ],
         "title": "FindingRead"
+      },
+      "GraphEdgeRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "relation": {
+            "type": "string",
+            "title": "Relation"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Seen"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen"
+          },
+          "event_count": {
+            "type": "integer",
+            "title": "Event Count"
+          },
+          "events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Events",
+            "description": "event_uids stating this relationship (at most 20)"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "target",
+          "relation",
+          "label",
+          "first_seen",
+          "last_seen",
+          "event_count",
+          "events",
+          "detail"
+        ],
+        "title": "GraphEdgeRead"
+      },
+      "GraphNodeRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "external": {
+            "type": "boolean",
+            "title": "External"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Seen"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen"
+          },
+          "event_count": {
+            "type": "integer",
+            "title": "Event Count"
+          },
+          "events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Events",
+            "description": "event_uids it appears in (at most 20)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "type",
+          "value",
+          "external",
+          "first_seen",
+          "last_seen",
+          "event_count",
+          "events"
+        ],
+        "title": "GraphNodeRead"
+      },
+      "GraphResponse": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNodeRead"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEdgeRead"
+            },
+            "type": "array",
+            "title": "Edges"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "title": "GraphResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -2904,6 +3440,58 @@
         ],
         "title": "MeResponse"
       },
+      "NoteCreate": {
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "body"
+        ],
+        "title": "NoteCreate"
+      },
+      "NoteRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "author_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Author Id"
+          },
+          "author_email": {
+            "type": "string",
+            "title": "Author Email"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "author_id",
+          "author_email",
+          "body",
+          "created_at"
+        ],
+        "title": "NoteRead"
+      },
       "Page_AuditEntryRead_": {
         "properties": {
           "items": {
@@ -3461,6 +4049,38 @@
         "title": "SourceWithToken",
         "description": "Returned only by create and rotate: the token is never retrievable afterwards."
       },
+      "StepCitationRead": {
+        "properties": {
+          "link_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Link Id"
+          },
+          "rule": {
+            "type": "string",
+            "title": "Rule"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "techniques": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Techniques"
+          }
+        },
+        "type": "object",
+        "required": [
+          "link_id",
+          "rule",
+          "title",
+          "techniques"
+        ],
+        "title": "StepCitationRead"
+      },
       "ThresholdSettings": {
         "properties": {
           "group_by": {
@@ -3498,6 +4118,181 @@
           "window_seconds"
         ],
         "title": "ThresholdSettings"
+      },
+      "TimelineResponse": {
+        "properties": {
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineStepRead"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "unresolved_events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unresolved Events",
+            "description": "Evidence event_uids with no recorded digest, so absent from the timeline and graph"
+          }
+        },
+        "type": "object",
+        "required": [
+          "steps",
+          "unresolved_events"
+        ],
+        "title": "TimelineResponse"
+      },
+      "TimelineStepRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "event_uid of the first event in the step"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Seen"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host"
+          },
+          "users": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Users"
+          },
+          "process": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Process"
+          },
+          "parent_process": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Process"
+          },
+          "command_lines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Command Lines"
+          },
+          "remote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote",
+            "description": "The other side: the client of a logon, or the far end of a connection"
+          },
+          "remote_ports": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Remote Ports"
+          },
+          "domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Domains"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/StepCitationRead"
+            },
+            "type": "array",
+            "title": "Citations",
+            "description": "Findings and correlation links citing these events"
+          },
+          "events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Events",
+            "description": "event_uids this step stands for, in time order"
+          },
+          "entities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Entities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "first_seen",
+          "last_seen",
+          "action",
+          "outcome",
+          "host",
+          "users",
+          "process",
+          "parent_process",
+          "command_lines",
+          "remote",
+          "remote_ports",
+          "domains",
+          "citations",
+          "events",
+          "entities"
+        ],
+        "title": "TimelineStepRead"
       },
       "TokenResponse": {
         "properties": {

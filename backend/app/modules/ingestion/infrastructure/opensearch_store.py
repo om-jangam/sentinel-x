@@ -34,6 +34,8 @@ INDEX_PREFIX = "events-ocsf"
 INDEX_PATTERN = f"{INDEX_PREFIX}-*"
 TEMPLATE_NAME = "sentinelx-events"
 ISM_POLICY_ID = "sentinelx-events"
+# A threshold finding cites at most 100 events, so one lookup never needs more.
+MAX_LOOKUP = 100
 SEARCHABLE_TEXT = ["message", "raw_data", "process.cmd_line", "query.hostname"]
 
 _KEYWORD = {"type": "keyword"}
@@ -392,6 +394,33 @@ class OpenSearchEventStore:
         )
         hits = response.get("hits", {}).get("hits", [])
         return hits[0]["_source"] if hits else None
+
+    async def get_many(self, org_id: UUID, event_uids: Sequence[str]) -> dict[str, dict[str, Any]]:
+        wanted = sorted(set(event_uids))[:MAX_LOOKUP]
+        if not wanted:
+            return {}
+        response = await self._client.search(
+            index=INDEX_PATTERN,
+            body={
+                "size": len(wanted),
+                "query": {
+                    "bool": {
+                        "filter": [
+                            {"term": {"sx.org_id": str(org_id)}},
+                            {"terms": {"sx.event_uid": wanted}},
+                        ]
+                    }
+                },
+            },
+            ignore_unavailable=True,
+        )
+        found: dict[str, dict[str, Any]] = {}
+        for hit in response.get("hits", {}).get("hits", []):
+            source = hit.get("_source") or {}
+            uid = (source.get("sx") or {}).get("event_uid")
+            if isinstance(uid, str) and uid in wanted:
+                found[uid] = source
+        return found
 
     async def aclose(self) -> None:
         await self._client.close()

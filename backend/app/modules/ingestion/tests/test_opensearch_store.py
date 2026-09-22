@@ -153,6 +153,28 @@ async def test_single_event_lookup_is_org_scoped() -> None:
     assert {"term": {"sx.event_uid": "evt-1"}} in filters
 
 
+async def test_batch_lookup_is_org_scoped_bounded_and_keyed_by_event_uid() -> None:
+    hits = [
+        {"_source": {"sx": {"event_uid": "evt-1", "org_id": str(ORG)}, "time": 1}},
+        {"_source": {"sx": {"event_uid": "not-asked-for"}}},
+    ]
+    client = stub_client(search=AsyncMock(return_value={"hits": {"hits": hits}}))
+    found = await store_with(client).get_many(ORG, ["evt-2", "evt-1", "evt-1"])
+
+    assert list(found) == ["evt-1"], "only requested events come back, whatever the cluster returns"
+    body = sent_body(client)
+    assert {"term": {"sx.org_id": str(ORG)}} in body["query"]["bool"]["filter"]
+    assert {"terms": {"sx.event_uid": ["evt-1", "evt-2"]}} in body["query"]["bool"]["filter"]
+    assert body["size"] == 2
+
+    many = stub_client()
+    assert await store_with(many).get_many(ORG, [f"e{i:03}" for i in range(150)]) == {}
+    assert len(sent_body(many)["query"]["bool"]["filter"][1]["terms"]["sx.event_uid"]) == 100
+    none = stub_client()
+    assert await store_with(none).get_many(ORG, []) == {}
+    none.search.assert_not_awaited()
+
+
 # ------------------------------------------------------------------- writes
 async def test_writes_never_overwrite_stored_evidence() -> None:
     items = [

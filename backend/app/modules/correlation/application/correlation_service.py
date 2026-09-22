@@ -14,7 +14,7 @@ batch changes nothing. Two rules create links:
 from __future__ import annotations
 
 import logging
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID
@@ -31,6 +31,7 @@ from app.modules.correlation.domain.entities import (
     extract,
     is_successful_logon,
 )
+from app.modules.correlation.domain.evidence import EvidenceEvent, digest
 from app.modules.correlation.domain.incidents import (
     MAX_MATCH_SIGHTINGS,
     CorrelationRule,
@@ -48,7 +49,7 @@ from app.modules.correlation.domain.policy import (
     assess,
     is_auth_failure_link,
 )
-from app.modules.correlation.domain.ports import CorrelationUnitOfWork, UnitOfWorkFactory
+from app.modules.correlation.domain.ports import CorrelationUnitOfWork, EvidenceLookup, UnitOfWorkFactory
 
 logger = logging.getLogger(__name__)
 
@@ -69,31 +70,73 @@ class _Touched:
     links_added: int = 0
 
 
+@dataclass(slots=True)
+class _Batch:
+    """What this batch knows about events: its own documents plus any evidence fetched from the event store."""
+
+    sightings: dict[str, list[Sighting]]
+    digests: dict[str, EvidenceEvent]
+
+    def sightings_for(self, uids: Sequence[str]) -> list[Sighting]:
+        return [s for uid in uids for s in self.sightings.get(uid, [])]
+
+    def digests_for(self, uids: Sequence[str]) -> list[EvidenceEvent]:
+        return [self.digests[uid] for uid in uids if uid in self.digests]
+
+
 class CorrelationService:
-    def __init__(self, *, uow_factory: UnitOfWorkFactory, clock: Clock = utcnow) -> None:
+    def __init__(
+        self, *, uow_factory: UnitOfWorkFactory, lookup: EvidenceLookup | None = None, clock: Clock = utcnow
+    ) -> None:
         self._uow_factory = uow_factory
+        self._lookup = lookup
         self._clock = clock
 
-    async def handle(self, org_id: UUID, findings: Sequence[FindingSignal], documents: Sequence[Document]) -> None:
-        sightings: dict[str, list[Sighting]] = {}
-        logons: list[tuple[str, int]] = []
+    async def _known_events(
+        self, org_id: UUID, findings: Sequence[FindingSignal], documents: Sequence[Document]
+    ) -> dict[str, Document]:
+        known: dict[str, Document] = {}
         for document in documents:
             identity = event_identity(document)
-            if identity is None:
-                continue
-            sightings[identity[0]] = extract(document)
-            if is_successful_logon(document):
-                logons.append(identity)
+            if identity is not None:
+                known[identity[0]] = document
+        missing = sorted({uid for finding in findings for uid in finding.evidence} - known.keys())
+        if missing and self._lookup is not None:
+            try:
+                fetched = await self._lookup(org_id, missing)
+            except Exception:
+                # An unreachable event store must not stall the pipeline: those events stay unresolved in the
+                # incident (the API reports them) rather than blocking every later batch.
+                logger.warning("evidence lookup failed", extra={"missing_events": len(missing)}, exc_info=True)
+                fetched = {}
+            for uid in missing:
+                if uid in fetched:
+                    known[uid] = fetched[uid]
+        return known
+
+    async def handle(self, org_id: UUID, findings: Sequence[FindingSignal], documents: Sequence[Document]) -> None:
+        logons = [
+            identity
+            for document in documents
+            if is_successful_logon(document) and (identity := event_identity(document)) is not None
+        ]
         if not findings and not logons:
             return
+        known = await self._known_events(org_id, findings, documents)
+        batch = _Batch(sightings={}, digests={})
+        for uid, document in known.items():
+            batch.sightings[uid] = extract(document)
+            event = digest(document)
+            if event is not None:
+                batch.digests[uid] = event
 
         async with self._uow_factory() as uow:
             await uow.incidents.lock(org_id)
             touched: dict[UUID, _Touched] = {}
             for finding in sorted(findings, key=lambda f: (f.first_seen, str(f.id))):
-                await self._correlate_finding(uow, org_id, finding, sightings, touched)
+                await self._correlate_finding(uow, org_id, finding, batch, touched)
             for uid, at_ms in sorted(logons, key=lambda item: (item[1], item[0])):
-                await self._correlate_logon(uow, org_id, uid, _at(at_ms), sightings.get(uid, []), touched)
+                await self._correlate_logon(uow, org_id, uid, _at(at_ms), batch, touched)
             if not touched:
                 return
             await self._finalise(uow, touched)
@@ -117,10 +160,11 @@ class CorrelationService:
         touched: dict[UUID, _Touched],
         incident: Incident,
         link: IncidentLink,
-        sightings: Sequence[Sighting],
+        batch: _Batch,
     ) -> None:
         await uow.incidents.add_link(link)
-        await uow.incidents.record_sightings(incident.org_id, incident.id, sightings)
+        await uow.incidents.record_sightings(incident.org_id, incident.id, batch.sightings_for(link.evidence))
+        await uow.incidents.record_evidence(incident.org_id, incident.id, batch.digests_for(link.evidence))
         # Widen now, so the next finding in this batch is matched against the incident's true extent.
         incident.first_seen = min(incident.first_seen, link.first_seen)
         incident.last_seen = max(incident.last_seen, link.last_seen)
@@ -133,12 +177,12 @@ class CorrelationService:
         uow: CorrelationUnitOfWork,
         org_id: UUID,
         finding: FindingSignal,
-        sightings: Mapping[str, list[Sighting]],
+        batch: _Batch,
         touched: dict[UUID, _Touched],
     ) -> None:
         if await uow.incidents.incident_for_finding(org_id, finding.id) is not None:
             return  # redelivered: already correlated
-        own = [s for uid in finding.evidence for s in sightings.get(uid, [])]
+        own = batch.sightings_for(finding.evidence)
         keys = {s.entity.key for s in own if s.entity.links}
         candidates = (
             await uow.incidents.open_incidents_with(
@@ -206,7 +250,7 @@ class CorrelationService:
                 "tactics": list(finding.tactics),
             },
         )
-        await self._link(uow, touched, incident, link, own)
+        await self._link(uow, touched, incident, link, batch)
 
     async def _correlate_logon(
         self,
@@ -214,9 +258,10 @@ class CorrelationService:
         org_id: UUID,
         event_uid: str,
         at: datetime,
-        own: Sequence[Sighting],
+        batch: _Batch,
         touched: dict[UUID, _Touched],
     ) -> None:
+        own = batch.sightings_for([event_uid])
         source = next((s for s in own if s.entity.type is EntityType.IP and s.field == "src_endpoint.ip"), None)
         host_keys = {s.entity.key for s in own if s.entity.type is EntityType.HOST}
         if source is None or not host_keys:
@@ -268,7 +313,7 @@ class CorrelationService:
                 event_uid=event_uid,
                 detail={"failure_links": [str(link.id) for link in failures], "user": user},
             )
-            await self._link(uow, touched, incident, link, own)
+            await self._link(uow, touched, incident, link, batch)
 
     async def _finalise(self, uow: CorrelationUnitOfWork, touched: dict[UUID, _Touched]) -> None:
         now = self._clock()

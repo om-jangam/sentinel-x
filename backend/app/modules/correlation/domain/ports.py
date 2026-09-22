@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
 from app.core.audit.port import AuditRecorder
-from app.modules.correlation.domain.entities import Sighting
+from app.modules.correlation.domain.entities import Document, Sighting
+from app.modules.correlation.domain.evidence import EvidenceEvent
 from app.modules.correlation.domain.incidents import (
     Incident,
     IncidentEntity,
     IncidentLink,
+    IncidentNote,
     IncidentPage,
     IncidentQuery,
 )
@@ -48,6 +50,16 @@ class IncidentRepository(Protocol):
 
     async def record_sightings(self, org_id: UUID, incident_id: UUID, sightings: Iterable[Sighting]) -> None: ...
 
+    async def record_evidence(self, org_id: UUID, incident_id: UUID, events: Iterable[EvidenceEvent]) -> None:
+        """Store digests of the incident's evidence events; an event already recorded is left as it is."""
+        ...
+
+    async def evidence(self, incident_id: UUID) -> list[EvidenceEvent]: ...
+
+    async def add_note(self, note: IncidentNote) -> None: ...
+
+    async def notes(self, incident_id: UUID) -> list[IncidentNote]: ...
+
 
 class CorrelationUnitOfWork(Protocol):
     @property
@@ -62,3 +74,7 @@ class CorrelationUnitOfWork(Protocol):
 
 
 UnitOfWorkFactory = Callable[[], AbstractAsyncContextManager[CorrelationUnitOfWork]]
+
+# Fetches stored events by event_uid for one organisation. Correlation uses it for evidence that arrived in
+# an earlier batch (a threshold finding's first events); missing events are simply absent from the result.
+EvidenceLookup = Callable[[UUID, Sequence[str]], Awaitable[Mapping[str, Document]]]

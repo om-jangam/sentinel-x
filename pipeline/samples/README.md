@@ -13,5 +13,10 @@ Load it into a running stack (timestamps are rebased so events land in the hot t
 
 ```bash
 cd backend
-uv run sentinelx load-demo --api-url http://127.0.0.1:8000
+uv run sentinelx load-demo
 ```
+
+Expected result: 12 findings and **two** incidents. The first is web-01's SSH spray ending in the `deploy`
+login. The second is WS-FIN-07's logon burst, RDP logon, encoded PowerShell, discovery and beaconing (the
+Windows and Zeek records join on the host name). Nothing in the evidence connects the two attackers, so they
+stay separate. Alice's logins, the morning console logon and the SMB session stay out of both.

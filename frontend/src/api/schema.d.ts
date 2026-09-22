@@ -425,6 +425,75 @@ export interface paths {
         patch: operations["change_incident_status_api_v1_incidents__incident_id__patch"];
         trace?: never;
     };
+    "/api/v1/incidents/{incident_id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The attack timeline: evidence events in order, grouped into steps */
+        get: operations["get_timeline_api_v1_incidents__incident_id__timeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incidents/{incident_id}/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The entity graph: every edge cites the events that state it */
+        get: operations["get_graph_api_v1_incidents__incident_id__graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incidents/{incident_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Digests of the evidence events and the links that cite them */
+        get: operations["get_evidence_api_v1_incidents__incident_id__evidence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incidents/{incident_id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Analyst notes, oldest first */
+        get: operations["list_notes_api_v1_incidents__incident_id__notes_get"];
+        put?: never;
+        /** Add an analyst note (audited) */
+        post: operations["add_note_api_v1_incidents__incident_id__notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -605,6 +674,53 @@ export interface components {
             /** Cursor */
             cursor?: string | null;
         };
+        /** EvidenceEventRead */
+        EvidenceEventRead: {
+            /** Event Uid */
+            event_uid: string;
+            /**
+             * Time
+             * Format: date-time
+             */
+            time: string;
+            /** Class Uid */
+            class_uid: number;
+            /** Activity Id */
+            activity_id: number | null;
+            /** Status Id */
+            status_id: number | null;
+            /** Action */
+            action: string;
+            /** Outcome */
+            outcome: string | null;
+            /** Message */
+            message: string | null;
+            /**
+             * Raw
+             * @description Excerpt of the original record (at most 2,048 characters); null without event:read
+             */
+            raw: string | null;
+            /** Roles */
+            roles: {
+                [key: string]: string[];
+            };
+            /** Detail */
+            detail: {
+                [key: string]: unknown;
+            };
+            /**
+             * Cited By
+             * @description Links that cite this event
+             */
+            cited_by: string[];
+        };
+        /** EvidenceResponse */
+        EvidenceResponse: {
+            /** Events */
+            events: components["schemas"]["EvidenceEventRead"][];
+            /** Unresolved Events */
+            unresolved_events: string[];
+        };
         /** FindingPageResponse */
         FindingPageResponse: {
             /** Items */
@@ -658,6 +774,75 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** GraphEdgeRead */
+        GraphEdgeRead: {
+            /** Id */
+            id: string;
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+            /** Relation */
+            relation: string;
+            /** Label */
+            label: string;
+            /**
+             * First Seen
+             * Format: date-time
+             */
+            first_seen: string;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+            /** Event Count */
+            event_count: number;
+            /**
+             * Events
+             * @description event_uids stating this relationship (at most 20)
+             */
+            events: string[];
+            /** Detail */
+            detail: {
+                [key: string]: unknown;
+            };
+        };
+        /** GraphNodeRead */
+        GraphNodeRead: {
+            /** Key */
+            key: string;
+            /** Type */
+            type: string;
+            /** Value */
+            value: string;
+            /** External */
+            external: boolean;
+            /**
+             * First Seen
+             * Format: date-time
+             */
+            first_seen: string;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+            /** Event Count */
+            event_count: number;
+            /**
+             * Events
+             * @description event_uids it appears in (at most 20)
+             */
+            events: string[];
+        };
+        /** GraphResponse */
+        GraphResponse: {
+            /** Nodes */
+            nodes: components["schemas"]["GraphNodeRead"][];
+            /** Edges */
+            edges: components["schemas"]["GraphEdgeRead"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -958,6 +1143,33 @@ export interface components {
             /** Last Login At */
             last_login_at: string | null;
         };
+        /** NoteCreate */
+        NoteCreate: {
+            /** Body */
+            body: string;
+        };
+        /** NoteRead */
+        NoteRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Author Id
+             * Format: uuid
+             */
+            author_id: string;
+            /** Author Email */
+            author_email: string;
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** Page[AuditEntryRead] */
         Page_AuditEntryRead_: {
             /** Items */
@@ -1163,6 +1375,20 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** StepCitationRead */
+        StepCitationRead: {
+            /**
+             * Link Id
+             * Format: uuid
+             */
+            link_id: string;
+            /** Rule */
+            rule: string;
+            /** Title */
+            title: string;
+            /** Techniques */
+            techniques: string[];
+        };
         /** ThresholdSettings */
         ThresholdSettings: {
             /** Group By */
@@ -1173,6 +1399,69 @@ export interface components {
             threshold: number;
             /** Window Seconds */
             window_seconds: number;
+        };
+        /** TimelineResponse */
+        TimelineResponse: {
+            /** Steps */
+            steps: components["schemas"]["TimelineStepRead"][];
+            /**
+             * Unresolved Events
+             * @description Evidence event_uids with no recorded digest, so absent from the timeline and graph
+             */
+            unresolved_events: string[];
+        };
+        /** TimelineStepRead */
+        TimelineStepRead: {
+            /**
+             * Id
+             * @description event_uid of the first event in the step
+             */
+            id: string;
+            /**
+             * First Seen
+             * Format: date-time
+             */
+            first_seen: string;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+            /** Action */
+            action: string;
+            /** Outcome */
+            outcome: string | null;
+            /** Host */
+            host: string | null;
+            /** Users */
+            users: string[];
+            /** Process */
+            process: string | null;
+            /** Parent Process */
+            parent_process: string | null;
+            /** Command Lines */
+            command_lines: string[];
+            /**
+             * Remote
+             * @description The other side: the client of a logon, or the far end of a connection
+             */
+            remote: string | null;
+            /** Remote Ports */
+            remote_ports: number[];
+            /** Domains */
+            domains: string[];
+            /**
+             * Citations
+             * @description Findings and correlation links citing these events
+             */
+            citations: components["schemas"]["StepCitationRead"][];
+            /**
+             * Events
+             * @description event_uids this step stands for, in time order
+             */
+            events: string[];
+            /** Entities */
+            entities: string[];
         };
         /** TokenResponse */
         TokenResponse: {
@@ -2171,6 +2460,165 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IncidentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_timeline_api_v1_incidents__incident_id__timeline_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimelineResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_graph_api_v1_incidents__incident_id__graph_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_evidence_api_v1_incidents__incident_id__evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_notes_api_v1_incidents__incident_id__notes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_note_api_v1_incidents__incident_id__notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteRead"];
                 };
             };
             /** @description Validation Error */

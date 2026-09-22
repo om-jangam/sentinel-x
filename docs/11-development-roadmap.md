@@ -54,9 +54,9 @@ Technique chains are an incident assessment, not a linking rule: findings spanni
 tactics raise severity and name the links involved. The samples contain **two** stories, not three.
 Nothing in the evidence connects web-01's attacker to WS-FIN-07's, so they stay separate. The Zeek
 beaconing joins the Windows story because both name `WS-FIN-07`. Background activity stays out.
-**Remaining:** an incidents page in the console (with the Phase 4 workspace).
+**Remaining:** nothing specific to correlation; the incidents pages arrived with Phase 4.
 
-## Phase 4 — Attack timeline, entity graph & incident workspace
+## Phase 4 — Attack timeline, entity graph & incident workspace ✅
 - Timeline: ordered steps (time, host, user, process, external entity) with supporting events.
 - Entity graph in PostgreSQL: attacker IP → host → user → process → file → hash → domain, each edge
   citing events.
@@ -65,6 +65,20 @@ beaconing joins the Windows story because both name `WS-FIN-07`. Background acti
 
 **Done when** an analyst can open a sample incident and trace every timeline step and edge back to raw
 events.
+
+**Built** ([ADR-0017](adr/ADR-0017-evidence-digests-timeline-graph.md),
+[module doc](modules/correlation.md#workspace-evidence-timeline-and-graph)):
+- **Evidence digests:** correlation records a digest of every event it links; evidence from earlier
+  batches is fetched from the event store.
+- **Timeline and graph** are computed from the digests. An edge exists only where one event states it.
+- **Notes** are append-only and audited.
+- **Console:** the incidents list and workspace. Its evidence inspector takes any step, node, edge, link
+  or entity to its events, their original records and the stored event.
+- **Found while wiring:** `load-demo` indexed demo data without ever running detection or correlation.
+  It now takes the same path as live data.
+
+**Remaining:** a findings page and event search in the console; verifying the stored-event hop against a
+live OpenSearch.
 
 ## Phase 5 — Threat intelligence
 Provider adapters for IP, domain and hash reputation and related indicators, cached with source and

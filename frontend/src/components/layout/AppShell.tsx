@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, LogOut, Menu, ScrollText, ShieldCheck, Users, X } from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, ScrollText, ShieldCheck, Siren, Users, X } from "lucide-react";
 import { type ComponentType, useEffect, useState } from "react";
 
 import { useMe } from "@/api/hooks";
@@ -11,7 +11,7 @@ import { session } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
-  to: "/" | "/admin/users" | "/admin/roles" | "/admin/audit";
+  to: "/" | "/incidents" | "/admin/users" | "/admin/roles" | "/admin/audit";
   label: string;
   icon: ComponentType<{ className?: string }>;
   permission?: PermissionName;
@@ -19,6 +19,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
+  { to: "/incidents", label: "Incidents", icon: Siren, permission: "incident:read" },
   { to: "/admin/users", label: "Users", icon: Users, permission: "user:read" },
   { to: "/admin/roles", label: "Roles & permissions", icon: ShieldCheck, permission: "role:read" },
   { to: "/admin/audit", label: "Audit log", icon: ScrollText, permission: "audit:read" },

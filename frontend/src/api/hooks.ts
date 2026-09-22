@@ -2,7 +2,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { api } from "./client";
 import { unwrap } from "./errors";
-import type { RoleCreate, RoleUpdate, UserCreate, UserUpdate } from "./types";
+import type { IncidentStatus, Resolution, RoleCreate, RoleUpdate, UserCreate, UserUpdate } from "./types";
 
 const PAGE_SIZE = 50;
 
@@ -14,6 +14,11 @@ export const queryKeys = {
   health: ["health"] as const,
   audit: (filters: AuditFilters) => ["audit", filters] as const,
   auditVerification: ["audit", "verification"] as const,
+  incidents: (filters: IncidentFilters) => ["incidents", filters] as const,
+  incident: (id: string) => ["incident", id] as const,
+  incidentPart: (id: string, part: "timeline" | "graph" | "evidence" | "notes") =>
+    ["incident", id, part] as const,
+  event: (uid: string) => ["event", uid] as const,
 };
 
 export async function fetchMe() {
@@ -149,5 +154,103 @@ export function useAuditVerification(enabled: boolean) {
     queryFn: async () => unwrap(await api.GET("/api/v1/audit/verify")),
     enabled,
     staleTime: 0,
+  });
+}
+
+// ------------------------------------------------------------------ incidents
+export interface IncidentFilters {
+  status?: IncidentStatus;
+  severity_min?: number;
+}
+
+export function useIncidents(filters: IncidentFilters) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.incidents(filters),
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) =>
+      unwrap(
+        await api.GET("/api/v1/incidents", {
+          params: {
+            query: {
+              limit: PAGE_SIZE,
+              cursor: pageParam,
+              status: filters.status,
+              severity_min: filters.severity_min,
+            },
+          },
+        }),
+      ),
+    getNextPageParam: (page) => page.next_cursor ?? undefined,
+  });
+}
+
+const incidentPath = (id: string) => ({ params: { path: { incident_id: id } } });
+
+export function useIncident(id: string) {
+  return useQuery({
+    queryKey: queryKeys.incident(id),
+    queryFn: async () => unwrap(await api.GET("/api/v1/incidents/{incident_id}", incidentPath(id))),
+  });
+}
+
+export function useIncidentTimeline(id: string) {
+  return useQuery({
+    queryKey: queryKeys.incidentPart(id, "timeline"),
+    queryFn: async () => unwrap(await api.GET("/api/v1/incidents/{incident_id}/timeline", incidentPath(id))),
+  });
+}
+
+export function useIncidentGraph(id: string) {
+  return useQuery({
+    queryKey: queryKeys.incidentPart(id, "graph"),
+    queryFn: async () => unwrap(await api.GET("/api/v1/incidents/{incident_id}/graph", incidentPath(id))),
+  });
+}
+
+export function useIncidentEvidence(id: string) {
+  return useQuery({
+    queryKey: queryKeys.incidentPart(id, "evidence"),
+    queryFn: async () => unwrap(await api.GET("/api/v1/incidents/{incident_id}/evidence", incidentPath(id))),
+  });
+}
+
+export function useIncidentNotes(id: string) {
+  return useQuery({
+    queryKey: queryKeys.incidentPart(id, "notes"),
+    queryFn: async () => unwrap(await api.GET("/api/v1/incidents/{incident_id}/notes", incidentPath(id))),
+  });
+}
+
+export function useAddNote(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: string) =>
+      unwrap(
+        await api.POST("/api/v1/incidents/{incident_id}/notes", { ...incidentPath(id), body: { body } }),
+      ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.incidentPart(id, "notes") }),
+  });
+}
+
+export function useChangeIncidentStatus(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { status: IncidentStatus; resolution?: Resolution; version: number }) =>
+      unwrap(await api.PATCH("/api/v1/incidents/{incident_id}", { ...incidentPath(id), body })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.incident(id) });
+      void queryClient.invalidateQueries({ queryKey: ["incidents"] });
+    },
+  });
+}
+
+/** The stored event itself, from the event store: the final hop from a step or edge to raw evidence. */
+export function useStoredEvent(uid: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.event(uid ?? ""),
+    queryFn: async () =>
+      unwrap(await api.GET("/api/v1/events/{event_uid}", { params: { path: { event_uid: uid ?? "" } } })),
+    enabled: enabled && uid !== null,
+    retry: false,
   });
 }

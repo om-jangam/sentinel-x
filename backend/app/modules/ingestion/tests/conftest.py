@@ -79,6 +79,14 @@ class FakeEventStore:
                 return document
         return None
 
+    async def get_many(self, org_id: UUID, event_uids: Sequence[str]) -> dict[str, dict[str, Any]]:
+        wanted = set(event_uids)
+        return {
+            document["sx"]["event_uid"]: document
+            for document in self.documents.values()
+            if document["sx"]["event_uid"] in wanted and document["sx"]["org_id"] == str(org_id)
+        }
+
 
 @pytest.fixture
 def event_store(app: FastAPI, container: Container) -> FakeEventStore:

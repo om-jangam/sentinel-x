@@ -14,6 +14,7 @@ MAX_ENTITY_SIGHTINGS = 20  # event_uids kept per incident entity
 MAX_MATCH_SIGHTINGS = 5  # event_uids quoted per side of a shared-entity match
 MAX_QUERY_WINDOW = timedelta(days=90)
 MAX_PAGE_SIZE = 200
+MAX_NOTE_LENGTH = 10_000
 SEVERITY_NAMES = {1: "Informational", 2: "Low", 3: "Medium", 4: "High", 5: "Critical"}
 
 
@@ -230,6 +231,30 @@ class IncidentQuery:
 class IncidentPage:
     items: list[Incident]
     next_cursor: IncidentCursor | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class IncidentNote:
+    """An analyst's note. Append-only: an assertion by a person, never evidence, and never edited."""
+
+    id: UUID
+    org_id: UUID
+    incident_id: UUID
+    author_id: UUID
+    author_email: str  # as it was when the note was written
+    body: str
+    created_at: datetime
+
+    def __post_init__(self) -> None:
+        if not self.body.strip():
+            raise ValidationFailedError(
+                "A note can't be empty", errors=[{"loc": ["body"], "msg": "must not be blank", "type": "blank"}]
+            )
+        if len(self.body) > MAX_NOTE_LENGTH:
+            raise ValidationFailedError(
+                "Note too long",
+                errors=[{"loc": ["body"], "msg": f"at most {MAX_NOTE_LENGTH} characters", "type": "too_long"}],
+            )
 
 
 @dataclass(frozen=True, slots=True)

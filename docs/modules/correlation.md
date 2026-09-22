@@ -1,6 +1,7 @@
 # Module · `correlation`
 
-*Phase 3*: joins findings, and the events that complete them, into **incidents**. Every link records the
+*Phases 3–4*: joins findings, and the events that complete them, into **incidents**, and serves the
+workspace that reconstructs them as a timeline and an entity graph. Every link records the
 rule that made it, the entities that justify it and the events that show them. Design decision:
 [ADR-0016](../adr/ADR-0016-entity-correlation-into-incidents.md).
 
@@ -71,6 +72,55 @@ already in the incident, redelivery changes nothing, and the result holds under 
 delivery and with the sources in reverse order. `app/tests/test_correlation_rules.py` covers each rule's
 boundaries.
 
+## Workspace: evidence, timeline and graph
+
+*Phase 4* ([ADR-0017](../adr/ADR-0017-evidence-digests-timeline-graph.md)).
+
+**Evidence digests.** When correlation links an event, it records a digest in `incident_events`. The digest
+holds:
+- the event time, OCSF class, activity and outcome, plus an action name ("Failed logon", "Process started",
+  "Network connection", …);
+- every entity, keyed by the role it plays (`host`, `dst_host`, `user`, `src_ip`, `dst_ip`, `process`,
+  `parent_process`, `file`, `hash`, `domain`, `answer`);
+- the command line (≤ 1 KiB), ports and logon type;
+- an excerpt of the original record (≤ 2 KiB).
+
+Digests are written once. If a finding cites events from an earlier batch, correlation fetches them from the
+event store (`get_many`, organisation-scoped, ≤ 100 per call). Events it cannot read are reported as
+`unresolved_events`; they are never guessed.
+
+**Timeline** (`domain/timeline.py`): the evidence in time order. Consecutive events with the same action,
+outcome, host, remote side, process and parent fold into one step, unless more than 10 minutes apart. Each
+step lists its `event_uid`s, and the findings and correlation links citing them.
+
+**Graph** (`domain/graph.py`): an edge exists only where a single event states it.
+
+| Event | Edges |
+|-------|-------|
+| Logon, success or failure (3002, activity 1) | source IP → host (`logon` / `failed_logon`); host → user (`logon_as` / `failed_logon_as`) |
+| Process activity (1007) | host → user (`ran_as`); user → process (`started`), or host → process with no user; parent → process (`spawned`); process → file (`image`); file → hash (`hash`) |
+| Network / HTTP (4001, 4002) | host → remote (`connected_to`, with ports); the remote is the external address, else the destination host or IP. Remote → domain (`named`) when the record names it |
+| DNS (4003) | host → domain (`queried`); domain → answer IP (`resolved_to`) |
+| File activity (1001) | host → file (`file_activity`); file → hash (`hash`) |
+
+Each node and edge lists the events it appears in (up to 20, with a full count). Logoffs and other events
+state no relationship and add no edge.
+
+**Notes** are analyst statements, not evidence: append-only, with no edit or delete API. Each one is audited
+as `incident.note_added` with its length and SHA-256, and the author's email is kept as it was when
+written.
+
+**Console:**
+- `/incidents` lists incidents by severity and status.
+- `/incidents/{id}` is the workspace:
+  - summary and "why this severity";
+  - status actions, shown only to those allowed;
+  - tabs for timeline, graph, findings and links, entities, and notes;
+  - an evidence inspector.
+- Selecting any step, node, edge, link or entity shows the events behind it in the inspector: each event's
+  digest, its original record, the links that cite it, and "Load stored event" (needs `event:read` and the
+  event store).
+
 ## API
 
 | Endpoint | Permission |
@@ -78,13 +128,18 @@ boundaries.
 | `GET /api/v1/incidents`: filters `status`, `severity_min`, `time_from`/`time_to` (on `last_seen`, ≤ 90 days); `limit` ≤ 200; opaque `cursor`; most recent activity first | `incident:read` |
 | `GET /api/v1/incidents/{id}`: the incident with `assessment`, `links` and `entities` | `incident:read` |
 | `PATCH /api/v1/incidents/{id}`: `{status, resolution?, version}`. A stale `version` is 409; only the status can change | `incident:update`; closing or reopening also needs `incident:resolve` |
+| `GET /api/v1/incidents/{id}/timeline`: steps plus `unresolved_events` | `incident:read` |
+| `GET /api/v1/incidents/{id}/graph`: nodes and edges, each with its events | `incident:read` |
+| `GET /api/v1/incidents/{id}/evidence`: digests, each with the links citing it, plus `unresolved_events` | `incident:read`; the `raw` excerpt of the original record also needs `event:read` |
+| `GET, POST /api/v1/incidents/{id}/notes`: `{body}` (1–10,000 characters) | read: `incident:read`; write: `incident:update` |
 
 Roles: every human role reads incidents (the `service` role does not). Analysts and above can start an investigation. Senior analysts,
 incident responders and admins can close and reopen.
 
 **Audit:**
 - `incident.opened` and `incident.correlated`, with the system as actor and before/after counts;
-- `incident.status_changed`, with the user as actor.
+- `incident.status_changed`, with the user as actor;
+- `incident.note_added`, with the user as actor.
 
 ## Limitations
 
@@ -98,3 +153,9 @@ incident responders and admins can close and reopen.
 - Correlation adds its latency to the detection consumer.
 - **No back-fill:** correlation sees findings as they are created. Findings stored before correlation was
   deployed (Phase 2 data) are not grouped into incidents.
+- **Digests start with Phase 4:** incidents linked before it have no digests, so their evidence is
+  unresolved and their timeline is empty.
+- An event that could not be read from the event store when it was linked stays unresolved; nothing retries
+  it yet.
+- The graph shows what single events state. It does not connect, for example, a DNS answer to a later
+  connection unless one record names both.

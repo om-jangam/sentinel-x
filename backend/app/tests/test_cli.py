@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from collections.abc import Iterator, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -87,6 +88,10 @@ class RecordingStore:
             self.documents[document.id] = dict(document.body)
         return IndexOutcome(indexed=len(new), duplicates=len(documents) - len(new), failed=0)
 
+    async def get_many(self, org_id: Any, event_uids: Sequence[str]) -> dict[str, dict[str, Any]]:
+        wanted = set(event_uids)
+        return {d["sx"]["event_uid"]: d for d in self.documents.values() if d["sx"]["event_uid"] in wanted}
+
     async def aclose(self) -> None:
         return None
 
@@ -127,19 +132,40 @@ def test_load_demo_ingests_the_sample_attack_story(
     assert len(store.documents) == stored
 
 
-def test_load_demo_needs_samples_and_an_event_store(
+def _count(cli_env: Path, table: str) -> int:
+    with sqlite3.connect(cli_env / "cli.db") as connection:
+        count: int = connection.execute(f"SELECT count(*) FROM {table}").fetchone()[0]  # noqa: S608 - fixed names
+    return count
+
+
+def test_load_demo_runs_detection_and_correlation(
+    cli_env: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Demo data must take the same path as live data: without it the demo shows no findings or incidents."""
+    assert cli.main(["migrate"]) == 0
+    assert cli.main(["seed"]) == 0
+    capsys.readouterr()
+
+    assert cli.main(["load-demo"]) == 0
+    output = capsys.readouterr()
+    assert "SENTINELX_OPENSEARCH_URL is not set" in output.err, "no event store: say so, but still analyse"
+    assert "detection and correlation ran in-process" in output.out
+    assert _count(cli_env, "findings") == 12
+    assert _count(cli_env, "incidents") == 2
+    assert _count(cli_env, "incident_events") == 22
+
+    # Loading again adds nothing: the same records produce the same event_uids and findings.
+    assert cli.main(["load-demo", "--keep-timestamps"]) == 0
+    assert cli.main(["load-demo", "--keep-timestamps"]) == 0
+    assert _count(cli_env, "findings") == 24, "the original dates are a separate, second story"
+    assert _count(cli_env, "incidents") == 4
+
+
+def test_load_demo_needs_the_samples(
     cli_env: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert cli.main(["migrate"]) == 0
     assert cli.main(["seed"]) == 0
     capsys.readouterr()
-
-    assert cli.main(["load-demo"]) == 1
-    assert "SENTINELX_OPENSEARCH_URL" in capsys.readouterr().err
-
-    monkeypatch.setattr(
-        "app.modules.ingestion.infrastructure.opensearch_store.event_store_from_settings",
-        lambda _settings: RecordingStore(),
-    )
     assert cli.main(["load-demo", "--samples", str(cli_env / "missing")]) == 1
     assert "sample telemetry not found" in capsys.readouterr().err
