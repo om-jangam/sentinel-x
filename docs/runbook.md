@@ -14,7 +14,8 @@ docker compose ps                                      # api healthy, worker run
 ```
 
 The console is at http://localhost:8080. Sign in as `admin@example.com`, or as `SENTINELX_BOOTSTRAP_ADMIN_EMAIL`
-if you set it. The one-shot `migrate` service runs `migrate`, `opensearch-init` and `seed` on every start;
+if you set it. **Then change the bootstrap password** from the console: **Change password** under your
+name in the sidebar. That signs out every other session. The one-shot `migrate` service runs `migrate`, `opensearch-init` and `seed` on every start;
 all three are idempotent.
 
 **Optional features** (off when unset; see [`.env.example`](../.env.example)):
@@ -46,6 +47,15 @@ worker and reports:
 - incidents (2);
 - each incident's timeline, graph, threat intel and one event read back from OpenSearch;
 - with `--analyse`, an AI analysis.
+
+To load just the sample stories without a local Python environment, mount them into a one-off API
+container (the containers' filesystems are read-only):
+
+```bash
+docker compose run --rm --no-deps -v ./pipeline/samples:/samples:ro api sentinelx load-demo --samples /samples
+```
+
+Run it once: each run shifts the samples to now, so a second run adds a second copy.
 
 It exits non-zero if a stage doesn't produce what the samples should. Running it again adds the same story
 to the same incidents.

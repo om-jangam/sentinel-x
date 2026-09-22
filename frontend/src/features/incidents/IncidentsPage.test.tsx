@@ -34,7 +34,7 @@ describe("IncidentsPage", () => {
     renderInRouter(IncidentsPage, { path: "/incidents" });
     const user = userEvent.setup();
 
-    expect(await screen.findByText(/No incidents match/)).toBeInTheDocument();
+    expect(await screen.findByText(/No incidents yet/)).toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText("Status"), "closed");
     await user.selectOptions(screen.getByLabelText("Minimum severity"), "4");
     await waitFor(() => expect(api.spy).toHaveBeenCalledTimes(4));
@@ -42,5 +42,6 @@ describe("IncidentsPage", () => {
     const url = new URL(last instanceof Request ? last.url : String(last));
     expect(url.searchParams.get("status")).toBe("closed");
     expect(url.searchParams.get("severity_min")).toBe("4");
+    expect(await screen.findByText("No incidents match these filters.")).toBeInTheDocument();
   });
 });

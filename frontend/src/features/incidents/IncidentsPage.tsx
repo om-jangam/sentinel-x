@@ -103,7 +103,9 @@ function IncidentsContent() {
         ) : null}
         {!incidents.isPending && !incidents.isError && items.length === 0 ? (
           <p className="p-4 text-sm text-muted">
-            No incidents match. Incidents open when correlation joins detection findings.
+            {filters.status || filters.severity_min
+              ? "No incidents match these filters."
+              : "No incidents yet. They appear once security logs arrive and detection finds something suspicious; the Overview page shows how to load the sample attacks."}
           </p>
         ) : null}
         {incidents.hasNextPage ? (
