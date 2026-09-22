@@ -79,7 +79,12 @@ before. In Sentinel-X, rarity would be deterministic and cited:
   shown;
 - it raises priority but never creates an incident on its own.
 
-### 6. Export incidents as standard formats
+### 6. Export incidents as standard formats ✅ built (per incident)
+*Done:* `GET /api/v1/incidents/{id}/exports/attack-navigator` and `.../attack-flow`, with download buttons
+in the workspace ([correlation](modules/correlation.md#exports)). Attack Flow actions carry the event_uids
+that show them.
+*Not yet:* a rule-coverage layer across the whole rule set (as opposed to one incident).
+
 - **ATT&CK Navigator layer** ([layer format v4.5](https://github.com/mitre-attack/attack-navigator/blob/master/layers/spec/v4.5/layerformat.md)):
   one per incident (techniques observed, with event counts as comments) and one for rule coverage. It
   opens directly in MITRE's Navigator.

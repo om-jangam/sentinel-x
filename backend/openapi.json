@@ -1642,6 +1642,106 @@
         }
       }
     },
+    "/api/v1/incidents/{incident_id}/exports/attack-navigator": {
+      "get": {
+        "tags": [
+          "incidents"
+        ],
+        "summary": "The incident as a MITRE ATT&CK Navigator layer (v4.5), scored by events per technique",
+        "operationId": "get_navigator_layer_api_v1_incidents__incident_id__exports_attack_navigator_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Navigator Layer Api V1 Incidents  Incident Id  Exports Attack Navigator Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{incident_id}/exports/attack-flow": {
+      "get": {
+        "tags": [
+          "incidents"
+        ],
+        "summary": "The incident as a STIX 2.1 Attack Flow bundle; each action cites its events",
+        "operationId": "get_attack_flow_api_v1_incidents__incident_id__exports_attack_flow_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Attack Flow Api V1 Incidents  Incident Id  Exports Attack Flow Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/incidents/{incident_id}/graph": {
       "get": {
         "tags": [

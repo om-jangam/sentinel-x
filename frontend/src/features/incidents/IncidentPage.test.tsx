@@ -37,6 +37,28 @@ function workspace(me: Me, overrides: Record<string, unknown> = {}) {
 }
 
 describe("IncidentPage", () => {
+  it("exports the incident in MITRE's formats", async () => {
+    const api = workspace(analystMe, {
+      [`GET ${base}/exports/attack-navigator`]: {
+        name: "Sentinel-X",
+        versions: { layer: "4.5" },
+        techniques: [],
+      },
+    });
+    let saved = "";
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      saved = this.download;
+    });
+    URL.createObjectURL = vi.fn(() => "blob:layer");
+    URL.revokeObjectURL = vi.fn();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /ATT&CK Navigator layer/i }));
+
+    await waitFor(() => expect(saved).toMatch(/attack-navigator-layer\.json$/));
+    expect(api.calls.some((c) => c.path.endsWith("/exports/attack-navigator"))).toBe(true);
+  });
+
   it("names the author of a community rule and links to the original", async () => {
     workspace(analystMe);
 

@@ -459,6 +459,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/incidents/{incident_id}/exports/attack-navigator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The incident as a MITRE ATT&CK Navigator layer (v4.5), scored by events per technique */
+        get: operations["get_navigator_layer_api_v1_incidents__incident_id__exports_attack_navigator_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incidents/{incident_id}/exports/attack-flow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The incident as a STIX 2.1 Attack Flow bundle; each action cites its events */
+        get: operations["get_attack_flow_api_v1_incidents__incident_id__exports_attack_flow_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/incidents/{incident_id}/graph": {
         parameters: {
             query?: never;
@@ -2800,6 +2834,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimelineResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_navigator_layer_api_v1_incidents__incident_id__exports_attack_navigator_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_attack_flow_api_v1_incidents__incident_id__exports_attack_flow_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

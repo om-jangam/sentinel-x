@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utcnow
 from app.core.http.deps import get_session, require_permission
 from app.core.pagination import decode_cursor
 from app.core.security.permissions import Permission
 from app.core.security.principal import Principal
 from app.modules.correlation.application.incident_service import IncidentService
+from app.modules.correlation.domain.exports import attack_flow, navigator_layer
 from app.modules.correlation.domain.incidents import MAX_PAGE_SIZE, IncidentCursor, IncidentQuery, IncidentStatus
 from app.modules.correlation.infrastructure.unit_of_work import SqlCorrelationUnitOfWork
 from app.modules.correlation.interface.schemas import (
@@ -92,6 +95,32 @@ async def get_timeline(
     return TimelineResponse(
         steps=[TimelineStepRead.from_step(step) for step in steps], unresolved_events=evidence.unresolved
     )
+
+
+@router.get(
+    "/{incident_id}/exports/attack-navigator",
+    summary="The incident as a MITRE ATT&CK Navigator layer (v4.5), scored by events per technique",
+)
+async def get_navigator_layer(
+    incident_id: UUID,
+    principal: Principal = Depends(require_permission(Permission.INCIDENT_READ)),
+    service: IncidentService = Depends(get_incident_service),
+) -> dict[str, Any]:
+    return navigator_layer(await service.detail(principal, incident_id), generated=utcnow())
+
+
+@router.get(
+    "/{incident_id}/exports/attack-flow",
+    summary="The incident as a STIX 2.1 Attack Flow bundle; each action cites its events",
+)
+async def get_attack_flow(
+    incident_id: UUID,
+    principal: Principal = Depends(require_permission(Permission.INCIDENT_READ)),
+    service: IncidentService = Depends(get_incident_service),
+) -> dict[str, Any]:
+    detail = await service.detail(principal, incident_id)
+    steps, _ = await service.timeline(principal, incident_id)
+    return attack_flow(detail, steps, generated=utcnow())
 
 
 @router.get("/{incident_id}/graph", summary="The entity graph: every edge cites the events that state it")

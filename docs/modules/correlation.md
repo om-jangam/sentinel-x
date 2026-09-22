@@ -134,6 +134,8 @@ written.
 | `PATCH /api/v1/incidents/{id}`: `{status, resolution?, version}`. A stale `version` is 409; only the status can change | `incident:update`; closing or reopening also needs `incident:resolve` |
 | `GET /api/v1/incidents/{id}/timeline`: steps plus `unresolved_events` | `incident:read` |
 | `GET /api/v1/incidents/{id}/graph`: nodes and edges, each with its events | `incident:read` |
+| `GET /api/v1/incidents/{id}/exports/attack-navigator`: the incident as an ATT&CK Navigator layer (v4.5) | `incident:read` |
+| `GET /api/v1/incidents/{id}/exports/attack-flow`: the incident as a STIX 2.1 Attack Flow bundle | `incident:read` |
 | `GET /api/v1/incidents/{id}/evidence`: digests, each with the links citing it, plus `unresolved_events` | `incident:read`; the `raw` excerpt of the original record also needs `event:read` |
 | `GET, POST /api/v1/incidents/{id}/notes`: `{body}` (1–10,000 characters) | read: `incident:read`; write: `incident:update` |
 
@@ -144,6 +146,21 @@ incident responders and admins can close and reopen.
 - `incident.opened` and `incident.correlated`, with the system as actor and before/after counts;
 - `incident.status_changed`, with the user as actor;
 - `incident.note_added`, with the user as actor.
+
+## Exports
+
+The workspace can hand an incident to MITRE's own tools (`domain/exports.py`). Neither export adds a
+claim: a technique is in the layer because a linked finding named it, and an action exists because a
+timeline step does.
+
+| Export | What it holds |
+|--------|---------------|
+| **ATT&CK Navigator layer** ([v4.5](https://github.com/mitre-attack/attack-navigator/blob/master/layers/spec/v4.5/layerformat.md)) | every technique the incident's findings named, scored by how many events show it, commented with the rules that fired |
+| **Attack Flow** ([STIX 2.1 extension](https://center-for-threat-informed-defense.github.io/attack-flow/language/)) | one `attack-action` per timeline step, chained by `effect_refs` in the order they happened, with hosts, users, addresses and domains as `attack-asset`s |
+
+Attack Flow actions keep Sentinel-X's evidence in STIX custom properties: `x_sentinelx_event_uids` (the
+events that show the action), `x_sentinelx_rules` and `x_sentinelx_outcome`. Object ids are a UUID v5 of
+the incident id, so exporting an unchanged incident twice gives the same document.
 
 ## Limitations
 

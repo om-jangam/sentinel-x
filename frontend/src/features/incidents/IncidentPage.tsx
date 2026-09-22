@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 
@@ -24,6 +24,8 @@ import { Card } from "@/components/ui/card";
 import { Label, Select } from "@/components/ui/input";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { hasPermission } from "@/features/auth/auth";
+
+import { type ExportKind, EXPORTS, downloadExport } from "./exports";
 import { cn, formatDateTime } from "@/lib/utils";
 
 import { AiAnalysis } from "./AiAnalysis";
@@ -113,6 +115,7 @@ function StatusActions({ incident }: { incident: IncidentDetail }) {
   }
   return (
     <div className="flex flex-wrap gap-2">
+      <ExportMenu incidentId={incident.id} />
       {incident.status === "new" && canUpdate ? (
         <Button disabled={change.isPending} onClick={() => submit("investigating")}>
           Start investigating
@@ -129,6 +132,37 @@ function StatusActions({ incident }: { incident: IncidentDetail }) {
         </Button>
       ) : null}
     </div>
+  );
+}
+
+/** Downloads of the incident in MITRE's own formats; the API builds them, the browser only saves them. */
+function ExportMenu({ incidentId }: { incidentId: string }) {
+  const [busy, setBusy] = useState<ExportKind | null>(null);
+  const save = async (kind: ExportKind) => {
+    setBusy(kind);
+    try {
+      toast.success(`Saved ${await downloadExport(incidentId, kind)}`);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <>
+      {(Object.keys(EXPORTS) as ExportKind[]).map((kind) => (
+        <Button
+          key={kind}
+          variant="ghost"
+          size="sm"
+          title={EXPORTS[kind].hint}
+          disabled={busy !== null}
+          onClick={() => void save(kind)}
+        >
+          <Download /> {busy === kind ? "Exporting…" : EXPORTS[kind].label}
+        </Button>
+      ))}
+    </>
   );
 }
 
