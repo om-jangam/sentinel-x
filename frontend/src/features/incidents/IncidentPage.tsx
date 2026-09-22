@@ -26,6 +26,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { hasPermission } from "@/features/auth/auth";
 import { cn, formatDateTime } from "@/lib/utils";
 
+import { AiAnalysis } from "./AiAnalysis";
 import { EntityGraphView } from "./EntityGraphView";
 import {
   entityValue,
@@ -41,7 +42,7 @@ import type { Selection } from "./selection";
 import { ThreatIntel } from "./ThreatIntel";
 import { Timeline } from "./Timeline";
 
-const TABS = ["timeline", "graph", "links", "entities", "intel", "notes"] as const;
+const TABS = ["timeline", "graph", "links", "entities", "intel", "ai", "notes"] as const;
 type Tab = (typeof TABS)[number];
 const TAB_LABELS: Record<Tab, string> = {
   timeline: "Timeline",
@@ -49,6 +50,7 @@ const TAB_LABELS: Record<Tab, string> = {
   links: "Findings & links",
   entities: "Entities",
   intel: "Threat intel",
+  ai: "AI analysis",
   notes: "Notes",
 };
 
@@ -444,6 +446,7 @@ function Workspace({ incidentId }: { incidentId: string }) {
                 </p>
               )
             ) : null}
+            {tab === "ai" ? <AiAnalysis incidentId={incidentId} onSelect={setSelection} /> : null}
             {tab === "notes" ? <Notes incidentId={incidentId} /> : null}
           </div>
         </Card>

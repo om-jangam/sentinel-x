@@ -5,6 +5,8 @@ from __future__ import annotations
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,6 +21,12 @@ class Environment(StrEnum):
 # OWASP Password Storage Cheat Sheet minimums for argon2id.
 _MIN_ARGON2_MEMORY_KIB = 19_456
 _MIN_ARGON2_TIME_COST = 2
+
+
+def _is_local_or_https(url: str) -> bool:
+    """Evidence may leave the host only over TLS; plain HTTP is allowed to a model on this machine."""
+    parts = urlsplit(url)
+    return parts.scheme == "https" or (parts.scheme == "http" and parts.hostname in {"127.0.0.1", "localhost", "::1"})
 
 
 class Settings(BaseSettings):
@@ -49,6 +57,14 @@ class Settings(BaseSettings):
     otx_base_url: str = "https://otx.alienvault.com"
     ti_cache_hours: int = Field(default=24, ge=1, le=720)
     ti_timeout_seconds: float = Field(default=5.0, gt=0, le=30)
+
+    # --- AI investigation assistant (docs/04, ADR-0019); off unless a provider is set
+    ai_provider: Literal["ollama", "openai"] | None = None
+    ai_model: str | None = None
+    ai_base_url: str | None = None  # default: http://127.0.0.1:11434 for ollama
+    ai_api_key: SecretStr | None = None  # OpenAI-compatible endpoints only
+    ai_timeout_seconds: float = Field(default=180.0, gt=0, le=600)
+    ai_context_tokens: int = Field(default=16_384, ge=2_048, le=262_144)
 
     # --- ingestion
     ingest_rate_limit: int = Field(default=600, ge=1)
@@ -111,6 +127,8 @@ class Settings(BaseSettings):
             problems.append("SENTINELX_OPENSEARCH_URL is required (event store)")
         elif self.opensearch_url.startswith("https") and not self.opensearch_verify_certs:
             problems.append("SENTINELX_OPENSEARCH_VERIFY_CERTS must be true")
+        if self.ai_base_url and not _is_local_or_https(self.ai_base_url):
+            problems.append("SENTINELX_AI_BASE_URL must be https unless it points at this host")
         if not self.otx_base_url.startswith("https://"):
             problems.append("SENTINELX_OTX_BASE_URL must use https")
         if problems:

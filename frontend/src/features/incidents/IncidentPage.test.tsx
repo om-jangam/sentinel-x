@@ -226,6 +226,111 @@ describe("IncidentPage", () => {
     expect(await screen.findByText(/No threat-intelligence providers are configured/)).toBeInTheDocument();
   });
 
+  const analysis = {
+    id: "a-1",
+    incident_id: INCIDENT_ID,
+    requested_by: "u-analyst",
+    created_at: "2026-09-15T10:00:00Z",
+    status: "completed",
+    provider: "ollama",
+    model: "qwen2.5:3b",
+    prompt_version: "assistant-v1",
+    bundle_hash: "f".repeat(64),
+    duration_ms: 42000,
+    output: {
+      summary: "Brute force, then an RDP logon and encoded PowerShell.",
+      statements: [
+        { kind: "FACT", text: "A remote logon succeeded.", evidence: ["e-logon"] },
+        {
+          kind: "INFERENCE",
+          text: "The attacker ran PowerShell.",
+          evidence: ["e-logon", "e-ps"],
+          reasoning: "Same user, 95 s later.",
+          confidence: "medium",
+        },
+        { kind: "UNCERTAINTY", text: "What the script did.", evidence: [], missing: "The decoded command." },
+      ],
+      techniques: [{ technique_id: "T1059.001", evidence: ["e-ps"], kind: "INFERENCE" }],
+      next_steps: ["Decode the command line."],
+    },
+    dropped: [
+      {
+        item: { kind: "FACT", text: "x", evidence: ["made-up"] },
+        reason: "cites events that are not in the incident: made-up",
+      },
+    ],
+    reason: null,
+    citation_validity: 0.8,
+    stats: {},
+  };
+  const enabled = { enabled: true, provider: "ollama", model: "qwen2.5:3b", prompt_version: "assistant-v1" };
+  const aiMe = { ...analystMe, permissions: [...analystMe.permissions, "assistant:use" as const] };
+
+  it("shows a grounded analysis whose citations open the evidence", async () => {
+    workspace(aiMe, {
+      "GET /api/v1/assistant": enabled,
+      [`GET ${base}/analyses`]: [analysis],
+    });
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("tab", { name: "AI analysis" }));
+    const view = await screen.findByRole("article", { name: "AI analysis" });
+    expect(within(view).getByText("INFERENCE")).toBeInTheDocument();
+    expect(within(view).getByText("Reasoning: Same user, 95 s later.")).toBeInTheDocument();
+    expect(within(view).getByText("Would resolve it: The decoded command.")).toBeInTheDocument();
+    expect(within(view).getByText(/80% of citations valid/)).toBeInTheDocument();
+
+    await user.click(within(view).getByRole("button", { name: "2 cited events" }));
+    const inspector = screen.getByRole("region", { name: "Evidence inspector" });
+    expect(within(inspector).getByText("event_uid e-logon")).toBeInTheDocument();
+    expect(within(inspector).getByText("event_uid e-ps")).toBeInTheDocument();
+
+    await user.click(within(view).getByRole("button", { name: /1 item was removed by validation/ }));
+    expect(within(view).getByText(/cites events that are not in the incident/)).toBeInTheDocument();
+  });
+
+  it("requests an analysis and shows when the model was unavailable", async () => {
+    const api = workspace(aiMe, {
+      "GET /api/v1/assistant": enabled,
+      [`GET ${base}/analyses`]: [],
+      [`POST ${base}/analyses`]: json(
+        {
+          ...analysis,
+          id: "a-2",
+          status: "unavailable",
+          output: null,
+          dropped: [],
+          reason: "model timed out",
+        },
+        201,
+      ),
+    });
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("tab", { name: "AI analysis" }));
+    expect(await screen.findByText("No analysis has been requested yet.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Analyse with AI/ }));
+    await waitFor(() =>
+      expect(api.calls).toContainEqual({ method: "POST", path: `${base}/analyses`, body: undefined }),
+    );
+  });
+
+  it("works without an AI provider and never offers the button", async () => {
+    workspace(aiMe, {
+      "GET /api/v1/assistant": {
+        enabled: false,
+        provider: null,
+        model: null,
+        prompt_version: "assistant-v1",
+      },
+      [`GET ${base}/analyses`]: [],
+    });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("tab", { name: "AI analysis" }));
+    expect(await screen.findByText(/The AI assistant is not configured/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Analyse with AI/ })).not.toBeInTheDocument();
+  });
+
   it("asks for access without incident:read", async () => {
     workspace(viewerMe);
     expect(await screen.findByText(/requires the/)).toBeInTheDocument();

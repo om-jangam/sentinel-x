@@ -36,6 +36,7 @@ async def test_admin_creates_user_who_can_log_in(client: httpx.AsyncClient, admi
     token = await login(client, "analyst@example.com", PASSWORD)
     me = (await client.get("/api/v1/me", headers=bearer(token))).json()
     assert me["permissions"] == [
+        "assistant:use",
         "event:read",
         "finding:read",
         "incident:read",

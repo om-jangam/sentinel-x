@@ -20,6 +20,8 @@ export const queryKeys = {
     ["incident", id, part] as const,
   event: (uid: string) => ["event", uid] as const,
   intelProviders: ["intel", "providers"] as const,
+  assistant: ["assistant"] as const,
+  analyses: (id: string) => ["incident", id, "analyses"] as const,
   intel: (keys: string[]) => ["intel", "results", keys] as const,
 };
 
@@ -274,5 +276,31 @@ export function useIntel(keys: string[], enabled: boolean) {
     queryKey: queryKeys.intel(sorted),
     queryFn: async () => unwrap(await api.POST("/api/v1/intel/lookup", { body: { indicators: sorted } })),
     enabled: enabled && sorted.length > 0,
+  });
+}
+
+// ------------------------------------------------------------------ AI assistant
+export function useAssistantStatus() {
+  return useQuery({
+    queryKey: queryKeys.assistant,
+    queryFn: async () => unwrap(await api.GET("/api/v1/assistant")),
+    staleTime: 60_000,
+  });
+}
+
+export function useAnalyses(id: string) {
+  return useQuery({
+    queryKey: queryKeys.analyses(id),
+    queryFn: async () => unwrap(await api.GET("/api/v1/incidents/{incident_id}/analyses", incidentPath(id))),
+  });
+}
+
+/** Can take minutes with a local model; the result is recorded whatever it is. */
+export function useRequestAnalysis(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () =>
+      unwrap(await api.POST("/api/v1/incidents/{incident_id}/analyses", incidentPath(id))),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.analyses(id) }),
   });
 }

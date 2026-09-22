@@ -29,6 +29,8 @@ export type Evidence = Schemas["EvidenceResponse"];
 export type Note = Schemas["NoteRead"];
 export type IntelProvider = Schemas["ProviderRead"];
 export type IntelResult = Schemas["IntelResultRead"];
+export type Analysis = Schemas["AnalysisRead"];
+export type AssistantStatus = Schemas["AssistantStatusRead"];
 
 export type PermissionName =
   | "platform:read"
@@ -46,4 +48,5 @@ export type PermissionName =
   | "incident:read"
   | "incident:update"
   | "incident:resolve"
-  | "intel:read";
+  | "intel:read"
+  | "assistant:use";

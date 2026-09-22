@@ -69,6 +69,13 @@ DETECTION_SECONDS = Histogram(
     buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5),
     registry=REGISTRY,
 )
+ASSISTANT_ANALYSES = Histogram(
+    "sentinelx_assistant_analysis_seconds",
+    "AI assistant analyses by outcome (completed, rejected by validation, model unavailable)",
+    ["status"],
+    buckets=(1, 5, 10, 30, 60, 120, 300, 600),
+    registry=REGISTRY,
+)
 INTEL_LOOKUPS = Histogram(
     "sentinelx_intel_lookup_seconds",
     "Threat-intelligence lookups by provider and outcome (found, not_found, error)",

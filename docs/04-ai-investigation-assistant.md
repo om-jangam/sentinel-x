@@ -1,6 +1,8 @@
 # 04 · AI Investigation Assistant
 
-*Design — not built (roadmap Phase 6). Replaces the July 2026 multi-agent design
+*Built in Phase 6: see the [module doc](modules/assistant.md) and
+[ADR-0019](adr/ADR-0019-ai-assistant-local-model-grounding-validator.md) for what was implemented and what
+is still unverified. Replaces the July 2026 multi-agent design
 ([ADR-0006](adr/ADR-0006-langgraph-supervisor-agents.md), superseded by
 [ADR-0014](adr/ADR-0014-lock-scope-security-investigation.md)).*
 

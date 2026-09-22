@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
 from app.analysis import build_analysis
+from app.assistant_bundle import SqlBundleSource
 from app.core.config import Environment, Settings, get_settings
 from app.core.container import build_container
 from app.core.events.bus import InMemoryEventBus
@@ -27,6 +28,8 @@ from app.core.observability.middleware import (
     SecurityHeadersMiddleware,
 )
 from app.core.observability.tracing import configure_tracing
+from app.modules.assistant.infrastructure.models_http import model_from_settings
+from app.modules.assistant.interface import router as assistant_api
 from app.modules.correlation.interface import router as correlation_api
 from app.modules.detection.infrastructure.rule_loader import load_rules
 from app.modules.detection.infrastructure.window_store import InMemoryWindowStore, RedisWindowStore
@@ -57,6 +60,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Rules are code: a rule that can't load stops start-up rather than silently never firing.
     detection_rules = load_rules()
     intel_providers = providers_from_settings(settings)
+    language_model = model_from_settings(settings)
 
     # Without Redis there is no worker to consume the bus, so the API indexes, detects and correlates in-process.
     if isinstance(container.event_bus, InMemoryEventBus):
@@ -91,6 +95,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await event_store.aclose()
         for provider in intel_providers:
             await provider.aclose()
+        if language_model is not None:
+            await language_model.aclose()
         await container.aclose()
 
     docs = settings.expose_api_docs
@@ -110,6 +116,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.event_store = event_store
     app.state.detection_rules = detection_rules
     app.state.intel_providers = intel_providers
+    app.state.language_model = language_model
+    app.state.bundle_source_factory = SqlBundleSource
     install_exception_handlers(app)
 
     # Starlette runs the last-added middleware outermost.
@@ -130,6 +138,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         *detection_api.routers,
         *correlation_api.routers,
         *intel_api.routers,
+        *assistant_api.routers,
         *platform_api.routers,
     ):
         app.include_router(router)

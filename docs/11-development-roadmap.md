@@ -97,12 +97,27 @@ feed correlation. Providers are configurable; the platform works with none confi
 **Remaining:** letting intel feed correlation or severity (it is context only today); a live test of OTX
 with a real key; more adapters (AbuseIPDB, VirusTotal) if needed.
 
-## Phase 6 — AI investigation assistant
+## Phase 6 — AI investigation assistant ✅ (built; live model unverified)
 As designed in [04](04-ai-investigation-assistant.md): evidence bundle, FACT / INFERENCE / UNCERTAINTY
 output, grounding validator, prompt-injection handling, evaluation set.
 
 **Done when** citation validity is 100% on the evaluation set and the incident page degrades cleanly
 without a model.
+
+**Built** ([ADR-0019](adr/ADR-0019-ai-assistant-local-model-grounding-validator.md),
+[module doc](modules/assistant.md)):
+- **Models:** an Ollama adapter (the default) and an OpenAI-compatible one.
+- **Evidence bundle:** deterministic, hashed and delimited, with attacker-controlled text escaped.
+- **Grounding validator:** drops anything citing events outside the bundle or naming addresses and hashes
+  not in it, keeping the reasons.
+- **Records:** every analysis is recorded and audited, including rejected and unavailable ones.
+- **Console:** an AI analysis tab whose citations open the evidence.
+- **Evaluation:** `sentinelx evaluate-assistant` scores a model on the sample incidents.
+
+The incident page works without a model.
+
+**Remaining:** a real model run that answers in time. `deepseek-r1:8b` on the development GPU timed out;
+try a small instruct model. Measure citation validity on the evaluation set, which must be 100%.
 
 ## Phase 7 — Hardening & demo
 Live Compose verification, PostgreSQL CI run, end-to-end demo script (load samples → findings → incident

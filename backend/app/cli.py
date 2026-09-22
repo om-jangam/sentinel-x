@@ -385,6 +385,45 @@ def cmd_export_openapi(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _evaluate_assistant() -> int:
+    from app.assistant_eval import evaluate
+    from app.modules.assistant.infrastructure.models_http import model_from_settings
+
+    model = model_from_settings(get_settings())
+    if model is None:
+        print("set SENTINELX_AI_PROVIDER and SENTINELX_AI_MODEL to evaluate a model", file=sys.stderr)
+        return 1
+    try:
+        results = await evaluate(model)
+    finally:
+        await model.aclose()
+
+    def pct(value: float | None) -> str:
+        return "  n/a" if value is None else f"{value:5.0%}"
+
+    print(f"model {model.provider}/{model.model}")
+    header = ("case", "status", "citations", "key events", "unsupported", "tech P", "tech R")
+    print(
+        f"{header[0]:<24} {header[1]:<12} {header[2]:>9} {header[3]:>10} {header[4]:>11} {header[5]:>6} {header[6]:>6}"
+    )
+    for r in results:
+        print(
+            f"{r.case:<24} {r.status:<12} {pct(r.citation_validity):>9} {pct(r.key_event_recall):>10} "
+            f"{pct(r.unsupported_rate):>11} {pct(r.technique_precision):>6} {pct(r.technique_recall):>6}"
+        )
+        if r.missed_key_events:
+            print(f"    missed: {', '.join(r.missed_key_events)}")
+        if r.detail.get("reason"):
+            print(f"    reason: {r.detail['reason']}")
+    passed = all(r.passed for r in results)
+    print("PASS: every citation was valid" if passed else "FAIL: citation validity must be 100% on every case")
+    return 0 if passed else 1
+
+
+def cmd_evaluate_assistant(_: argparse.Namespace) -> int:
+    return asyncio.run(_evaluate_assistant())
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="sentinelx")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -427,6 +466,10 @@ def main(argv: list[str] | None = None) -> int:
         help="directory holding the sample files (mount pipeline/samples when running in a container)",
     )
     demo.set_defaults(func=cmd_load_demo)
+
+    sub.add_parser(
+        "evaluate-assistant", help="score the configured AI model on the labelled sample incidents"
+    ).set_defaults(func=cmd_evaluate_assistant)
 
     openapi = sub.add_parser("export-openapi", help="write the OpenAPI document")
     openapi.add_argument("--out", default=str(BACKEND_ROOT / "openapi.json"))

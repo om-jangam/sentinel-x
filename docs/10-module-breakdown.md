@@ -52,11 +52,20 @@ changed incidents' external IPs, domains and hashes, cached per organisation wit
 and the retrieval time. A read-only lookup API that never calls a provider.
 → [module doc](modules/threatintel.md)
 
+### `assistant`
+The evidence-grounded AI assistant:
+- a deterministic evidence bundle, built at the composition root;
+- Ollama and OpenAI-compatible adapters;
+- a grounding validator for FACT / INFERENCE / UNCERTAINTY statements with citations;
+- recorded, audited analyses;
+- an evaluation harness.
+
+It never detects, decides or acts. → [module doc](modules/assistant.md)
+
 ## Planned (in workflow order)
 
 | Module | Responsibility | Produces | Consumes |
 |--------|----------------|----------|----------|
-| `assistant` | Evidence-grounded AI analysis ([04](04-ai-investigation-assistant.md)) | FACT / INFERENCE / UNCERTAINTY statements with citations | evidence bundle |
 
 **Entities available to later modules:** each incident's entities with the event_uids they were seen
 in, and each link's matched entities. Hashes arrive only through native OCSF sources so far.

@@ -26,7 +26,8 @@ security data → ingestion → normalisation → detection → correlation
 | Correlation: findings and events → incidents, every link justified by shared entities and cited events | ✅ Built ([rules and entities](docs/modules/correlation.md)) |
 | Incident workspace: attack timeline, entity graph, evidence inspector, audited notes and status | ✅ Built ([ADR-0017](docs/adr/ADR-0017-evidence-digests-timeline-graph.md)) |
 | Threat intelligence: local indicator feed and AlienVault OTX, background enrichment, cached with source and time | ✅ Built ([module doc](docs/modules/threatintel.md)) |
-| AI investigation assistant | Planned ([roadmap](docs/11-development-roadmap.md)) |
+| AI investigation assistant: evidence bundle, FACT / INFERENCE / UNCERTAINTY with validated citations, local model by default | ✅ Built; live model run pending ([module doc](docs/modules/assistant.md)) |
+| Hardening and end-to-end demo | Planned ([roadmap](docs/11-development-roadmap.md)) |
 
 Known limitations: [architecture.md §12](docs/architecture.md#12-known-limitations).
 
@@ -123,7 +124,7 @@ builds.
 | [Executive summary](docs/00-executive-summary.md) | Purpose, principles, scope |
 | [Modules](docs/10-module-breakdown.md) · [Roadmap](docs/11-development-roadmap.md) | Built and planned modules; phases |
 | [AI investigation assistant](docs/04-ai-investigation-assistant.md) | Design of the evidence-grounded assistant |
-| Module docs: [identity](docs/modules/identity.md) · [platform + core](docs/modules/platform.md) · [ingestion](docs/modules/ingestion.md) · [detection](docs/modules/detection.md) · [correlation](docs/modules/correlation.md) · [threat intel](docs/modules/threatintel.md) | How each built module works |
+| Module docs: [identity](docs/modules/identity.md) · [platform + core](docs/modules/platform.md) · [ingestion](docs/modules/ingestion.md) · [detection](docs/modules/detection.md) · [correlation](docs/modules/correlation.md) · [threat intel](docs/modules/threatintel.md) · [assistant](docs/modules/assistant.md) | How each built module works |
 | [Architecture decision records](docs/adr/) | Why things are the way they are |
 | Reference design (July 2026): [02](docs/02-technology-selection.md) · [03](docs/03-system-architecture.md) · [05](docs/05-database-design.md) · [06](docs/06-api-design.md) · [07](docs/07-security-architecture.md) · [08](docs/08-deployment-and-cicd.md) · [09](docs/09-folder-structure.md) | Each carries a status banner saying what is current |
 | [Archive](docs/archive/2026-07-initial-design/) | The superseded "autonomous SOC" framing |
@@ -140,8 +141,8 @@ builds.
 | Delivery | Docker Compose, GitHub Actions |
 
 Threat intelligence uses a local indicator feed and, with a key, AlienVault OTX
-([ADR-0018](docs/adr/ADR-0018-threat-intelligence-providers.md)). The model provider is chosen by an ADR at
-the start of Phase 6.
+([ADR-0018](docs/adr/ADR-0018-threat-intelligence-providers.md)). The AI assistant uses a local Ollama model by default, or
+any OpenAI-compatible endpoint ([ADR-0019](docs/adr/ADR-0019-ai-assistant-local-model-grounding-validator.md)).
 
 ## Intent
 
