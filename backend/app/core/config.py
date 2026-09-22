@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     event_retention_days: int = Field(default=90, ge=1, le=3650)
 
     # --- threat intelligence (ADR-0018); every provider is optional and none is required
+    # Splunk as a log source (`sentinelx pull-splunk`); unset means no Splunk.
+    splunk_url: str | None = None
+    splunk_token: SecretStr | None = None
+    splunk_verify_certs: bool = True
+    splunk_timeout_seconds: float = Field(default=60.0, gt=0, le=600)
+
     ti_local_feed: Path | None = None  # CSV or JSON indicator file
     otx_api_key: SecretStr | None = None  # AlienVault OTX; external lookups are off without a key
     otx_base_url: str = "https://otx.alienvault.com"
@@ -106,7 +112,15 @@ class Settings(BaseSettings):
     otel_exporter_endpoint: str | None = None
 
     @field_validator(
-        "ti_local_feed", "otx_api_key", "ai_provider", "ai_model", "ai_base_url", "ai_api_key", mode="before"
+        "ti_local_feed",
+        "otx_api_key",
+        "ai_provider",
+        "ai_model",
+        "ai_base_url",
+        "ai_api_key",
+        "splunk_url",
+        "splunk_token",
+        mode="before",
     )
     @classmethod
     def _blank_is_unset(cls, value: object) -> object:
@@ -141,6 +155,10 @@ class Settings(BaseSettings):
             problems.append("SENTINELX_OPENSEARCH_URL is required (event store)")
         elif self.opensearch_url.startswith("https") and not self.opensearch_verify_certs:
             problems.append("SENTINELX_OPENSEARCH_VERIFY_CERTS must be true")
+        if self.splunk_url and not _is_local_or_https(self.splunk_url):
+            problems.append("SENTINELX_SPLUNK_URL must be https unless it points at this host")
+        if self.splunk_url and self.splunk_url.startswith("https") and not self.splunk_verify_certs:
+            problems.append("SENTINELX_SPLUNK_VERIFY_CERTS must be true")
         if self.ai_base_url and not _is_local_or_https(self.ai_base_url):
             problems.append("SENTINELX_AI_BASE_URL must be https unless it points at this host")
         if not self.otx_base_url.startswith("https://"):

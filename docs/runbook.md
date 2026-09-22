@@ -24,6 +24,7 @@ all three are idempotent.
 |---------|-----|
 | Demo threat-intel feed (fictional) | `SENTINELX_TI_LOCAL_FEED=/intel/demo_indicators.csv` (`pipeline/intel` is mounted at `/intel`) |
 | AlienVault OTX | `SENTINELX_OTX_API_KEY` (the worker has an egress network for it) |
+| Pull events from a Splunk server (`sentinelx pull-splunk`) | `SENTINELX_SPLUNK_URL`, `SENTINELX_SPLUNK_TOKEN` (see [ingestion](modules/ingestion.md#pulling-from-splunk)) |
 | AI assistant on the host's Ollama | `SENTINELX_AI_PROVIDER=ollama`, `SENTINELX_AI_MODEL=qwen2.5:3b`, `SENTINELX_AI_BASE_URL=http://host.docker.internal:11434`, `SENTINELX_AI_TIMEOUT_SECONDS=600` |
 | Smaller OpenSearch heap on small machines | `OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m` |
 

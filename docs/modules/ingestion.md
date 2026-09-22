@@ -210,6 +210,26 @@ Rejected with a reason: any other `EventID` (for example 15, 17, 18 and 25), a m
 Passes the record to OCSF validation unchanged. It must contain `class_uid`; everything in *Coverage
 honesty* applies.
 
+## Pulling from Splunk
+
+Where an organisation already keeps its logs in Splunk, Sentinel-X can search it and ingest what comes
+back, instead of being sent events. Decision: [ADR-0021](../adr/ADR-0021-splunk-as-a-pull-source.md).
+
+```bash
+export SENTINELX_SPLUNK_TOKEN=...      # a Splunk authentication token, never a password
+export SENTINELX_INGEST_TOKEN=...      # the token of the ingest source these events belong to
+sentinelx pull-splunk   --search 'index=windows sourcetype=XmlWinEventLog*' --parser windows_sysmon   --earliest -24h --latest now --api-url http://localhost:8080
+```
+
+- `SENTINELX_SPLUNK_URL` (https unless it points at this host; `SENTINELX_SPLUNK_VERIFY_CERTS=false` is
+  refused in production) and `SENTINELX_SPLUNK_TIMEOUT_SECONDS` configure the connection.
+- The pull is bounded: an explicit time window, `--limit` results (10,000 by default), preview-free export.
+- The **sourcetype** chooses the parser; a result for another parser is reported, not sent under the wrong
+  source. Splunk's classic `WinEventLog:` key-value text is not read (see the ADR).
+- Events go through `POST /api/v1/ingest/events` like any other producer, so validation, rejection reasons
+  and the audit trail are identical.
+- Repeating a pull is safe: the same record keeps the same `event_uid`, so the event store stores it once.
+
 ## Search
 
 `POST /api/v1/events/search` (`event:read`) takes a fixed set of filters, never a raw query:
