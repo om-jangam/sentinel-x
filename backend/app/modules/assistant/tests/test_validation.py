@@ -176,3 +176,41 @@ def test_the_prompt_json_cannot_close_the_evidence_delimiter() -> None:
 def test_the_same_evidence_always_hashes_the_same() -> None:
     assert bundle().digest == bundle().digest
     assert bundle().digest != EvidenceBundle(**{**bundle().as_json(), "entities": []}).digest
+
+
+def test_prompt_v2_returns_one_array_per_kind() -> None:
+    raw = json.dumps(
+        {
+            "summary": "s",
+            "facts": [{"text": r"acme\jsmith logged on.", "evidence": ["e-logon"]}],
+            "inferences": [
+                {
+                    "text": "It was the attacker.",
+                    "evidence": ["e-logon", "e-ps"],
+                    "reasoning": "r",
+                    "confidence": "high",
+                },
+                {"text": "No reason given.", "evidence": ["e-ps"], "reasoning": "", "confidence": "low"},
+            ],
+            "uncertainties": [{"text": "What ran.", "missing": "The decoded script."}],
+            "techniques": [],
+            "next_steps": [],
+        }
+    )
+    result = validate(raw, bundle())
+    assert result.analysis is not None
+    assert [s.kind for s in result.analysis.statements] == [Kind.FACT, Kind.INFERENCE, Kind.UNCERTAINTY]
+    assert result.analysis.statements[1].confidence is not None
+    [dropped] = result.dropped
+    assert "reasoning" in dropped.reason
+
+
+def test_repeated_techniques_are_merged() -> None:
+    techniques = [
+        {"technique_id": "T1059.001", "evidence": ["e-ps"], "kind": "INFERENCE"},
+        {"technique_id": "t1059.001", "evidence": ["e-logon", "e-ps"], "kind": "FACT"},
+    ]
+    result = validate(answer(techniques=techniques), bundle())
+    assert result.analysis is not None
+    [technique] = result.analysis.techniques
+    assert technique.evidence == ("e-ps", "e-logon")

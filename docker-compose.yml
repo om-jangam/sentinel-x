@@ -18,6 +18,14 @@ x-backend-env: &backend-env
   SENTINELX_CORS_ORIGINS: '["http://localhost:8080"]'
   SENTINELX_COOKIE_SECURE: "true"
   SENTINELX_EXPOSE_API_DOCS: "false"
+  # Optional (ADR-0018, ADR-0019); empty means off. The demo feed is mounted at /intel.
+  SENTINELX_TI_LOCAL_FEED: ${SENTINELX_TI_LOCAL_FEED:-}
+  SENTINELX_OTX_API_KEY: ${SENTINELX_OTX_API_KEY:-}
+  SENTINELX_AI_PROVIDER: ${SENTINELX_AI_PROVIDER:-}
+  SENTINELX_AI_MODEL: ${SENTINELX_AI_MODEL:-}
+  SENTINELX_AI_BASE_URL: ${SENTINELX_AI_BASE_URL:-}   # Ollama on the Docker host: http://host.docker.internal:11434
+  SENTINELX_AI_API_KEY: ${SENTINELX_AI_API_KEY:-}
+  SENTINELX_AI_TIMEOUT_SECONDS: ${SENTINELX_AI_TIMEOUT_SECONDS:-180}
 
 services:
   postgres:
@@ -91,6 +99,9 @@ services:
     build: ./backend
     environment: *backend-env
     secrets: [jwt_private_key]
+    volumes:
+      - ./pipeline/intel:/intel:ro
+    extra_hosts: ["host.docker.internal:host-gateway"]
     read_only: true
     tmpfs: [/tmp]
     security_opt: ["no-new-privileges:true"]
@@ -113,6 +124,8 @@ services:
     command: ["sentinelx-worker"]
     environment: *backend-env
     secrets: [jwt_private_key]
+    volumes:
+      - ./pipeline/intel:/intel:ro
     read_only: true
     tmpfs: [/tmp]
     security_opt: ["no-new-privileges:true"]
@@ -121,7 +134,8 @@ services:
       redis: { condition: service_healthy }
       opensearch: { condition: service_healthy }
     restart: unless-stopped
-    networks: [data]
+    # `egress` lets enrichment reach external intel providers (OTX); the worker publishes no ports.
+    networks: [data, egress]
 
   web:
     build: ./frontend
@@ -164,3 +178,4 @@ networks:
   data:
     internal: true   # stores are never reachable from outside the compose network
   app:
+  egress:

@@ -234,7 +234,7 @@ describe("IncidentPage", () => {
     status: "completed",
     provider: "ollama",
     model: "qwen2.5:3b",
-    prompt_version: "assistant-v1",
+    prompt_version: "assistant-v2",
     bundle_hash: "f".repeat(64),
     duration_ms: 42000,
     output: {
@@ -263,7 +263,7 @@ describe("IncidentPage", () => {
     citation_validity: 0.8,
     stats: {},
   };
-  const enabled = { enabled: true, provider: "ollama", model: "qwen2.5:3b", prompt_version: "assistant-v1" };
+  const enabled = { enabled: true, provider: "ollama", model: "qwen2.5:3b", prompt_version: "assistant-v2" };
   const aiMe = { ...analystMe, permissions: [...analystMe.permissions, "assistant:use" as const] };
 
   it("shows a grounded analysis whose citations open the evidence", async () => {
@@ -321,7 +321,7 @@ describe("IncidentPage", () => {
         enabled: false,
         provider: null,
         model: null,
-        prompt_version: "assistant-v1",
+        prompt_version: "assistant-v2",
       },
       [`GET ${base}/analyses`]: [],
     });

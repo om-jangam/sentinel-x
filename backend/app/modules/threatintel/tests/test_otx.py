@@ -85,6 +85,11 @@ async def test_nothing_known_is_not_found() -> None:
     assert await provider({}).lookup(Indicator(IndicatorType.HASH, hash_value)) is None  # 404
 
 
+async def test_an_indicator_otx_refuses_is_not_found_rather_than_an_outage() -> None:
+    otx = provider({"/api/v1/indicators/domain/c2.example/general": httpx.Response(400, json={"detail": "invalid"})})
+    assert await otx.lookup(Indicator(IndicatorType.DOMAIN, "c2.example")) is None
+
+
 async def test_ipv6_uses_its_own_section() -> None:
     seen: list[httpx.Request] = []
     await provider({}, seen).lookup(Indicator(IndicatorType.IP, "2001:db8::1"))

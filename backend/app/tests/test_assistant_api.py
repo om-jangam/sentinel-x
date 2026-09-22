@@ -86,7 +86,7 @@ async def test_without_a_model_the_assistant_says_it_is_unavailable(
     client: httpx.AsyncClient, admin_token: str, seeded: Seeded
 ) -> None:
     status = await client.get("/api/v1/assistant", headers=bearer(admin_token))
-    assert status.json() == {"enabled": False, "provider": None, "model": None, "prompt_version": "assistant-v1"}
+    assert status.json() == {"enabled": False, "provider": None, "model": None, "prompt_version": "assistant-v2"}
     await _ingest_samples(client, admin_token)
     incident = await _windows_incident(client, admin_token)
     response = await _analyse(client, admin_token, incident["id"])
@@ -136,7 +136,7 @@ async def test_an_analysis_keeps_only_grounded_statements_and_is_audited(
         )
     assert audit.after is not None
     assert audit.after["bundle_hash"] == record["bundle_hash"]
-    assert audit.after["prompt_version"] == "assistant-v1"
+    assert audit.after["prompt_version"] == "assistant-v2"
     assert audit.resource_id == incident["id"]
 
     # The same incident gives the same bundle, and so the same hash.
@@ -185,3 +185,15 @@ async def test_only_analysts_can_ask_but_everyone_can_read(
     assert len(history.json()) == 1
     missing = await _analyse(client, admin_token, "0190a2b4-0000-7000-8000-000000000000")
     assert missing.status_code == 404
+
+
+async def test_analyses_are_rate_limited_per_user(
+    app: FastAPI, client: httpx.AsyncClient, admin_token: str, seeded: Seeded, container: Container
+) -> None:
+    container.settings.ai_rate_limit = 2
+    app.state.language_model = ScriptedModel()
+    await _ingest_samples(client, admin_token)
+    incident = await _windows_incident(client, admin_token)
+    assert [(await _analyse(client, admin_token, incident["id"])).status_code for _ in range(3)] == [201, 201, 429]
+    limited = await _analyse(client, admin_token, incident["id"])
+    assert limited.headers.get("Retry-After")

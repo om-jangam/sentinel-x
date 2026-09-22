@@ -26,8 +26,8 @@ security data → ingestion → normalisation → detection → correlation
 | Correlation: findings and events → incidents, every link justified by shared entities and cited events | ✅ Built ([rules and entities](docs/modules/correlation.md)) |
 | Incident workspace: attack timeline, entity graph, evidence inspector, audited notes and status | ✅ Built ([ADR-0017](docs/adr/ADR-0017-evidence-digests-timeline-graph.md)) |
 | Threat intelligence: local indicator feed and AlienVault OTX, background enrichment, cached with source and time | ✅ Built ([module doc](docs/modules/threatintel.md)) |
-| AI investigation assistant: evidence bundle, FACT / INFERENCE / UNCERTAINTY with validated citations, local model by default | ✅ Built; live model run pending ([module doc](docs/modules/assistant.md)) |
-| Hardening and end-to-end demo | Planned ([roadmap](docs/11-development-roadmap.md)) |
+| AI investigation assistant: evidence bundle, FACT / INFERENCE / UNCERTAINTY with validated citations, local model by default | ✅ Built ([module doc](docs/modules/assistant.md)) |
+| Hardening: Compose and PostgreSQL verified live, bus retries with dead-lettering, end-to-end demo, runbook | ✅ Done ([runbook](docs/runbook.md)) |
 
 Known limitations: [architecture.md §12](docs/architecture.md#12-known-limitations).
 
@@ -88,7 +88,9 @@ SENTINELX_BOOTSTRAP_ADMIN_PASSWORD='choose-a-long-passphrase' docker compose up 
 Runs PostgreSQL, Redis, OpenSearch, a one-shot migrate/seed job, the API, the worker (indexing, detection and correlation) and the
 nginx-served console. To load the demo attack telemetry, mount the samples into a one-off container:
 `docker compose run --rm -v "$PWD/pipeline/samples:/samples:ro" migrate sentinelx load-demo --samples /samples`.
-The Compose stack, including this command, has not yet been run end to end.
+The stack has been run end to end. Then drive the whole workflow over HTTP:
+`SENTINELX_DEMO_PASSWORD=… uv run sentinelx demo --api-url http://localhost:8080 --analyse`
+([runbook](docs/runbook.md)).
 
 ### Sending events
 
@@ -121,6 +123,7 @@ builds.
 | Start here | |
 |---|---|
 | [Architecture (as built)](docs/architecture.md) | Components, data flow, security controls, stores, API, limitations |
+| [Operations runbook](docs/runbook.md) | Start, upgrade, monitor, failure handling, backup, key rotation |
 | [Executive summary](docs/00-executive-summary.md) | Purpose, principles, scope |
 | [Modules](docs/10-module-breakdown.md) · [Roadmap](docs/11-development-roadmap.md) | Built and planned modules; phases |
 | [AI investigation assistant](docs/04-ai-investigation-assistant.md) | Design of the evidence-grounded assistant |

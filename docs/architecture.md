@@ -1,6 +1,6 @@
 # Sentinel-X architecture
 
-*Current as of Phase 6 (September 2026). This document describes what is **built**. Planned work is in
+*Current as of Phase 7 (September 2026). This document describes what is **built**. Planned work is in
 [11 · Roadmap](11-development-roadmap.md); the product scope is fixed by
 [ADR-0014](adr/ADR-0014-lock-scope-security-investigation.md).*
 
@@ -24,7 +24,7 @@ connected, and what evidence should an analyst investigate?*
 | Correlation | Group findings and events by shared entities and time → incidents | **Built**: entity extraction by role, 2 correlation rules, severity from named conditions, audited triage ([module doc](modules/correlation.md)) |
 | Attack reconstruction | Evidence-linked timeline and entity graph per incident | **Built**: computed from evidence digests; every step and edge lists its events ([ADR-0017](adr/ADR-0017-evidence-digests-timeline-graph.md)) |
 | Threat intelligence | Reputation and related indicators as investigation context | **Built**: local feed and AlienVault OTX, enriched in the background, cached with source and time ([module doc](modules/threatintel.md)) |
-| AI investigation | Evidence-grounded assistant: FACT / INFERENCE / UNCERTAINTY | **Built**: local model by default, grounding validator, recorded and audited analyses ([module doc](modules/assistant.md)); not yet run against a model that answers in time on the development machine |
+| AI investigation | Evidence-grounded assistant: FACT / INFERENCE / UNCERTAINTY | **Built**: local model by default, grounding validator, recorded and audited analyses ([module doc](modules/assistant.md)); `qwen2.5:3b` scores 100% citation validity on the evaluation set |
 | Incident workspace | Incident summary, timeline, graph, evidence, notes, status | **Built**: incidents list and workspace with an evidence inspector; append-only, audited notes |
 
 ## 3. Scope
@@ -180,7 +180,7 @@ image scans, and API and web image builds.
   - It has not run against a model that answers in time on the development machine.
   - Analyses are synchronous.
   - The validator checks citations and named addresses and hashes, but not whether an inference is sound.
-- **Threat-intel limits** ([module doc](modules/threatintel.md#limitations)): intel is context only and doesn't raise severity; the OTX adapter has not run against the live service; no manual refresh.
+- **Threat-intel limits** ([module doc](modules/threatintel.md#limitations)): intel is context only and doesn't raise severity; OTX's slow answers surface as retried errors; no manual refresh.
 - **Workspace limits** (details in the [module doc](modules/correlation.md#limitations)):
   - Incidents from before Phase 4 have no evidence digests.
   - Events the event store couldn't return while they were being linked stay unresolved.
@@ -195,17 +195,21 @@ image scans, and API and web image builds.
   cite an event that is still being indexed.
 - **OCSF coverage is partial:** a trimmed subset of 6 classes; attributes outside it are dropped when
   passed through, not preserved. See [mappings](modules/ingestion.md#ocsf-mappings).
-- **Not verified against live services on the development machine:** OpenSearch, the Vector
-  collector, the Docker images and the Compose stack (no Docker available locally). The repository
-  has no remote yet, so the CI workflow in §11 has never run; its PostgreSQL-only checks (migrations
-  and the append-only audit trigger) are unverified.
+- **Verified live on the development machine (Phase 7):**
+  - the Docker images and the Compose stack, with OpenSearch, the worker's consumer groups, threat intel
+    and the AI assistant on the host's Ollama ([runbook](runbook.md));
+  - the backend suite on PostgreSQL, including migrations and the append-only audit trigger.
+
+  **Also verified:** OTX threat intel against the live service.
+
+  **Still unverified:** the Vector collector; the GitHub CI workflow itself (the repository has no remote).
 - **Aegis is not connected.** There is no Aegis parser or endpoint yet; the proposed contract and
   endpoint are awaiting decisions.
 - **Single organisation.** `org_id` is threaded through every table and query, but there is no
   organisation management API.
 - **Console:** incidents have a list and a workspace; sources, event search and findings have no pages yet.
-- **Worker glue untested:** the stream → detection → database path and the detection → correlation composition are tested; the worker process's
-  signal handling and its running of both consumer loops together are not.
+- **Bus retries** are 30 s apart with no backoff. After 5 failed attempts a message is dead-lettered
+  and has to be replayed by hand ([ADR-0020](adr/ADR-0020-bus-reclaim-and-dead-letter.md)).
 
 ## 13. Documentation map
 

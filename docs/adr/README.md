@@ -30,5 +30,6 @@ Superseded, Deferred}; an amended ADR keeps its original text and links the ADR 
 | [0017](ADR-0017-evidence-digests-timeline-graph.md) | Timeline and entity graph derived from evidence digests in PostgreSQL | Accepted |
 | [0018](ADR-0018-threat-intelligence-providers.md) | Threat intelligence: local feed and AlienVault OTX, cached, enriched in the background | Accepted |
 | [0019](ADR-0019-ai-assistant-local-model-grounding-validator.md) | AI assistant: local model by default, grounding enforced in code | Accepted |
+| [0020](ADR-0020-bus-reclaim-and-dead-letter.md) | Event bus: reclaim failed messages, dead-letter after five attempts | Accepted |
 
 New ADRs are added as implementation surfaces new significant decisions (per-phase).

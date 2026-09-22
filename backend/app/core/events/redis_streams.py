@@ -20,14 +20,30 @@ StreamResponse = list[tuple[bytes, list[tuple[bytes, dict[bytes, bytes]]]]]
 class RedisStreamsEventBus:
     """At-least-once delivery via consumer groups.
 
-    A message is acknowledged only after its handler succeeds; failures stay in the group's
-    pending list for redelivery, so handlers must be idempotent (key on `Event.id`).
+    A message is acknowledged only after its handler succeeds. A failed message stays pending, and once it
+    has been idle for `reclaim_idle_ms` any consumer of the group claims it and tries again. That covers a
+    handler error and a consumer that died mid-batch, so handlers must be idempotent. After
+    `max_deliveries` attempts the message moves to `<prefix>dead:<topic>` and is acknowledged: one poison
+    message never blocks the rest, and it is kept for inspection instead of being retried forever.
     """
 
-    def __init__(self, redis: Redis, *, stream_prefix: str = "sx:events:", max_len: int = 100_000) -> None:
+    def __init__(
+        self,
+        redis: Redis,
+        *,
+        stream_prefix: str = "sx:events:",
+        max_len: int = 100_000,
+        reclaim_idle_ms: int = 30_000,
+        max_deliveries: int = 5,
+    ) -> None:
         self._redis = redis
         self._prefix = stream_prefix
         self._max_len = max_len
+        self._reclaim_idle_ms = reclaim_idle_ms
+        self._max_deliveries = max_deliveries
+
+    def dead_letter_stream(self, topic: str) -> str:
+        return f"{self._prefix}dead:{topic}"
 
     def stream_name(self, topic: str) -> str:
         return self._prefix + topic
@@ -47,6 +63,20 @@ class RedisStreamsEventBus:
             if "BUSYGROUP" not in str(exc):
                 raise
 
+    async def _reclaim(
+        self, stream: str, group: str, consumer: str, count: int
+    ) -> list[tuple[bytes, dict[bytes, bytes]]]:
+        """Pending messages idle long enough to be retried, now owned by this consumer."""
+        reply = await self._redis.xautoclaim(
+            stream, group, consumer, min_idle_time=self._reclaim_idle_ms, start_id="0-0", count=count
+        )
+        messages = reply[1] if isinstance(reply, list | tuple) and len(reply) > 1 else []
+        return [(message_id, fields) for message_id, fields in messages if fields]
+
+    async def _deliveries(self, stream: str, group: str, message_id: bytes) -> int:
+        entries = await self._redis.xpending_range(stream, group, min=message_id, max=message_id, count=1)
+        return int(entries[0]["times_delivered"]) if entries else 1
+
     async def consume_once(
         self,
         topic: str,
@@ -58,25 +88,44 @@ class RedisStreamsEventBus:
         block_ms: int = 1000,
     ) -> int:
         stream = self.stream_name(topic)
-        response = cast(
-            StreamResponse | None,
-            await self._redis.xreadgroup(group, consumer, {stream: ">"}, count=count, block=block_ms),
-        )
+        batch = await self._reclaim(stream, group, consumer, count)
+        if not batch:
+            response = cast(
+                StreamResponse | None,
+                await self._redis.xreadgroup(group, consumer, {stream: ">"}, count=count, block=block_ms),
+            )
+            batch = [message for _stream, messages in response or [] for message in messages]
         processed = 0
-        for _stream, messages in response or []:
-            for message_id, fields in messages:
-                raw = fields.get(b"event")
-                if raw is None:
-                    logger.error("malformed stream message; acknowledging to drop it", extra={"topic": topic})
-                    await self._redis.xack(stream, group, message_id)
-                    continue
-                try:
-                    await handler(Event.from_json(raw))
-                except Exception:
-                    logger.exception("event handler failed; leaving message pending", extra={"topic": topic})
-                    continue
+        for message_id, fields in batch:
+            raw = fields.get(b"event")
+            if raw is None:
+                logger.error("malformed stream message; acknowledging to drop it", extra={"topic": topic})
                 await self._redis.xack(stream, group, message_id)
-                processed += 1
+                continue
+            try:
+                await handler(Event.from_json(raw))
+            except Exception:
+                deliveries = await self._deliveries(stream, group, message_id)
+                if deliveries >= self._max_deliveries:
+                    await self._redis.xadd(
+                        self.dead_letter_stream(topic),
+                        {"event": raw, "group": group, "deliveries": str(deliveries)},
+                        maxlen=self._max_len,
+                        approximate=True,
+                    )
+                    await self._redis.xack(stream, group, message_id)
+                    logger.exception(
+                        "event handler failed repeatedly; moved to the dead-letter stream",
+                        extra={"topic": topic, "group": group, "deliveries": deliveries},
+                    )
+                else:
+                    logger.exception(
+                        "event handler failed; the message stays pending and will be retried",
+                        extra={"topic": topic, "group": group, "deliveries": deliveries},
+                    )
+                continue
+            await self._redis.xack(stream, group, message_id)
+            processed += 1
         return processed
 
     async def run(

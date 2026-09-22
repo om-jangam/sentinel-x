@@ -14,8 +14,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project --extra otel
 
 COPY app ./app
+# --reinstall-package: uv caches the project's built wheel by version in the cache mount, so without it an
+# image rebuilt from changed code at the same version would silently ship the previous build.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-editable --extra otel
+    uv sync --frozen --no-dev --no-editable --extra otel --reinstall-package sentinel-x
 
 FROM python:3.12-slim AS runtime
 RUN groupadd --system --gid 10001 sentinelx \

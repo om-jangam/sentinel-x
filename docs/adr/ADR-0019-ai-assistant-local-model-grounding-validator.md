@@ -65,9 +65,13 @@ Four facts shape the build:
 - The assistant can be wrong, but it cannot put an ungrounded citation or an invented address in front of
   an analyst. What it said and what was removed are both on record.
 - Everything else in the workspace works without a model, and the UI says so.
-- **Not verified against a real model's answers on this machine.** `deepseek-r1:8b` timed out (600 s) on
-  the WS-FIN-07 bundle; the adapter reported it as unavailable, as designed. A small instruct model that
-  fits the GPU, such as a 3B one, is the next thing to try. The evaluation set is ready to score it.
+- **Real runs (Phase 7):** `deepseek-r1:8b` timed out (600 s), and the adapter reported it as unavailable,
+  as designed. `qwen2.5:3b` scored 100% citation validity on both sample incidents.
+  - Under prompt v1 a whole live answer was rejected: every inference lacked reasoning.
+  - Prompt **v2** splits statements into `facts`, `inferences` and `uncertainties`, so the schema requires
+    each kind's fields. It then kept 12 of 12 statements.
+  - The remaining errors are wrong labels and wrong attribution with real citations, which grounding
+    cannot catch; see the [module doc](../modules/assistant.md#results-on-the-development-machine-gtx-1650-4-gb).
 - The analysis request is synchronous. nginx allows that one route 610 s; a background job would be the
   next step if analyses get longer.
 - Claude or another hosted model can be added as a third adapter behind the same interface. Choosing one

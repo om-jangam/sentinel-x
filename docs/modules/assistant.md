@@ -48,8 +48,13 @@ prompt tells the model that nothing inside is an instruction, and the model has 
 
 ## Output and validation
 
-The model must return `{summary, statements[], techniques[], next_steps[]}`
-(`domain/prompt.py`, prompt `assistant-v1`). The validator keeps:
+The model must return `{summary, facts[], inferences[], uncertainties[], techniques[], next_steps[]}`
+(`domain/prompt.py`, prompt `assistant-v2`). There is one array per kind, so schema-constrained decoding
+can require each kind's fields: an inference must have `reasoning` and `confidence`, and an uncertainty
+`missing`.
+
+Under v1's single `statements` list, `qwen2.5:3b` left out an inference's reasoning in all 5 cases, and the
+whole answer was rejected. The validator still accepts the v1 shape. It keeps:
 
 | Item | Kept only if |
 |------|--------------|
@@ -93,10 +98,33 @@ It builds the two sample incidents through the real pipeline in a throwaway data
 
 It exits non-zero on failure. Key events are labelled by what they are, not by event_uid.
 
+## Results on the development machine (GTX 1650, 4 GB)
+
+| Model | Prompt | Case | Citations valid | Key events | Dropped | Technique precision / recall |
+|-------|--------|------|-----------------|------------|---------|------------------------------|
+| `deepseek-r1:8b` | v1 | any | — | — | — | timed out: over 600 s, mostly on the CPU; it ignores `think: false` |
+| `qwen2.5:3b` | v1 | ws-fin-07 | 100% | 100% | 22% | 100% / 50% |
+| `qwen2.5:3b` | v1 | web-01 | 100% | 100% | 0% | 100% / 33% |
+| `qwen2.5:3b` | v2 | ws-fin-07 | 100% | 83% (missed `net`) | 0% | 100% / 62% |
+| `qwen2.5:3b` | v2 | web-01 | 100% | 100% | 0% | 100% / 33% |
+
+Each analysis took 140–380 s. Live in Compose, the merged 28-event WS-FIN-07 incident under v2 kept 12 of
+12 statements, all citing real events.
+
+**What a 3B model still gets wrong**, which the validator cannot catch because each statement cites real
+events:
+- inferences labelled FACT ("likely achieved through brute force");
+- actions attributed to the wrong entity ("PowerShell connected to 192.0.2.66": the host did);
+- a wrong first/last time;
+- sub-techniques the evidence doesn't support (`T1027.001` for `T1027`);
+- asking whether a logon succeeded when the success event is in the bundle.
+
+That is why the console presents everything as the assistant's analysis for the analyst to check.
+
 ## Limitations
 
-- **Not yet run against a model that answers in time on the development machine.** `deepseek-r1:8b` timed
-  out on a real bundle (see ADR-0019).
+- **Content isn't verified, only grounding.** A small model's statements cite real events but can still
+  mislabel or misattribute, as above.
 - Analyses are synchronous (nginx allows 610 s on that route).
 - The validator checks citations and named IPs and hashes. It cannot tell whether an INFERENCE is sound;
   that is what the labels, reasoning and the analyst are for.

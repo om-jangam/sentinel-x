@@ -60,8 +60,9 @@ source and retrieval time", with "the platform working with none configured". Fo
 - With no provider configured, nothing changes, and the workspace says intel isn't set up.
 - The demo feed (`pipeline/intel/demo_indicators.csv`) is **fictional** and marks the sample stories'
   documentation addresses. It is for demos and tests, not a source of real intelligence.
-- **The OTX adapter has not run against the live service.** It is built from OTX's documented API and
-  tested with recorded-shape responses; enabling a key is the first real test.
+- **The OTX adapter has been run against the live service** (Phase 7). Two defaults changed as a result:
+  - the timeout went from 5 s to 30 s, because OTX takes 1–10 s and sometimes longer;
+  - an HTTP 400 now means "not found" rather than an outage, because OTX rejects reserved names.
 - **Intel doesn't feed correlation or severity yet.** An incident isn't raised because an indicator is on
   a list. That is a deliberate next step, needing a rule for how much one provider's claim may weigh.
 - **No manual "look up now".** Enrichment follows incident changes. An indicator whose cached answer

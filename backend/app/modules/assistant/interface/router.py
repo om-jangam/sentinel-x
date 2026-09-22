@@ -7,8 +7,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import ServiceUnavailableError
-from app.core.http.deps import get_session, require_permission
+from app.core.container import Container
+from app.core.errors import RateLimitedError, ServiceUnavailableError
+from app.core.http.deps import get_container, get_session, require_permission
 from app.core.security.permissions import Permission
 from app.core.security.principal import Principal
 from app.modules.assistant.application.assistant_service import AssistantService
@@ -58,7 +59,14 @@ async def analyse(
     incident_id: UUID,
     principal: Principal = Depends(require_permission(Permission.ASSISTANT_USE)),
     service: AssistantService = Depends(get_assistant),
+    container: Container = Depends(get_container),
 ) -> AnalysisRead:
+    settings = container.settings
+    decision = await container.rate_limiter.hit(
+        f"assistant:{principal.user_id}", limit=settings.ai_rate_limit, window_seconds=settings.ai_rate_window_seconds
+    )
+    if not decision.allowed:
+        raise RateLimitedError(decision.retry_after_seconds)
     return AnalysisRead.from_record(await service.analyse(principal, incident_id))
 
 

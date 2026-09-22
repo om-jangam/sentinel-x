@@ -23,6 +23,10 @@ def cli_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     monkeypatch.setenv("SENTINELX_ARGON2_MEMORY_COST_KIB", "64")
     monkeypatch.setenv("SENTINELX_ARGON2_PARALLELISM", "1")
     monkeypatch.delenv("SENTINELX_BOOTSTRAP_ADMIN_PASSWORD", raising=False)
+    # get_settings() also reads backend/.env: blank every external provider so a developer's own keys are
+    # never used, and the network never touched, by the test suite. An empty setting means "not configured".
+    for name in ("OTX_API_KEY", "TI_LOCAL_FEED", "AI_PROVIDER", "AI_MODEL", "AI_BASE_URL", "AI_API_KEY", "REDIS_URL"):
+        monkeypatch.setenv(f"SENTINELX_{name}", "")
     get_settings.cache_clear()
     yield tmp_path
     get_settings.cache_clear()
@@ -169,3 +173,10 @@ def test_load_demo_needs_the_samples(
     capsys.readouterr()
     assert cli.main(["load-demo", "--samples", str(cli_env / "missing")]) == 1
     assert "sample telemetry not found" in capsys.readouterr().err
+
+
+def test_the_cli_tests_never_use_a_developers_external_credentials(cli_env: Path) -> None:
+    settings = get_settings()
+    assert settings.otx_api_key is None
+    assert settings.ai_provider is None
+    assert settings.ti_local_feed is None

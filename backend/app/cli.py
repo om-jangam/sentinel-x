@@ -1,6 +1,7 @@
 """Operator CLI.
 
-`sentinelx {generate-keys,migrate,seed,verify-audit,opensearch-init,load-demo,worker,export-openapi}`
+`sentinelx {generate-keys,migrate,seed,verify-audit,opensearch-init,load-demo,demo,evaluate-assistant,worker,
+export-openapi}`
 """
 
 from __future__ import annotations
@@ -420,6 +421,13 @@ async def _evaluate_assistant() -> int:
     return 0 if passed else 1
 
 
+def cmd_demo(args: argparse.Namespace) -> int:
+    from app.demo import run_demo
+
+    password = os.environ.get("SENTINELX_DEMO_PASSWORD") or getpass.getpass(f"Password for {args.email}: ")
+    return run_demo(args.api_url, args.email, password, Path(args.samples), analyse=args.analyse)
+
+
 def cmd_evaluate_assistant(_: argparse.Namespace) -> int:
     return asyncio.run(_evaluate_assistant())
 
@@ -466,6 +474,13 @@ def main(argv: list[str] | None = None) -> int:
         help="directory holding the sample files (mount pipeline/samples when running in a container)",
     )
     demo.set_defaults(func=cmd_load_demo)
+
+    demo_run = sub.add_parser("demo", help="run the end-to-end demo against a running deployment, over HTTP")
+    demo_run.add_argument("--api-url", default="http://localhost:8080", help="the console/API origin")
+    demo_run.add_argument("--email", default="admin@example.com")
+    demo_run.add_argument("--samples", default=str(BACKEND_ROOT.parent / "pipeline" / "samples"))
+    demo_run.add_argument("--analyse", action="store_true", help="also ask the AI assistant (slow with local models)")
+    demo_run.set_defaults(func=cmd_demo)
 
     sub.add_parser(
         "evaluate-assistant", help="score the configured AI model on the labelled sample incidents"

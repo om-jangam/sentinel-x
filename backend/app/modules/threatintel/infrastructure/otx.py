@@ -62,7 +62,9 @@ class OtxProvider:
     async def _get(self, indicator: Indicator, part: str) -> dict[str, Any] | None:
         path = f"/api/v1/indicators/{_section(indicator)}/{quote(indicator.value, safe='')}/{part}"
         response = await self._client.get(path, headers=self._headers)
-        if response.status_code == 404:
+        # 404: nothing known. 400: OTX refuses to look the value up (it rejects reserved names such as
+        # `.example`), which also means it has nothing to say; retrying would never succeed.
+        if response.status_code in (400, 404):
             return None
         if response.status_code != 200:
             raise OtxError(f"OTX answered {response.status_code}")

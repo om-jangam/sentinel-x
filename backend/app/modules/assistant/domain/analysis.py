@@ -136,6 +136,18 @@ def unknown_mentions(text: str, known: frozenset[str]) -> list[str]:
     return found
 
 
+_ARRAYS = (("facts", "FACT"), ("inferences", "INFERENCE"), ("uncertainties", "UNCERTAINTY"))
+
+
+def _statements(data: dict[str, Any]) -> list[Any]:
+    """Prompt v2 returns one array per kind (so the schema can require each kind's fields); v1 one list."""
+    if any(key in data for key, _ in _ARRAYS):
+        return [
+            {**item, "kind": kind} for key, kind in _ARRAYS for item in _list(data.get(key)) if isinstance(item, dict)
+        ]
+    return _list(data.get("statements"))
+
+
 def parse_json(raw: str) -> dict[str, Any] | None:
     text = _FENCE.sub("", _THINK.sub("", raw).strip()).strip()
     try:
@@ -168,7 +180,7 @@ def validate(raw: str, bundle: EvidenceBundle) -> Validation:
         return f"cites events that are not in the incident: {', '.join(missing[:3])}" if missing else None
 
     statements: list[Statement] = []
-    raw_statements = _list(data.get("statements"))
+    raw_statements = _statements(data)
     for item in raw_statements[:MAX_STATEMENTS]:
         if not isinstance(item, dict):
             continue
@@ -228,7 +240,13 @@ def validate(raw: str, bundle: EvidenceBundle) -> Validation:
             dropped.append(Dropped(item, problem))
             continue
         kind = Kind.FACT if str(item.get("kind", "")).upper() == "FACT" else Kind.INFERENCE
-        techniques.append(TechniqueSuggestion(technique, tuple(dict.fromkeys(evidence)), kind))
+        existing = next((i for i, t in enumerate(techniques) if t.technique_id == technique), None)
+        if existing is None:
+            techniques.append(TechniqueSuggestion(technique, tuple(dict.fromkeys(evidence)), kind))
+        else:  # the same technique twice: one suggestion citing both sets of events
+            merged = techniques[existing]
+            events = tuple(dict.fromkeys((*merged.evidence, *evidence)))
+            techniques[existing] = TechniqueSuggestion(technique, events, merged.kind)
 
     next_steps: list[str] = []
     raw_steps = _list(data.get("next_steps"))

@@ -50,9 +50,15 @@ A missing or unreadable file stops start-up. The file is capped at 20 MiB and 20
 domains, with the `X-OTX-API-KEY` header.
 - **Recorded:** up to five pulse names as related "pulses", up to ten passive-DNS names or addresses, pulse
   tags and malware families, and pulse URLs as references.
-- **Errors:** a 404 means "not found". Any other non-200 status, invalid JSON or a response over 2 MiB is
-  an error. Redirects are not followed.
-- **Not verified live:** tested against recorded-shape responses only.
+- **Errors:** a 404 means "not found", and so does a 400: OTX refuses reserved names such as `.example`, and
+  retrying would never succeed. Any other non-200 status, invalid JSON or a response over 2 MiB is an error.
+  Redirects are not followed.
+- **Verified live (September 2026, free key):**
+  - The EICAR test-file hash came back *suspicious*, referenced in 50 pulses.
+  - `203.0.113.45` came back *benign*: OTX allowlists documentation addresses. Its passive DNS listed
+    unrelated domains, which is why related indicators are always shown "according to OTX".
+  - OTX answers in 1–10 s but sometimes takes longer than 30 s. Those lookups are recorded as `error` and
+    retried after 15 min.
 
 ## Results
 
@@ -83,5 +89,6 @@ a marker.
 
 - Intel doesn't raise incident severity or feed correlation yet.
 - There is no manual refresh. An expired answer is looked up again only when its incident changes.
-- The OTX adapter has not run against the live service.
+- OTX's response time varies widely. Slow lookups surface as `error` results until the 15-minute retry
+  succeeds.
 - The local feed reloads only at start-up.

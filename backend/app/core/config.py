@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,7 +26,9 @@ _MIN_ARGON2_TIME_COST = 2
 def _is_local_or_https(url: str) -> bool:
     """Evidence may leave the host only over TLS; plain HTTP is allowed to a model on this machine."""
     parts = urlsplit(url)
-    return parts.scheme == "https" or (parts.scheme == "http" and parts.hostname in {"127.0.0.1", "localhost", "::1"})
+    # host.docker.internal is this machine seen from inside a container (a model served on the Docker host).
+    local = {"127.0.0.1", "localhost", "::1", "host.docker.internal"}
+    return parts.scheme == "https" or (parts.scheme == "http" and parts.hostname in local)
 
 
 class Settings(BaseSettings):
@@ -56,7 +58,8 @@ class Settings(BaseSettings):
     otx_api_key: SecretStr | None = None  # AlienVault OTX; external lookups are off without a key
     otx_base_url: str = "https://otx.alienvault.com"
     ti_cache_hours: int = Field(default=24, ge=1, le=720)
-    ti_timeout_seconds: float = Field(default=5.0, gt=0, le=30)
+    # Measured live: OTX answers in 1-10 s, sometimes slower; 30 s avoids needless errors on a background job.
+    ti_timeout_seconds: float = Field(default=30.0, gt=0, le=60)
 
     # --- AI investigation assistant (docs/04, ADR-0019); off unless a provider is set
     ai_provider: Literal["ollama", "openai"] | None = None
@@ -65,6 +68,9 @@ class Settings(BaseSettings):
     ai_api_key: SecretStr | None = None  # OpenAI-compatible endpoints only
     ai_timeout_seconds: float = Field(default=180.0, gt=0, le=600)
     ai_context_tokens: int = Field(default=16_384, ge=2_048, le=262_144)
+    # Each analysis occupies the model for minutes: a per-user cap keeps one analyst from starving the rest.
+    ai_rate_limit: int = Field(default=10, ge=1)
+    ai_rate_window_seconds: int = Field(default=3600, ge=60)
 
     # --- ingestion
     ingest_rate_limit: int = Field(default=600, ge=1)
@@ -98,6 +104,14 @@ class Settings(BaseSettings):
     metrics_enabled: bool = True
     otel_enabled: bool = False
     otel_exporter_endpoint: str | None = None
+
+    @field_validator(
+        "ti_local_feed", "otx_api_key", "ai_provider", "ai_model", "ai_base_url", "ai_api_key", mode="before"
+    )
+    @classmethod
+    def _blank_is_unset(cls, value: object) -> object:
+        """Compose passes optional settings as empty strings; an empty setting means "not configured"."""
+        return None if isinstance(value, str) and not value.strip() else value
 
     @property
     def is_production(self) -> bool:

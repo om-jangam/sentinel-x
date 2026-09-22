@@ -100,6 +100,46 @@ async def test_redis_streams_bus_acks_success_and_keeps_failures_pending(redis: 
     assert pending["pending"] == 1
 
 
+async def test_failed_messages_are_retried_after_they_go_idle(redis: Redis) -> None:
+    bus = RedisStreamsEventBus(redis, reclaim_idle_ms=0)
+    await bus.ensure_group("t", "g")
+    await bus.publish(Event(topic="t", payload={"n": 1}))
+    attempts: list[int] = []
+
+    async def flaky(event: Event) -> None:
+        attempts.append(event.payload["n"])
+        if len(attempts) == 1:
+            raise RuntimeError("database briefly down")
+
+    assert await bus.consume_once("t", group="g", consumer="w1", handler=flaky, block_ms=1) == 0
+    # A different consumer (a restarted worker has a new name) picks the pending message up.
+    assert await bus.consume_once("t", group="g", consumer="w2", handler=flaky, block_ms=1) == 1
+    assert attempts == [1, 1]
+    assert (await redis.xpending(bus.stream_name("t"), "g"))["pending"] == 0
+
+
+async def test_a_poison_message_is_dead_lettered_not_retried_forever(redis: Redis) -> None:
+    bus = RedisStreamsEventBus(redis, reclaim_idle_ms=0, max_deliveries=3)
+    await bus.ensure_group("t", "g")
+    await bus.publish(Event(topic="t", payload={"n": "poison"}))
+    await bus.publish(Event(topic="t", payload={"n": "fine"}))
+    handled: list[object] = []
+
+    async def handler(event: Event) -> None:
+        if event.payload["n"] == "poison":
+            raise ValueError("cannot handle")
+        handled.append(event.payload["n"])
+
+    for _ in range(4):
+        await bus.consume_once("t", group="g", consumer="w", handler=handler, block_ms=1)
+    assert handled == ["fine"]
+    assert (await redis.xpending(bus.stream_name("t"), "g"))["pending"] == 0
+    dead: list[tuple[bytes, dict[bytes, bytes]]] = await redis.xrange(bus.dead_letter_stream("t"))  # type: ignore[assignment]
+    [(_, fields)] = dead
+    assert Event.from_json(fields[b"event"]).payload == {"n": "poison"}
+    assert fields[b"deliveries"] == b"3"
+
+
 async def test_redis_streams_run_stops_on_signal(redis: Redis) -> None:
     bus = RedisStreamsEventBus(redis)
     stop = asyncio.Event()

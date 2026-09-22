@@ -18,6 +18,9 @@ from typing import Any
 
 from redis.asyncio import Redis
 
+# Every model, not only the ones the worker touches: findings reference `orgs` (identity) by foreign key, and
+# SQLAlchemy can't order an insert whose referenced table was never imported in this process.
+import app.model_registry  # noqa: F401
 from app.analysis import build_analysis
 from app.core.config import Settings, get_settings
 from app.core.db.session import Database

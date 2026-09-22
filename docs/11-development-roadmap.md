@@ -97,7 +97,7 @@ feed correlation. Providers are configurable; the platform works with none confi
 **Remaining:** letting intel feed correlation or severity (it is context only today); a live test of OTX
 with a real key; more adapters (AbuseIPDB, VirusTotal) if needed.
 
-## Phase 6 — AI investigation assistant ✅ (built; live model unverified)
+## Phase 6 — AI investigation assistant ✅
 As designed in [04](04-ai-investigation-assistant.md): evidence bundle, FACT / INFERENCE / UNCERTAINTY
 output, grounding validator, prompt-injection handling, evaluation set.
 
@@ -116,12 +116,27 @@ without a model.
 
 The incident page works without a model.
 
-**Remaining:** a real model run that answers in time. `deepseek-r1:8b` on the development GPU timed out;
-try a small instruct model. Measure citation validity on the evaluation set, which must be 100%.
+**Measured in Phase 7:** `qwen2.5:3b` has 100% citation validity on the evaluation set (see the
+[module doc](modules/assistant.md#results-on-the-development-machine-gtx-1650-4-gb)).
 
-## Phase 7 — Hardening & demo
+## Phase 7 — Hardening & demo ✅
 Live Compose verification, PostgreSQL CI run, end-to-end demo script (load samples → findings → incident
 → workspace → AI analysis), and an operations runbook.
+
+**Done** (on the development machine; the GitHub CI workflow itself still has no remote to run on):
+- **PostgreSQL:** the full backend suite passes (460 tests, including migrations and the append-only audit
+  trigger).
+- **Compose:** the full stack runs end to end. That includes the worker's three consumer groups, OpenSearch
+  indexing, the stored-event read-back, threat intel, and the AI assistant on the host's Ollama.
+- **Demo:** `sentinelx demo` drives a running stack over HTTP and checks each stage. It passed live.
+- **Runbook:** [runbook.md](runbook.md).
+- **Bugs found only live, all fixed with regression tests:**
+  - the worker never registered the identity models, so every batch failed;
+  - failed bus messages were never redelivered, now reclaimed and dead-lettered ([ADR-0020](adr/ADR-0020-bus-reclaim-and-dead-letter.md));
+  - rebuilt images shipped stale code from uv's wheel cache;
+  - Compose couldn't pass optional settings, reach the host's model, or give the worker egress;
+  - the AI output contract let small models omit an inference's reasoning (prompt v2).
+- **Hardening:** a per-user rate limit on AI analyses.
 
 ## Definition of done (every phase)
 - Unit, integration and negative/security tests; coverage gate met.
