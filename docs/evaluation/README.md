@@ -4,37 +4,54 @@ The numbers are in [`detection-baseline.md`](detection-baseline.md), regenerated
 `sentinelx evaluate-detection`. This page says what they mean and what they changed. It is written by
 hand; the report is not.
 
-**Baseline, with the 7 shipped rules:** 2 of 5 industry-priority techniques detected, and 1 of 3 techniques
-a shipped rule claims. Of the 47,281 events read, 46,794 are in logs Sentinel-X parses (46,793 Sysmon and
-one Security); 46,588 of those became normalised events (99.6%).
+## Before and after the SigmaHQ pack
+
+| | Own rules only (7) | With the SigmaHQ pack (169) |
+|---|---|---|
+| Industry-priority techniques detected | 2 of 5 | **3 of 5** |
+| Techniques a shipped rule claims | 1 of 3 | 1 of 3 |
+| Rules that fired on the T1059.001 recording | 1 | 11 |
+| Events parsed | 46,588 of 46,794 (99.6%) | unchanged |
+
+Of the 47,281 events read, 46,794 are in logs Sentinel-X parses (46,793 Sysmon and one Security);
+46,588 of those became normalised events. The gain came from
+[step 3](../12-improvement-research.md#3-ship-a-curated-sigmahq-rule-set-with-attribution): 162 community
+rules, chosen by a fixed rule and shipped with their authors named.
 
 ## What held up
 
 - **Parsing real telemetry.** The Sysmon parser read 99.6% of the ~46,800 events recorded on real
   machines, in a format nobody wrote for Sentinel-X. What it refused, it refused by name: Sysmon 17 and 18
   (named pipes), 6 (driver loaded), 4 (Sysmon service state) and 16 (configuration change).
-- **Detection on other people's data.** The encoded-PowerShell rule flagged Atomic Red Team's own
-  T1059.001 tests (18 findings, every parameter spelling from `-E` to `/EncodedCommand`) and its T1027
-  test, which decodes to `Write-Host "Hey, Atomic!"`. The Domain Admins rule flagged the real
-  `net group` discovery in the AD recording.
+- **Community rules ran unchanged.** 914 of the 1,377 rules in SigmaHQ's core package load in this engine
+  with no edits, which is what the Sysmon work in step 1 bought. The 162 shipped ones found real activity
+  in recordings nobody made for this project: downloads through `bitsadmin` and `certutil` (T1105),
+  eleven distinct PowerShell techniques (T1059.001), and SharpView's domain-group discovery (T1069.002).
+- **Detection on other people's data.** The project's own encoded-PowerShell rule flagged Atomic Red
+  Team's T1059.001 tests and its T1027 test, which decodes to `Write-Host "Hey, Atomic!"`.
 
 ## What it exposed
 
 1. **A "detection" that was the test lab.** Splunk's Attack Range drives each test from Ansible over
-   WinRM, which runs encoded PowerShell itself, so the rule fired 37 times per recording on the harness.
-   Counting those would have inflated every result. The evaluator now recognises lab automation by fixed
-   markers (Ansible's exec wrapper, its reboot check, the Atomic runner's module import, Attack Range's
-   command prefix) and reports it separately. T1027 survived this because 2 of its 39 findings are the
-   test itself; T1047 and T1033 had nothing left.
+   WinRM, which runs encoded PowerShell itself, so encoded-PowerShell rules fire ~37 times per recording
+   on the harness. Counting those would have inflated every result. The evaluator recognises lab
+   automation by fixed markers (Ansible's exec wrapper, its reboot check, the Atomic runner's module
+   import, Attack Range's command prefix) and reports it separately.
 2. **A rule that claims more than it detects.** `whoami used to list privileges or groups` is tagged
-   T1033, but it only fires on `/all`, `/priv` or `/groups`. The recording runs plain `whoami`, so the
-   claim failed on real data. Either the rule widens or the tag narrows; step 3's community rules settle it.
-3. **Two log sources that are read as nothing.** The password-spraying recording is in
+   T1033 but only fires on `/all`, `/priv` or `/groups`; the recording runs plain `whoami`. The SigmaHQ
+   pack did not close this either, so T1033 is still missed: community rules for it look for unusual
+   parents or renamed binaries, not the command itself.
+3. **Community rules trade recall for precision, on purpose.** T1047 (WMI) is still missed although the
+   pack ships 15 WMI rules. SigmaHQ's `wmic process call create` rule only fires when the launched
+   program looks suspicious (`rundll32`, `cmd /c`, `\Users\Public\`, …); the Atomic test launches
+   `notepad.exe`. That is a deliberate choice by the rule's authors, and the evaluation makes it visible
+   rather than hiding it behind an overall percentage.
+4. **Two log sources are read as nothing.** The password-spraying recording is in
    `Microsoft-Windows-NTLM/Operational` (487 events, no parser), and Splunk's `windows-security.log`
-   files are its older key-value text format, not XML. Both are now named in the report instead of
-   quietly counting zero.
-4. **Missing detections are honest gaps, not bugs.** Ingress tool transfer (T1105), WMI execution
-   (T1047) and command shell (T1059.003) have no rule at all: 7 rules cannot cover the top ten techniques.
+   files are its older key-value text format, not XML. Both are named in the report.
+5. **T1059.003 stays missed** because its recording holds 8 events: too little of the command-shell
+   activity a rule would need. A miss on a thin recording is not the same as a blind spot, and the report
+   shows the event count next to the verdict so the two can be told apart.
 
 ## Bugs this found in the evaluator itself
 
@@ -54,9 +71,13 @@ uv run sentinelx evaluate-detection --report ../docs/evaluation/detection-baseli
 
 The recordings are cached under `backend/.cache/` and ignored by git. Nothing in the evaluation needs a
 database, Redis, OpenSearch or Docker: it runs the real parsers and the real `DetectionService` in memory,
-in about 25 seconds.
+in about 80 seconds with 169 rules.
 
-## What this sets up
+## What would move the numbers next
 
-Step 3 (a curated SigmaHQ rule set) is measured against this same baseline, so the gain is a number, not
-an impression. The unread log sources and the T1033 claim are the concrete gaps it has to close.
+- A rule for plain `whoami`, or a narrower tag on the one that exists (finding 2).
+- Reading Splunk's classic Security text and the NTLM log (finding 4), which would put T1110.003 and
+  several thousand Security events back in scope.
+- Rarity scoring ([step 5](../12-improvement-research.md#5-evidence-backed-rarity-first-seen)): `wmic
+  process call create notepad.exe` is unremarkable alone, but "first time on this host in 30 days" is
+  evidence a precision-first rule set cannot express.

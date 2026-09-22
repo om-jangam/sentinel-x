@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
+from dataclasses import replace
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 from uuid import UUID
@@ -24,6 +27,8 @@ from app.modules.detection.infrastructure.ocsf_paths import is_known_path
 from app.modules.detection.infrastructure.sigma_loader import LOGSOURCES, RuleLoadError, compile_sigma
 
 RULES_DIR = Path(__file__).resolve().parents[1] / "rules"
+VENDOR_DIR = "sigmahq"  # community rules, unmodified, with their own manifest and licence notice
+MANIFEST = "MANIFEST.json"
 MAX_WINDOW_MS = 24 * 3600 * 1000
 _DURATION = re.compile(r"(\d+)(s|m|h)")
 _UNIT_MS = {"s": 1000, "m": 60_000, "h": 3_600_000}
@@ -37,6 +42,7 @@ class ThresholdSpec(BaseModel):
     id: UUID
     title: str = Field(min_length=3, max_length=200)
     description: str = ""
+    author: str = "Sentinel-X"
     level: Literal["informational", "low", "medium", "high", "critical"]
     tags: list[str] = Field(default_factory=list)
     references: list[str] = Field(default_factory=list)
@@ -111,6 +117,7 @@ def compile_threshold(text: str, *, path: str) -> ThresholdRule:
             path=path,
             references=tuple(spec.references),
             false_positives=tuple(spec.falsepositives),
+            author=spec.author,
         ),
         match=_match_predicate(spec.match, path),
         group_by=tuple(spec.group_by),
@@ -136,15 +143,48 @@ def check_field_mappings() -> list[str]:
     ]
 
 
+def _rule_files(directory: Path) -> tuple[tuple[Path, str], ...]:
+    """Every rule file with the path recorded on findings, own rules first."""
+    own = [(file, f"sigma/{file.name}") for file in sorted((directory / "sigma").glob("*.yml"))]
+    vendor = [
+        (file, f"{VENDOR_DIR}/{file.relative_to(directory / VENDOR_DIR).as_posix()}")
+        for file in sorted((directory / VENDOR_DIR).rglob("*.yml"))
+    ]
+    return tuple(own + vendor)
+
+
+def _source_urls(directory: Path) -> dict[str, str]:
+    """`MANIFEST.json` in the vendor directory says where each community rule came from."""
+    manifest = directory / VENDOR_DIR / MANIFEST
+    if not manifest.is_file():
+        return {}
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    base = str(data.get("rule_base_url", "")).rstrip("/")
+    return {f"{VENDOR_DIR}/{name}": f"{base}/{upstream}" for name, upstream in data.get("files", {}).items()}
+
+
 def load_rules(directory: Path = RULES_DIR) -> RuleSet:
+    """Compile every shipped rule. Cached per directory contents: a rule set is loaded once per process."""
+    files = _rule_files(directory)
+    fingerprint = tuple((path, path.stat().st_mtime_ns, path.stat().st_size) for path, _ in files)
+    return _compile_rules(directory, fingerprint)
+
+
+@lru_cache(maxsize=4)
+def _compile_rules(directory: Path, _fingerprint: tuple[tuple[Path, int, int], ...]) -> RuleSet:
     problems = check_field_mappings()
     single_event: list[SingleEventRule] = []
     threshold: list[ThresholdRule] = []
-    for file in sorted((directory / "sigma").glob("*.yml")):
+    sources = _source_urls(directory)
+    for file, path in _rule_files(directory):
         try:
-            single_event.append(compile_sigma(file.read_text(encoding="utf-8"), path=f"sigma/{file.name}"))
+            rule = compile_sigma(file.read_text(encoding="utf-8"), path=path)
         except RuleLoadError as exc:
             problems.append(str(exc))
+            continue
+        if (source := sources.get(path)) is not None:
+            rule = replace(rule, meta=replace(rule.meta, source_url=source))
+        single_event.append(rule)
     for file in sorted((directory / "threshold").glob("*.yml")):
         try:
             threshold.append(compile_threshold(file.read_text(encoding="utf-8"), path=f"threshold/{file.name}"))

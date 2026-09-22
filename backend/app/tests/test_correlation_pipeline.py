@@ -91,6 +91,10 @@ async def test_each_story_becomes_one_incident(container: Container, seeded: See
         "whoami used to list privileges or groups",
         "net.exe lists the Domain Admins group",
         "Repeated connections from one host to the same external destination",
+        # SigmaHQ community rules on the same encoded PowerShell command line.
+        "PowerShell Base64 Encoded IEX Cmdlet",
+        "Suspicious Encoded PowerShell Command Line",
+        "Suspicious PowerShell Encoded Command Patterns",
     }
     assert windows.incident.severity == "Critical"
     assert {a["rule"] for a in windows.incident.assessment} == {
@@ -182,7 +186,7 @@ async def test_arrival_order_does_not_change_the_incidents(container: Container,
     incidents = _by_host(await _incidents(container, seeded))
     assert set(incidents) == {"web-01", "ws-fin-07"}
     assert incidents["web-01"].incident.finding_count == 7
-    assert incidents["ws-fin-07"].incident.finding_count == 5
+    assert incidents["ws-fin-07"].incident.finding_count == 8
     assert all(any(link.kind is LinkKind.EVENT for link in detail.links) for detail in incidents.values()), (
         "the successful logon still completes each story"
     )
@@ -193,7 +197,7 @@ async def test_sources_delivered_in_reverse_still_join(container: Container, see
     await _run(container, seeded, [stories["ocsf"], stories["windows_security"], stories["linux_auth"]])
     incidents = _by_host(await _incidents(container, seeded))
     assert set(incidents) == {"web-01", "ws-fin-07"}
-    assert incidents["ws-fin-07"].incident.finding_count == 5
+    assert incidents["ws-fin-07"].incident.finding_count == 8
 
 
 async def test_opening_and_correlating_are_audited_as_system(container: Container, seeded: Seeded) -> None:

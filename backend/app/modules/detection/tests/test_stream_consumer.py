@@ -24,6 +24,10 @@ WINDOWS_TITLES = {
     "PowerShell started with an encoded command",
     "whoami used to list privileges or groups",
     "net.exe lists the Domain Admins group",
+    # SigmaHQ community rules on the same encoded PowerShell command line.
+    "PowerShell Base64 Encoded IEX Cmdlet",
+    "Suspicious Encoded PowerShell Command Line",
+    "Suspicious PowerShell Encoded Command Patterns",
 }
 
 

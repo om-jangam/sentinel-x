@@ -154,14 +154,14 @@ def test_load_demo_runs_detection_and_correlation(
     output = capsys.readouterr()
     assert "SENTINELX_OPENSEARCH_URL is not set" in output.err, "no event store: say so, but still analyse"
     assert "detection and correlation ran in-process" in output.out
-    assert _count(cli_env, "findings") == 12
+    assert _count(cli_env, "findings") == 15
     assert _count(cli_env, "incidents") == 2
     assert _count(cli_env, "incident_events") == 22
 
     # Loading again adds nothing: the same records produce the same event_uids and findings.
     assert cli.main(["load-demo", "--keep-timestamps"]) == 0
     assert cli.main(["load-demo", "--keep-timestamps"]) == 0
-    assert _count(cli_env, "findings") == 24, "the original dates are a separate, second story"
+    assert _count(cli_env, "findings") == 30, "the original dates are a separate, second story"
     assert _count(cli_env, "incidents") == 4
 
 

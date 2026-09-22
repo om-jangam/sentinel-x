@@ -37,6 +37,19 @@ function workspace(me: Me, overrides: Record<string, unknown> = {}) {
 }
 
 describe("IncidentPage", () => {
+  it("names the author of a community rule and links to the original", async () => {
+    workspace(analystMe);
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("tab", { name: /findings/i }));
+
+    expect(await screen.findByText(/Rule by Florian Roth/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "original rule" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("github.com/SigmaHQ/sigma"),
+    );
+  });
+
   it("shows the summary, why it is critical, and the timeline in order", async () => {
     workspace(analystMe);
 

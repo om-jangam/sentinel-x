@@ -516,6 +516,7 @@ def compile_sigma(text: str, *, path: str) -> SingleEventRule:
             path=path,
             references=tuple(rule.references or ()),
             false_positives=tuple(rule.falsepositives or ()),
+            author=str(rule.author or "")[:255],
         ),
         logsource=mapping.name,
         predicate=AllOf((mapping.scope, matched)),

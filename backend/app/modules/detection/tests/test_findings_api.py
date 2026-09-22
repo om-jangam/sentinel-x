@@ -49,14 +49,26 @@ async def test_ingested_events_become_findings_that_cite_them(
         "PowerShell started with an encoded command",
         "whoami used to list privileges or groups",
         "net.exe lists the Domain Admins group",
+        # SigmaHQ community rules on the same encoded PowerShell command line.
+        "PowerShell Base64 Encoded IEX Cmdlet",
+        "Suspicious Encoded PowerShell Command Line",
+        "Suspicious PowerShell Encoded Command Patterns",
     }
+
+    # Every finding names who wrote the rule; community ones link to the published rule (DRL-1.1).
+    for item in items:
+        assert item["rule_author"]
+        if item["rule_author"] == "Sentinel-X":
+            assert item["rule_source"] is None
+        else:
+            assert item["rule_source"].startswith("https://github.com/SigmaHQ/sigma/blob/")
     for item in items:
         assert set(item["evidence"]) <= stored_uids, "findings cite only events that were ingested"
         assert item["evidence_count"] == len(item["evidence"])
     last_seen = [item["last_seen"] for item in items]
     assert last_seen == sorted(last_seen, reverse=True)
 
-    powershell = next(i for i in items if i["rule_title"].startswith("PowerShell"))
+    powershell = next(i for i in items if i["rule_title"] == "PowerShell started with an encoded command")
     assert powershell["severity"] == "High"
     assert powershell["techniques"] == ["T1027", "T1059.001"]
     assert powershell["entities"]["process.name"] == ["powershell.exe"]
@@ -72,16 +84,17 @@ async def test_findings_filter_and_paginate(client: httpx.AsyncClient, admin_tok
         assert response.status_code == 200, response.text
         return [item["rule_title"] for item in response.json()["items"]]
 
-    assert await titles("severity_min=4") == ["PowerShell started with an encoded command"]
+    assert "PowerShell started with an encoded command" in await titles("severity_min=4")
+    assert await titles("severity_min=5") == []
     assert await titles("technique=t1069.002") == ["net.exe lists the Domain Admins group"]
     assert await titles("time_from=2030-01-01T00:00:00Z") == []
 
-    first = (await client.get("/api/v1/findings?limit=3", headers=bearer(admin_token))).json()
+    first = (await client.get("/api/v1/findings?limit=4", headers=bearer(admin_token))).json()
     second = (
-        await client.get(f"/api/v1/findings?limit=3&cursor={first['next_cursor']}", headers=bearer(admin_token))
+        await client.get(f"/api/v1/findings?limit=4&cursor={first['next_cursor']}", headers=bearer(admin_token))
     ).json()
     ids = [item["id"] for item in first["items"] + second["items"]]
-    assert len(ids) == len(set(ids)) == 4
+    assert len(ids) == len(set(ids)) == 7, "two pages, no repeats"
     assert second["next_cursor"] is None
 
 
@@ -100,7 +113,13 @@ async def test_bad_queries_and_missing_findings(client: httpx.AsyncClient, admin
 
 async def test_rules_catalogue(client: httpx.AsyncClient, admin_token: str) -> None:
     rules = (await client.get("/api/v1/detection/rules", headers=bearer(admin_token))).json()
-    assert len(rules) == 7
+    assert len(rules) >= 150, "own rules plus the SigmaHQ pack"
+    community = [rule for rule in rules if rule["path"].startswith("sigmahq/")]
+    assert community, "the community pack is served"
+    for rule in community:
+        assert rule["author"], f"{rule['path']} must name its author (Detection Rule License)"
+        assert rule["source_url"].startswith("https://github.com/SigmaHQ/sigma/blob/")
+    assert all(rule["author"] == "Sentinel-X" for rule in rules if not rule["path"].startswith("sigmahq/"))
     spray = next(rule for rule in rules if rule["type"] == "threshold" and "many accounts" in rule["title"])
     assert spray["threshold"] == {
         "group_by": ["src_endpoint.ip"],

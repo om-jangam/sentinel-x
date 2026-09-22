@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 
+from app.modules.detection.domain.rules import RuleType
 from app.modules.detection.infrastructure.ocsf_paths import is_known_path
 from app.modules.detection.infrastructure.rule_loader import (
     RULES_DIR,
@@ -192,11 +194,36 @@ def test_bad_threshold_rules_are_refused(change: tuple[str, str], reason: str) -
 def test_every_shipped_rule_loads_and_every_mapping_points_at_a_real_field() -> None:
     assert check_field_mappings() == []
     rules = load_rules()
-    assert len(rules.single_event) == 4
+    own = [rule for rule in rules.all() if not rule.meta.path.startswith("sigmahq/")]
+    community = [rule for rule in rules.all() if rule.meta.path.startswith("sigmahq/")]
+    assert len([r for r in own if r.type is RuleType.SIGMA]) == 4
     assert len(rules.threshold) == 3
+    assert len(community) >= 150, "the SigmaHQ pack is shipped"
     for rule in rules.all():
         assert rule.meta.attack.techniques, f"{rule.meta.path} names no ATT&CK technique"
         assert rule.meta.description, f"{rule.meta.path} has no description"
+
+
+def test_community_rules_keep_their_author_and_a_link_to_the_original() -> None:
+    """The Detection Rule License requires every match to name the rule's author (rules/sigmahq/NOTICE.md)."""
+    rules = load_rules()
+    manifest = json.loads((RULES_DIR / "sigmahq" / "MANIFEST.json").read_text(encoding="utf-8"))
+    for rule in rules.all():
+        if not rule.meta.path.startswith("sigmahq/"):
+            assert rule.meta.author == "Sentinel-X", f"{rule.meta.path} is not attributed"
+            assert rule.meta.source_url is None
+            continue
+        upstream = rule.meta.path.removeprefix("sigmahq/")
+        assert upstream in manifest["files"], f"{upstream} is not in MANIFEST.json"
+        assert rule.meta.author, f"{rule.meta.path} lost its author"
+        assert rule.meta.source_url == f"{manifest['rule_base_url']}/{manifest['files'][upstream]}"
+
+
+def test_every_vendored_file_is_listed_in_the_manifest() -> None:
+    manifest = json.loads((RULES_DIR / "sigmahq" / "MANIFEST.json").read_text(encoding="utf-8"))
+    on_disk = {path.relative_to(RULES_DIR / "sigmahq").as_posix() for path in (RULES_DIR / "sigmahq").rglob("*.yml")}
+    assert on_disk == set(manifest["files"])
+    assert manifest["license"].startswith("Detection Rule License")
 
 
 def test_one_bad_file_stops_loading_with_every_problem_listed(tmp_path: Path) -> None:

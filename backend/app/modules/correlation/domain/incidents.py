@@ -54,6 +54,10 @@ class FindingSignal:
     evidence: tuple[str, ...]
     first_seen: datetime
     last_seen: datetime
+    # Who wrote the rule, and where it is published: community rules are licensed on the condition that
+    # every match names their author, and an incident link is such a match.
+    rule_author: str = ""
+    rule_source: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

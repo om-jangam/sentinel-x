@@ -906,6 +906,10 @@ export interface components {
             rule_type: string;
             /** Rule Version */
             rule_version: string;
+            /** Rule Author */
+            rule_author: string;
+            /** Rule Source */
+            rule_source: string | null;
             /** Severity Id */
             severity_id: number;
             /** Severity */
@@ -1559,6 +1563,10 @@ export interface components {
             version: string;
             /** Path */
             path: string;
+            /** Author */
+            author: string;
+            /** Source Url */
+            source_url: string | null;
             /** References */
             references: string[];
             /** False Positives */

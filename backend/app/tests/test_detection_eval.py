@@ -69,7 +69,7 @@ async def test_replay_uses_the_real_rules_and_counts_what_it_could_not_parse() -
     assert result.accepted == 2, "the WMI log is not a parsed source; 4776 is not a supported Security event"
     assert result.rejected == {"unsupported Windows Security event 4776": 1}
     assert result.detected
-    assert {f.rule_title for f in result.matching} == {"PowerShell started with an encoded command"}
+    assert "PowerShell started with an encoded command" in {f.rule_title for f in result.matching}
     assert {f.rule_title for f in result.other} == {"whoami used to list privileges or groups"}
     assert result.unread_files == ["classic.log: no Windows event XML (another format, e.g. Splunk's classic text)"]
 

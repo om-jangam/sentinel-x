@@ -153,6 +153,8 @@ class DetectionService:
             rule_title=meta.title,
             rule_type=rule.type,
             rule_version=meta.version,
+            rule_author=meta.author,
+            rule_source=meta.source_url,
             severity_id=meta.severity_id,
             techniques=meta.attack.techniques,
             tactics=meta.attack.tactics,

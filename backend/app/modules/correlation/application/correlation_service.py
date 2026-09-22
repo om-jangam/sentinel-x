@@ -263,6 +263,9 @@ class CorrelationService:
             detail={
                 "rule_id": finding.rule_id,
                 "rule_title": finding.rule_title,
+                # Community rules are licensed on the condition that matches name their author.
+                "rule_author": finding.rule_author,
+                "rule_source": finding.rule_source,
                 "severity_id": finding.severity_id,
                 "techniques": list(finding.techniques),
                 "tactics": list(finding.tactics),

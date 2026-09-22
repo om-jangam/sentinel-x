@@ -213,6 +213,7 @@ function LinksTable({
               <TD className="min-w-64">
                 <p className="font-medium">{title}</p>
                 <p className="text-xs text-muted">{link.reason}</p>
+                <RuleAuthor detail={link.detail} />
               </TD>
               <TD className="font-mono text-xs">{link.matched.map((m) => m.key).join(", ") || "—"}</TD>
               <TD className="text-right tabular-nums">{link.evidence.length}</TD>
@@ -221,6 +222,32 @@ function LinksTable({
         })}
       </TBody>
     </Table>
+  );
+}
+
+/** Community rules are licensed on the condition that every match names their author (DRL-1.1). */
+function RuleAuthor({ detail }: { detail: Record<string, unknown> }) {
+  const author = typeof detail.rule_author === "string" ? detail.rule_author : "";
+  const source = typeof detail.rule_source === "string" ? detail.rule_source : null;
+  if (!author || author === "Sentinel-X") return null;
+  return (
+    <p className="mt-0.5 text-xs text-muted">
+      Rule by {author}
+      {source ? (
+        <>
+          {" · "}
+          <a
+            href={source}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-primary hover:underline"
+            onClick={(event) => event.stopPropagation()}
+          >
+            original rule
+          </a>
+        </>
+      ) : null}
+    </p>
   );
 }
 

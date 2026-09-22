@@ -49,7 +49,16 @@ missed, and false positives on the benign background events.
 This mirrors SigmaHQ's own quality process, which tests rules against recorded EVTX logs in CI
 ([SigmaHQ QA pipeline](https://blog.sigmahq.io/sigmahq-quality-assurance-pipeline-d99eaba1760e)).
 
-### 3. Ship a curated SigmaHQ rule set, with attribution
+### 3. Ship a curated SigmaHQ rule set, with attribution ✅ built
+*Done:* 162 rules from SigmaHQ's `sigma_core.zip` (release `r2026-07-01`) under
+[`rules/sigmahq/`](../backend/app/modules/detection/rules/sigmahq/NOTICE.md), unmodified, with a manifest
+naming each rule's upstream path. Findings and the rules API carry `rule_author` and `rule_source`, as the
+Detection Rule License requires. Priority detection went from 2 of 5 to **3 of 5**
+([before and after](evaluation/README.md#before-and-after-the-sigmahq-pack)).
+*Selection rule (reproducible):* every core rule that this engine can evaluate **and** is tagged with a
+technique the evaluation targets — the Red Canary top ten that Windows logs can show, plus every technique
+a Sentinel-X rule claims. 914 of the 1,377 core rules load here; the technique filter narrows that to 162.
+
 Import selected SigmaHQ rules that the normaliser can evaluate. They are under the
 [Detection Rule License 1.1](https://github.com/SigmaHQ/Detection-Rule-License/blob/main/LICENSE.Detection.Rules.md):
 findings from a licensed rule must name the rule's author, and redistributed rules must keep the author and

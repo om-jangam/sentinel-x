@@ -2948,6 +2948,21 @@
             "type": "string",
             "title": "Rule Version"
           },
+          "rule_author": {
+            "type": "string",
+            "title": "Rule Author"
+          },
+          "rule_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Source"
+          },
           "severity_id": {
             "type": "integer",
             "title": "Severity Id"
@@ -3014,6 +3029,8 @@
           "rule_title",
           "rule_type",
           "rule_version",
+          "rule_author",
+          "rule_source",
           "severity_id",
           "severity",
           "techniques",
@@ -4478,6 +4495,21 @@
             "type": "string",
             "title": "Path"
           },
+          "author": {
+            "type": "string",
+            "title": "Author"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
           "references": {
             "items": {
               "type": "string"
@@ -4526,6 +4558,8 @@
           "tactics",
           "version",
           "path",
+          "author",
+          "source_url",
           "references",
           "false_positives"
         ],

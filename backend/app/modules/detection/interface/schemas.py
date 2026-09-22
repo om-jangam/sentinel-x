@@ -16,6 +16,8 @@ class FindingRead(BaseModel):
     rule_title: str
     rule_type: str
     rule_version: str
+    rule_author: str
+    rule_source: str | None
     severity_id: int
     severity: str
     techniques: list[str]
@@ -35,6 +37,8 @@ class FindingRead(BaseModel):
             rule_title=finding.rule_title,
             rule_type=finding.rule_type.value,
             rule_version=finding.rule_version,
+            rule_author=finding.rule_author,
+            rule_source=finding.rule_source,
             severity_id=finding.severity_id,
             severity=finding.severity,
             techniques=list(finding.techniques),
@@ -78,6 +82,8 @@ class RuleRead(BaseModel):
     tactics: list[str]
     version: str
     path: str
+    author: str
+    source_url: str | None
     references: list[str]
     false_positives: list[str]
     logsource: str | None = None
@@ -97,6 +103,8 @@ class RuleRead(BaseModel):
             "tactics": list(meta.attack.tactics),
             "version": meta.version,
             "path": meta.path,
+            "author": meta.author,
+            "source_url": meta.source_url,
             "references": list(meta.references),
             "false_positives": list(meta.false_positives),
         }

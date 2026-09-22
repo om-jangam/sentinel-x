@@ -88,7 +88,11 @@ export const incidentDetail: IncidentDetail = {
       event_uid: null,
       evidence: ["e-ps"],
       matched: [{ key: "host:ws-fin-07", incident_events: ["e-fail-1"], new_events: ["e-ps"] }],
-      detail: { rule_title: "PowerShell started with an encoded command" },
+      detail: {
+        rule_title: "PowerShell started with an encoded command",
+        rule_author: "Florian Roth (Nextron Systems)",
+        rule_source: "https://github.com/SigmaHQ/sigma/blob/r2026-07-01/rules/windows/x.yml",
+      },
       first_seen: "2026-09-15T09:42:37Z",
       last_seen: "2026-09-15T09:42:37Z",
       created_at: times.created_at,

@@ -22,6 +22,7 @@ from app.modules.detection.tests.conftest import (
     sample_documents,
 )
 
+# What the two sample stories fire, own rules and the SigmaHQ pack together.
 EXPECTED = {
     "Authentication failures across many accounts from one source": 1,
     "Burst of authentication failures for one account from one source": 1,
@@ -30,6 +31,10 @@ EXPECTED = {
     "net.exe lists the Domain Admins group": 1,
     "Repeated connections from one host to the same external destination": 1,
     "SSH authentication attempt for a user that does not exist": 6,
+    # SigmaHQ community rules on the same encoded PowerShell command line.
+    "PowerShell Base64 Encoded IEX Cmdlet": 1,
+    "Suspicious Encoded PowerShell Command Line": 1,
+    "Suspicious PowerShell Encoded Command Patterns": 1,
 }
 
 
@@ -64,7 +69,12 @@ async def test_detection_runs_cleanly_with_info_logging_enabled(caplog: pytest.L
     findings = MemoryFindings()
     await service(findings).handle(bus_event(sample_documents("windows_security.jsonl", "windows_security")))
     assert any(record.getMessage() == "findings created" for record in caplog.records)
-    assert len(findings.all) == 4
+    windows_titles = {
+        title
+        for title in EXPECTED
+        if "SSH" not in title and "many accounts" not in title and "Repeated connections" not in title
+    }
+    assert {finding.rule_title for finding in findings.all} == windows_titles
 
 
 async def test_redelivered_batches_create_no_duplicate_findings() -> None:

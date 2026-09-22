@@ -77,6 +77,10 @@ class RuleMeta:
     path: str
     references: tuple[str, ...] = ()
     false_positives: tuple[str, ...] = ()
+    # Who wrote the rule, and where it came from. Community rules are licensed on the condition that
+    # matches keep naming their author (Detection Rule License 1.1), so findings carry both.
+    author: str = ""
+    source_url: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

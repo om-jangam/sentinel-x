@@ -25,6 +25,8 @@ class FindingModel(UUIDPrimaryKeyMixin, Base):
     rule_title: Mapped[str] = mapped_column(String(255))
     rule_type: Mapped[str] = mapped_column(String(16))
     rule_version: Mapped[str] = mapped_column(String(64))
+    rule_author: Mapped[str] = mapped_column(String(255), default="")
+    rule_source: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     severity_id: Mapped[int] = mapped_column(SmallInteger)
     tactics: Mapped[list[str]] = mapped_column(JsonType)
     entities: Mapped[dict[str, Any]] = mapped_column(JsonType)

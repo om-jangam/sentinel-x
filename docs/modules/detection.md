@@ -125,6 +125,22 @@ or late data behaves the same as live data.
 `sentinelx_detection_findings_total{rule_type,outcome}` (`created` or `duplicate`) and
 `sentinelx_detection_batch_seconds`.
 
+## Community rules (SigmaHQ)
+
+Besides its own 7 rules, Sentinel-X ships 162 rules from [SigmaHQ](https://github.com/SigmaHQ/sigma)'s
+core package, release `r2026-07-01`, unmodified, under `rules/sigmahq/` with a manifest and
+[NOTICE](../../backend/app/modules/detection/rules/sigmahq/NOTICE.md). They are licensed under the
+Detection Rule License 1.1, which requires every match to name the rule's author, so:
+
+- `RuleMeta` carries `author` and `source_url`; `GET /api/v1/detection/rules` returns both;
+- every finding stores `rule_author` and `rule_source` as it stores `rule_version`, so an alert stays
+  attributed to the text that fired even after the pack is updated;
+- the console shows the author and links to the published rule.
+
+Which rules: every core rule this engine can evaluate that is tagged with a technique the evaluation
+targets (see [docs/12](../12-improvement-research.md#3-ship-a-curated-sigmahq-rule-set-with-attribution)).
+Rules load once per process and are cached by file fingerprint, so the 169 rules cost ~0.4 s at start-up.
+
 ## Measured on public recordings
 
 `sentinelx evaluate-detection` replays attack recordings from

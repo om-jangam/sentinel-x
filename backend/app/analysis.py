@@ -35,6 +35,8 @@ def signal(finding: Finding) -> FindingSignal:
         evidence=finding.evidence,
         first_seen=finding.first_seen,
         last_seen=finding.last_seen,
+        rule_author=finding.rule_author,
+        rule_source=finding.rule_source,
     )
 
 

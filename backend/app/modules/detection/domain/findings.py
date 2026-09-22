@@ -35,6 +35,10 @@ class Finding:
     last_seen: datetime
     dedupe_key: str
     created_at: datetime
+    # Who wrote the rule and where it is published. Community rules are licensed on the condition that
+    # every match names their author (Detection Rule License 1.1); own rules carry "Sentinel-X".
+    rule_author: str = ""
+    rule_source: str | None = None
 
     def __post_init__(self) -> None:
         if not self.evidence:

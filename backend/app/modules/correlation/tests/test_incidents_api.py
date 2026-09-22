@@ -69,7 +69,7 @@ async def test_incidents_list_and_detail(client: httpx.AsyncClient, admin_token:
     detail = await client.get(f"/api/v1/incidents/{items[0]['id']}", headers=bearer(admin_token))
     assert detail.status_code == 200, detail.text
     body = detail.json()
-    assert body["finding_count"] == 5
+    assert body["finding_count"] == 8
     assert {link["rule"] for link in body["links"]} == {"opened", "shared-entity", "auth-success-after-failures"}
     for link in body["links"]:
         assert link["evidence"], "every link cites events"
