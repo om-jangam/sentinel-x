@@ -25,7 +25,14 @@ and [ADR-0010](../adr/ADR-0010-auth-stack.md).
    whole family** and writes `auth.refresh_token_reuse_detected` to the audit log.
 4. **Logout** revokes the refresh family and blocklists the access token's `jti` until it expires
    (Redis in production). It works with only the refresh cookie, so expired sessions can still sign out.
-5. `GET /.well-known/jwks.json` publishes verification keys. Rotation: `sentinelx generate-keys --force`
+5. **Change your own password** `POST /api/v1/auth/password` `{current_password, new_password}` (any
+   signed-in user; the console's **Change password** link). It needs the current password and is rate
+   limited per account like login. The new password must pass the same policy as any other, and must
+   differ from the current one. On success it revokes every refresh token the user has, blocklists the
+   calling access token, and returns a fresh session for this browser. Other browsers are signed out at
+   their next refresh. Failures (`auth.password_change_failed`) and success (`auth.password_changed`,
+   with the number of sessions revoked) are audited. Neither password is ever logged.
+6. `GET /.well-known/jwks.json` publishes verification keys. Rotation: `sentinelx generate-keys --force`
    keeps the previous public key for `SENTINELX_JWT_PREVIOUS_PUBLIC_KEY_FILE`.
 
 ## Authorisation
@@ -53,6 +60,7 @@ and [ADR-0010](../adr/ADR-0010-auth-stack.md).
 | Method & path | Permission |
 |---------------|-----------|
 | `POST /api/v1/auth/login` · `/refresh` · `/logout` | — |
+| `POST /api/v1/auth/password` (your own password) | authenticated |
 | `GET /api/v1/me` | authenticated |
 | `GET /api/v1/users` (cursor-paginated) · `GET /api/v1/users/{id}` | `user:read` |
 | `POST /api/v1/users` · `PATCH /api/v1/users/{id}` · `DELETE /api/v1/users/{id}` (deactivate) · `PUT /api/v1/users/{id}/roles` | `user:manage` |
@@ -65,6 +73,7 @@ operation is idempotent replacement rather than appending.
 ## Audit actions
 
 `auth.login_succeeded`, `auth.login_failed`, `auth.logout`, `auth.refresh_token_reuse_detected`,
+`auth.password_changed`, `auth.password_change_failed`,
 `user.created`, `user.updated` (records `password_changed`, never the password), `user.roles_changed`,
 `role.created`, `role.updated`, `role.system_synced`, `org.created`.
 

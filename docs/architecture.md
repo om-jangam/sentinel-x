@@ -108,7 +108,7 @@ reference events by `sx.event_uid`.
 
 | Area | Control |
 |------|---------|
-| Users | Argon2id passwords; RS256 access JWTs (10 min) with JWKS and key rotation; opaque refresh tokens in an HttpOnly, Secure, SameSite=Strict cookie, rotated on use, whole family revoked on reuse; login rate limits per account and IP; constant-time failures |
+| Users | Argon2id passwords; RS256 access JWTs (10 min) with JWKS and key rotation; opaque refresh tokens in an HttpOnly, Secure, SameSite=Strict cookie, rotated on use, whole family revoked on reuse; login rate limits per account and IP; constant-time failures; self-service password change (current password required, rate limited, revokes every other session, audited) |
 | Authorisation | `resource:action` permissions resolved from the database on every request; checked at the route and again in the use case; guards stop the last admin being removed and machine principals gaining RBAC-management power |
 | Sources | Per-source `sxi_` tokens: 256-bit random, stored as SHA-256 only, shown once, rotatable, disableable, every change audited |
 | Input | Strict Pydantic schemas (unknown fields rejected on management APIs); OCSF validation with length caps; 5 MiB / 1,000-event caps (nginx allows 6 MiB on the ingest route only); constrained search, no query pass-through |

@@ -28,6 +28,7 @@ from app.modules.identity.infrastructure.unit_of_work import SqlIdentityUnitOfWo
 from app.modules.identity.interface.schemas import (
     LoginRequest,
     MeResponse,
+    PasswordChange,
     PermissionRead,
     RoleAssignment,
     RoleCreate,
@@ -151,6 +152,29 @@ async def refresh(
 ) -> TokenResponse:
     token = request.cookies.get(container.settings.refresh_cookie_name)
     session = await service.refresh(refresh_token=token, client=client)
+    _set_refresh_cookie(response, container, session)
+    return _token_response(session)
+
+
+@auth_router.post(
+    "/password",
+    response_model=TokenResponse,
+    summary="Change your own password (signs out every other session; audited)",
+)
+async def change_password(
+    body: PasswordChange,
+    response: Response,
+    principal: Principal = Depends(get_principal),
+    client: ClientInfo = Depends(get_client_info),
+    service: AuthService = Depends(get_auth_service),
+    container: Container = Depends(get_container),
+) -> TokenResponse:
+    session = await service.change_own_password(
+        principal,
+        current_password=body.current_password.get_secret_value(),
+        new_password=body.new_password.get_secret_value(),
+        client=client,
+    )
     _set_refresh_cookie(response, container, session)
     return _token_response(session)
 

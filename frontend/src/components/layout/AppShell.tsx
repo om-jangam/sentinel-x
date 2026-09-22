@@ -1,6 +1,16 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, LogOut, Menu, ScrollText, ShieldCheck, Siren, Users, X } from "lucide-react";
+import {
+  KeyRound,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  ScrollText,
+  ShieldCheck,
+  Siren,
+  Users,
+  X,
+} from "lucide-react";
 import { type ComponentType, useEffect, useState } from "react";
 
 import { useMe } from "@/api/hooks";
@@ -121,12 +131,15 @@ export function AppShell() {
         <div className="border-t border-border p-3">
           <p className="truncate px-2 text-sm font-medium">{me?.full_name}</p>
           <p className="truncate px-2 text-xs text-muted">{me?.email}</p>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-2 w-full justify-start"
-            onClick={() => void onLogout()}
+          <Link
+            to="/account"
+            onClick={() => setNavOpen(false)}
+            className="mt-2 flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted hover:bg-surface-raised hover:text-foreground [&_svg]:size-4"
+            activeProps={{ className: "bg-surface-raised text-foreground" }}
           >
+            <KeyRound /> Change password
+          </Link>
+          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => void onLogout()}>
             <LogOut /> Sign out
           </Button>
         </div>

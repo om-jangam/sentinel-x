@@ -22,6 +22,11 @@ class LoginRequest(_Request):
     password: SecretStr = Field(min_length=1, max_length=128)
 
 
+class PasswordChange(_Request):
+    current_password: SecretStr = Field(min_length=1, max_length=128)
+    new_password: SecretStr = Field(max_length=128)
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: Literal["bearer"] = "bearer"  # noqa: S105 — OAuth token type, not a secret

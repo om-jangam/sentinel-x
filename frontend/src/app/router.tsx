@@ -10,6 +10,7 @@ import {
 import { Toaster } from "sonner";
 
 import { AppShell } from "@/components/layout/AppShell";
+import { AccountPage } from "@/features/account/AccountPage";
 import { AuditPage } from "@/features/admin/AuditPage";
 import { RolesPage } from "@/features/admin/RolesPage";
 import { UsersPage } from "@/features/admin/UsersPage";
@@ -89,6 +90,11 @@ const incidentRoute = createRoute({
     return <IncidentPage key={incidentId} incidentId={incidentId} />;
   },
 });
+const accountRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/account",
+  component: AccountPage,
+});
 const auditRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/admin/audit",
@@ -97,7 +103,15 @@ const auditRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([dashboardRoute, incidentsRoute, incidentRoute, usersRoute, rolesRoute, auditRoute]),
+  appRoute.addChildren([
+    dashboardRoute,
+    incidentsRoute,
+    incidentRoute,
+    usersRoute,
+    rolesRoute,
+    auditRoute,
+    accountRoute,
+  ]),
 ]);
 
 export const router = createRouter({

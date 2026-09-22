@@ -10,7 +10,7 @@ from uuid import UUID
 
 from app.core.audit.port import AuditEvent
 from app.core.clock import Clock, utcnow
-from app.core.errors import AuthenticationError, RateLimitedError
+from app.core.errors import AuthenticationError, RateLimitedError, ValidationFailedError
 from app.core.ids import uuid7
 from app.core.observability.metrics import AUTH_EVENTS
 from app.core.security.blocklist import TokenBlocklist
@@ -24,7 +24,7 @@ from app.core.security.tokens import (
     hash_opaque_token,
 )
 from app.modules.identity.domain.entities import RefreshToken, User
-from app.modules.identity.domain.policies import normalize_email
+from app.modules.identity.domain.policies import normalize_email, validate_password
 from app.modules.identity.domain.ports import IdentityUnitOfWork
 
 logger = logging.getLogger(__name__)
@@ -192,6 +192,54 @@ class AuthService:
                 )
             )
         await self._uow.commit()
+
+    # -------------------------------------------------------- change password
+    async def change_own_password(
+        self, principal: Principal, *, current_password: str, new_password: str, client: ClientInfo
+    ) -> AuthSession:
+        """Self-service change. Signs out every session, then opens a fresh one for this browser.
+
+        The current password is required even with a valid access token, so a stolen token or an unattended
+        browser can't take the account over. Wrong guesses share the login rate limit's budget per account.
+        """
+        user = await self._uow.users.get(principal.org_id, principal.user_id)
+        if user is None or not user.is_active:
+            raise AuthenticationError("Account is inactive")
+        decision = await self._rate_limiter.hit(
+            f"password:account:{user.id}",
+            limit=self._policy.login_rate_limit,
+            window_seconds=self._policy.login_rate_window_seconds,
+        )
+        if not decision.allowed:
+            raise RateLimitedError(decision.retry_after_seconds)
+
+        valid, _ = self._hasher.verify(current_password, user.hashed_password)
+        if not valid:
+            await self._audit_user(user, "auth.password_change_failed", client, reason="invalid_current_password")
+            await self._uow.commit()
+            # 422, not 401: a wrong current password must not look like an expired session to the console.
+            raise ValidationFailedError(
+                "Current password is incorrect",
+                errors=[{"loc": ["current_password"], "msg": "is incorrect", "type": "invalid"}],
+            )
+        if new_password == current_password:
+            raise ValidationFailedError(
+                "Choose a new password",
+                errors=[{"loc": ["new_password"], "msg": "must differ from the current password", "type": "same"}],
+            )
+        validate_password(new_password, email=user.email)
+
+        now = self._clock()
+        user.hashed_password = self._hasher.hash(new_password)
+        await self._uow.users.update(user)
+        revoked = await self._uow.refresh_tokens.revoke_all_for_user(user.id, now)
+        if principal.token_jti and principal.token_expires_at:
+            await self._blocklist.block(principal.token_jti, principal.token_expires_at)
+        session = await self._open_session(user, family_id=uuid7(), now=now)
+        await self._audit_user(user, "auth.password_changed", client, sessions_revoked=revoked)
+        await self._uow.commit()
+        AUTH_EVENTS.labels(event="password_change", outcome="success").inc()
+        return session
 
     # --------------------------------------------------------------- helpers
     async def _open_session(self, user: User, *, family_id: UUID, now: datetime) -> AuthSession:

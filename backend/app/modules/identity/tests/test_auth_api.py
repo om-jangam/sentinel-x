@@ -169,3 +169,70 @@ async def test_auth_activity_keeps_the_audit_chain_valid(
         result = await verify_audit_chain(session, seeded.org.id)
     assert result.valid
     assert {"auth.login_succeeded", "auth.logout"} <= set(await _audit_actions(container, seeded))
+
+
+async def test_changing_your_password_signs_out_every_other_session(
+    client: httpx.AsyncClient, seeded: Seeded, container: Container
+) -> None:
+    # Two sessions: another browser (whose cookie we keep aside), then this one.
+    await login(client, seeded.admin_email, seeded.admin_password)
+    other_browser = _refresh_cookie(client)
+    token = await login(client, seeded.admin_email, seeded.admin_password)
+    new_password = "a-brand-new-passphrase-7"
+
+    changed = await client.post(
+        "/api/v1/auth/password",
+        headers=bearer(token),
+        json={"current_password": seeded.admin_password, "new_password": new_password},
+    )
+    assert changed.status_code == 200, changed.text
+    fresh = changed.json()["access_token"]
+    assert (await client.get("/api/v1/me", headers=bearer(fresh))).status_code == 200, "this browser stays in"
+    assert (await client.get("/api/v1/me", headers=bearer(token))).status_code == 401, "the old token is blocked"
+    assert (await client.post("/api/v1/auth/refresh")).status_code == 200, "the new refresh cookie works"
+
+    _present_refresh_cookie(client, other_browser)
+    assert (await client.post("/api/v1/auth/refresh")).status_code == 401, "the other browser is signed out"
+
+    old = await client.post("/api/v1/auth/login", json={"email": seeded.admin_email, "password": seeded.admin_password})
+    assert old.status_code == 401
+    assert await login(client, seeded.admin_email, new_password)
+    assert "auth.password_changed" in await _audit_actions(container, seeded)
+
+
+async def test_a_password_change_needs_the_current_password_and_a_good_new_one(
+    client: httpx.AsyncClient, seeded: Seeded, container: Container
+) -> None:
+    token = await login(client, seeded.admin_email, seeded.admin_password)
+
+    async def change(current: str, new: str) -> httpx.Response:
+        return await client.post(
+            "/api/v1/auth/password", headers=bearer(token), json={"current_password": current, "new_password": new}
+        )
+
+    wrong = await change("not-my-password-at-all", "a-brand-new-passphrase-7")
+    assert wrong.status_code == 422, "a wrong current password must not look like an expired session"
+    assert "incorrect" in wrong.text
+    assert seeded.admin_password not in wrong.text
+    assert (await change(seeded.admin_password, "short")).status_code == 422
+    assert (await change(seeded.admin_password, seeded.admin_password)).status_code == 422
+    assert "auth.password_change_failed" in await _audit_actions(container, seeded)
+    assert (
+        await client.post("/api/v1/auth/password", json={"current_password": "x", "new_password": "y"})
+    ).status_code == 401
+
+
+async def test_password_change_guesses_are_rate_limited(client: httpx.AsyncClient, seeded: Seeded) -> None:
+    token = await login(client, seeded.admin_email, seeded.admin_password)
+    statuses = [
+        (
+            await client.post(
+                "/api/v1/auth/password",
+                headers=bearer(token),
+                json={"current_password": f"guess-number-{i}", "new_password": "a-brand-new-passphrase-7"},
+            )
+        ).status_code
+        for i in range(7)
+    ]
+    assert statuses[:5] == [422] * 5
+    assert statuses[5:] == [429, 429], "the settings fixture allows 5 attempts per window"

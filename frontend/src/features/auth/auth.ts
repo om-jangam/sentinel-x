@@ -24,6 +24,19 @@ export async function login(queryClient: QueryClient, email: string, password: s
   session.accept(tokens);
 }
 
+/**
+ * Changes the signed-in user's own password. The server signs out every other session and issues this
+ * browser a fresh one, so the new access token replaces the current one.
+ */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const tokens = unwrap(
+    await api.POST("/api/v1/auth/password", {
+      body: { current_password: currentPassword, new_password: newPassword },
+    }),
+  );
+  session.accept(tokens);
+}
+
 export async function logout(queryClient: QueryClient): Promise<void> {
   try {
     await api.POST("/api/v1/auth/logout");
