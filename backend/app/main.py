@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import timedelta
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +18,7 @@ from app.analysis import build_analysis
 from app.core.config import Environment, Settings, get_settings
 from app.core.container import build_container
 from app.core.events.bus import InMemoryEventBus
-from app.core.events.topics import EVENTS_NORMALIZED
+from app.core.events.topics import EVENTS_NORMALIZED, INCIDENTS_CHANGED
 from app.core.http.problems import install_exception_handlers
 from app.core.observability.logging import configure_logging
 from app.core.observability.middleware import (
@@ -36,6 +37,10 @@ from app.modules.ingestion.application.indexing_service import IndexingService
 from app.modules.ingestion.infrastructure.opensearch_store import event_store_from_settings
 from app.modules.ingestion.interface import router as ingestion_api
 from app.modules.platform.interface import router as platform_api
+from app.modules.threatintel.application.enrichment_service import EnrichmentService
+from app.modules.threatintel.infrastructure.providers import providers_from_settings
+from app.modules.threatintel.infrastructure.repositories import sql_uow_factory as intel_uow_factory
+from app.modules.threatintel.interface import router as intel_api
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +56,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # Rules are code: a rule that can't load stops start-up rather than silently never firing.
     detection_rules = load_rules()
+    intel_providers = providers_from_settings(settings)
 
     # Without Redis there is no worker to consume the bus, so the API indexes, detects and correlates in-process.
     if isinstance(container.event_bus, InMemoryEventBus):
@@ -61,8 +67,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             container.database,
             RedisWindowStore(container.redis) if container.redis is not None else InMemoryWindowStore(),
             lookup=None if event_store is None else event_store.get_many,
+            publish=container.event_bus.publish,
         )
         container.event_bus.subscribe(EVENTS_NORMALIZED, detection.handle)
+        if intel_providers:
+            enrichment = EnrichmentService(
+                intel_providers,
+                uow_factory=intel_uow_factory(container.database),
+                cache_ttl=timedelta(hours=settings.ti_cache_hours),
+            )
+            container.event_bus.subscribe(INCIDENTS_CHANGED, enrichment.handle)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -75,6 +89,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
         if event_store is not None:
             await event_store.aclose()
+        for provider in intel_providers:
+            await provider.aclose()
         await container.aclose()
 
     docs = settings.expose_api_docs
@@ -93,6 +109,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.container = container
     app.state.event_store = event_store
     app.state.detection_rules = detection_rules
+    app.state.intel_providers = intel_providers
     install_exception_handlers(app)
 
     # Starlette runs the last-added middleware outermost.
@@ -112,6 +129,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         *ingestion_api.routers,
         *detection_api.routers,
         *correlation_api.routers,
+        *intel_api.routers,
         *platform_api.routers,
     ):
         app.include_router(router)

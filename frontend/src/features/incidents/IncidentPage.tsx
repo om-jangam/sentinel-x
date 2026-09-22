@@ -12,9 +12,11 @@ import {
   useIncidentGraph,
   useIncidentNotes,
   useIncidentTimeline,
+  useIntel,
+  useIntelProviders,
   useMe,
 } from "@/api/hooks";
-import type { IncidentDetail, IncidentStatus, Resolution } from "@/api/types";
+import type { IncidentDetail, IncidentStatus, IntelResult, Resolution } from "@/api/types";
 import { RequirePermission } from "@/components/RequirePermission";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,16 +36,19 @@ import {
   statusTone,
 } from "./format";
 import { Inspector } from "./Inspector";
+import { verdictTone, worstVerdicts } from "./intel";
 import type { Selection } from "./selection";
+import { ThreatIntel } from "./ThreatIntel";
 import { Timeline } from "./Timeline";
 
-const TABS = ["timeline", "graph", "links", "entities", "notes"] as const;
+const TABS = ["timeline", "graph", "links", "entities", "intel", "notes"] as const;
 type Tab = (typeof TABS)[number];
 const TAB_LABELS: Record<Tab, string> = {
   timeline: "Timeline",
   graph: "Graph",
   links: "Findings & links",
   entities: "Entities",
+  intel: "Threat intel",
   notes: "Notes",
 };
 
@@ -217,12 +222,23 @@ function LinksTable({
   );
 }
 
+function IntelBadge({ result }: { result: IntelResult | undefined }) {
+  if (!result) return <span className="text-muted">—</span>;
+  return (
+    <Badge tone={verdictTone(result.verdict)}>
+      {result.verdict} ({result.provider})
+    </Badge>
+  );
+}
+
 function EntitiesTable({
   incident,
+  intel,
   selectedId,
   onSelect,
 }: {
   incident: IncidentDetail;
+  intel: Map<string, IntelResult>;
   selectedId: string | null;
   onSelect: (selection: Selection) => void;
 }) {
@@ -233,6 +249,7 @@ function EntitiesTable({
           <TH>Type</TH>
           <TH>Value</TH>
           <TH>Joins incidents</TH>
+          <TH>Threat intel</TH>
           <TH>Seen</TH>
           <TH className="text-right">Events</TH>
         </tr>
@@ -249,6 +266,9 @@ function EntitiesTable({
               <TD className="text-muted">{entity.type}</TD>
               <TD className="break-all font-mono text-xs">{entityValue(entity.key)}</TD>
               <TD>{entity.links ? "yes" : "context"}</TD>
+              <TD>
+                <IntelBadge result={intel.get(entity.key)} />
+              </TD>
               <TD className="whitespace-nowrap text-xs text-muted">{formatDateTime(entity.first_seen)}</TD>
               <TD className="text-right tabular-nums">{entity.events.length}</TD>
             </TR>
@@ -319,6 +339,9 @@ function Workspace({ incidentId }: { incidentId: string }) {
   const timeline = useIncidentTimeline(incidentId);
   const graph = useIncidentGraph(incidentId);
   const evidence = useIncidentEvidence(incidentId);
+  const canReadIntel = hasPermission(me, "intel:read");
+  const providers = useIntelProviders(canReadIntel);
+  const intel = useIntel(incident.data?.entities.map((entity) => entity.key) ?? [], canReadIntel);
   const [tab, setTab] = useState<Tab>("timeline");
   const [selection, setSelection] = useState<Selection | null>(null);
 
@@ -326,6 +349,7 @@ function Workspace({ incidentId }: { incidentId: string }) {
   if (incident.isError) return <p className="text-sm text-danger">{errorMessage(incident.error)}</p>;
   const detail = incident.data;
   const selectedId = selection?.id ?? null;
+  const flagged = worstVerdicts(intel.data?.results);
 
   return (
     <>
@@ -384,7 +408,12 @@ function Workspace({ incidentId }: { incidentId: string }) {
               graph.isError ? (
                 <p className="p-4 text-sm text-danger">{errorMessage(graph.error)}</p>
               ) : graph.data ? (
-                <EntityGraphView graph={graph.data} selectedId={selectedId} onSelect={setSelection} />
+                <EntityGraphView
+                  graph={graph.data}
+                  intel={flagged}
+                  selectedId={selectedId}
+                  onSelect={setSelection}
+                />
               ) : (
                 <p className="p-4 text-sm text-muted">Loading graph…</p>
               )
@@ -393,7 +422,27 @@ function Workspace({ incidentId }: { incidentId: string }) {
               <LinksTable incident={detail} selectedId={selectedId} onSelect={setSelection} />
             ) : null}
             {tab === "entities" ? (
-              <EntitiesTable incident={detail} selectedId={selectedId} onSelect={setSelection} />
+              <EntitiesTable
+                incident={detail}
+                intel={flagged}
+                selectedId={selectedId}
+                onSelect={setSelection}
+              />
+            ) : null}
+            {tab === "intel" ? (
+              canReadIntel ? (
+                <ThreatIntel
+                  providers={providers.data}
+                  results={intel.data?.results}
+                  error={providers.error ?? intel.error}
+                  entityEvents={new Map(detail.entities.map((entity) => [entity.key, entity.events]))}
+                  onSelect={setSelection}
+                />
+              ) : (
+                <p className="p-4 text-sm text-muted">
+                  Threat intelligence needs the <code className="font-mono">intel:read</code> permission.
+                </p>
+              )
             ) : null}
             {tab === "notes" ? <Notes incidentId={incidentId} /> : null}
           </div>

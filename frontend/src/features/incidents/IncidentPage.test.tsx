@@ -163,6 +163,69 @@ describe("IncidentPage", () => {
     expect(screen.queryByRole("button", { name: /Load stored event/ })).not.toBeInTheDocument();
   });
 
+  it("shows what each intel provider said, and flags the graph", async () => {
+    const intelMe = { ...analystMe, permissions: [...analystMe.permissions, "intel:read" as const] };
+    workspace(intelMe, {
+      "GET /api/v1/intel/providers": [
+        {
+          name: "local",
+          title: "Local indicator feed (demo.csv)",
+          kind: "local",
+          supports: ["ip"],
+          detail: {},
+        },
+      ],
+      "POST /api/v1/intel/lookup": {
+        results: [
+          {
+            indicator: "ip:198.51.100.23",
+            provider: "local",
+            status: "found",
+            verdict: "malicious",
+            confidence: 80,
+            summary: "Demo feed: RDP password guessing",
+            tags: ["rdp"],
+            related: [],
+            references: ["https://intel.example/198.51.100.23", "javascript:alert(1)"],
+            provider_first_seen: null,
+            provider_last_seen: null,
+            retrieved_at: "2026-09-15T10:00:00Z",
+            expires_at: "2026-09-15T11:00:00Z",
+            error: null,
+          },
+        ],
+        skipped: ["host:ws-fin-07"],
+      },
+    });
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("tab", { name: "Threat intel" }));
+    const section = await screen.findByRole("region", { name: "Intel for ip:198.51.100.23" });
+    expect(within(section).getByText("Demo feed: RDP password guessing")).toBeInTheDocument();
+    expect(within(section).getByRole("link", { name: /intel.example/ })).toHaveAttribute(
+      "rel",
+      "noopener noreferrer",
+    );
+    expect(within(section).queryByRole("link", { name: /javascript/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/never sent to a provider/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Graph" }));
+    expect(
+      screen.getByRole("button", { name: /ip 198.51.100.23, 6 events, malicious according to local/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("says so when no intel provider is configured", async () => {
+    const intelMe = { ...analystMe, permissions: [...analystMe.permissions, "intel:read" as const] };
+    workspace(intelMe, {
+      "GET /api/v1/intel/providers": [],
+      "POST /api/v1/intel/lookup": { results: [], skipped: [] },
+    });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("tab", { name: "Threat intel" }));
+    expect(await screen.findByText(/No threat-intelligence providers are configured/)).toBeInTheDocument();
+  });
+
   it("asks for access without incident:read", async () => {
     workspace(viewerMe);
     expect(await screen.findByText(/requires the/)).toBeInTheDocument();

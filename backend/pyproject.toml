@@ -141,6 +141,7 @@ modules = [
     "app.modules.ingestion",
     "app.modules.detection",
     "app.modules.correlation",
+    "app.modules.threatintel",
 ]
 # Tests share the composition-root fixtures; production code may not.
 ignore_imports = ["app.modules.*.tests.* -> app.conftest"]

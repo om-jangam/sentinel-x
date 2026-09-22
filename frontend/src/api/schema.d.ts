@@ -494,6 +494,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/intel/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The configured threat-intelligence providers (may be none) */
+        get: operations["list_providers_api_v1_intel_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/intel/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cached intel for indicators. Never calls a provider: enrichment runs in the background */
+        post: operations["lookup_api_v1_intel_lookup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -1092,6 +1126,71 @@ export interface components {
             /** Errors */
             errors: components["schemas"]["IngestErrorRead"][];
         };
+        /** IntelLookup */
+        IntelLookup: {
+            /**
+             * Indicators
+             * @description `ip:…`, `domain:…` or `hash:…` keys
+             */
+            indicators: string[];
+        };
+        /** IntelLookupResponse */
+        IntelLookupResponse: {
+            /** Results */
+            results: components["schemas"]["IntelResultRead"][];
+            /**
+             * Skipped
+             * @description Keys that aren't indicators Sentinel-X looks up (e.g. internal IPs)
+             */
+            skipped: string[];
+        };
+        /** IntelResultRead */
+        IntelResultRead: {
+            /**
+             * Indicator
+             * @description `type:value`, matching incident entity keys
+             */
+            indicator: string;
+            /** Provider */
+            provider: string;
+            /**
+             * Status
+             * @description `found`, `not_found` (asked, nothing known) or `error` (couldn't ask)
+             */
+            status: string;
+            /**
+             * Verdict
+             * @description The provider's own classification; Sentinel-X does not merge providers
+             */
+            verdict: string;
+            /** Confidence */
+            confidence: number | null;
+            /** Summary */
+            summary: string;
+            /** Tags */
+            tags: string[];
+            /** Related */
+            related: components["schemas"]["RelatedRead"][];
+            /** References */
+            references: string[];
+            /** Provider First Seen */
+            provider_first_seen: string | null;
+            /** Provider Last Seen */
+            provider_last_seen: string | null;
+            /**
+             * Retrieved At
+             * Format: date-time
+             * @description When the provider was asked
+             */
+            retrieved_at: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Error */
+            error: string | null;
+        };
         /** LoginRequest */
         LoginRequest: {
             /** Email */
@@ -1223,6 +1322,33 @@ export interface components {
             tracing_enabled: boolean;
             /** Jwt Signing Kid */
             jwt_signing_kid: string;
+        };
+        /** ProviderRead */
+        ProviderRead: {
+            /** Name */
+            name: string;
+            /** Title */
+            title: string;
+            /**
+             * Kind
+             * @description `local` (a file this deployment loads) or `external` (a third-party service)
+             */
+            kind: string;
+            /** Supports */
+            supports: string[];
+            /** Detail */
+            detail: {
+                [key: string]: unknown;
+            };
+        };
+        /** RelatedRead */
+        RelatedRead: {
+            /** Type */
+            type: string;
+            /** Value */
+            value: string;
+            /** Relation */
+            relation: string;
         };
         /**
          * Resolution
@@ -2619,6 +2745,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NoteRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_providers_api_v1_intel_providers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderRead"][];
+                };
+            };
+        };
+    };
+    lookup_api_v1_intel_lookup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntelLookup"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntelLookupResponse"];
                 };
             };
             /** @description Validation Error */

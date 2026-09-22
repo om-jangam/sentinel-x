@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -53,6 +53,9 @@ from app.modules.correlation.domain.ports import CorrelationUnitOfWork, Evidence
 
 logger = logging.getLogger(__name__)
 
+# Entities threat intelligence can say something about; hosts, users and internal addresses never leave.
+_INTEL_TYPES = frozenset({EntityType.IP, EntityType.DOMAIN, EntityType.HASH})
+
 
 def _at(ms: int) -> datetime:
     return datetime.fromtimestamp(ms / 1000, UTC)
@@ -68,6 +71,7 @@ class _Touched:
     opened: bool
     before: dict[str, object]
     links_added: int = 0
+    indicators: set[str] = field(default_factory=set)
 
 
 @dataclass(slots=True)
@@ -114,14 +118,15 @@ class CorrelationService:
                     known[uid] = fetched[uid]
         return known
 
-    async def handle(self, org_id: UUID, findings: Sequence[FindingSignal], documents: Sequence[Document]) -> None:
+    async def handle(self, org_id: UUID, findings: Sequence[FindingSignal], documents: Sequence[Document]) -> list[str]:
+        """Returns the linking indicators (external IPs, domains, hashes) of the incidents that changed."""
         logons = [
             identity
             for document in documents
             if is_successful_logon(document) and (identity := event_identity(document)) is not None
         ]
         if not findings and not logons:
-            return
+            return []
         known = await self._known_events(org_id, findings, documents)
         batch = _Batch(sightings={}, digests={})
         for uid, document in known.items():
@@ -137,8 +142,16 @@ class CorrelationService:
                 await self._correlate_finding(uow, org_id, finding, batch, touched)
             for uid, at_ms in sorted(logons, key=lambda item: (item[1], item[0])):
                 await self._correlate_logon(uow, org_id, uid, _at(at_ms), batch, touched)
+            # From every finding, not only newly linked ones: if announcing failed last time, the redelivered
+            # batch links nothing new but must still name the indicators again (enrichment caches repeats).
+            indicators = {
+                s.entity.key
+                for finding in findings
+                for s in batch.sightings_for(finding.evidence)
+                if s.entity.links and s.entity.type in _INTEL_TYPES
+            } | {key for state in touched.values() for key in state.indicators}
             if not touched:
-                return
+                return sorted(indicators)
             await self._finalise(uow, touched)
             await uow.commit()
 
@@ -147,6 +160,7 @@ class CorrelationService:
             "incidents correlated",
             extra={"incidents_opened": opened, "incidents_updated": len(touched) - opened, "org_id": str(org_id)},
         )
+        return sorted(indicators)
 
     async def _track(self, touched: dict[UUID, _Touched], incident: Incident, *, opened: bool = False) -> Incident:
         """One object per incident per batch, so later links see earlier ones' changes."""
@@ -163,7 +177,11 @@ class CorrelationService:
         batch: _Batch,
     ) -> None:
         await uow.incidents.add_link(link)
-        await uow.incidents.record_sightings(incident.org_id, incident.id, batch.sightings_for(link.evidence))
+        sightings = batch.sightings_for(link.evidence)
+        await uow.incidents.record_sightings(incident.org_id, incident.id, sightings)
+        touched[incident.id].indicators.update(
+            s.entity.key for s in sightings if s.entity.links and s.entity.type in _INTEL_TYPES
+        )
         await uow.incidents.record_evidence(incident.org_id, incident.id, batch.digests_for(link.evidence))
         # Widen now, so the next finding in this batch is matched against the incident's true extent.
         incident.first_seen = min(incident.first_seen, link.first_seen)

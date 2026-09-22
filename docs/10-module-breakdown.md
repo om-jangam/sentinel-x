@@ -46,11 +46,16 @@ detection at the composition root (`app/analysis.py`). Since Phase 4 it also hol
 They share incident storage and transactions, and splitting them would only move code across a boundary.
 → [module doc](modules/correlation.md)
 
+### `threatintel`
+Providers behind one interface: a local indicator feed and AlienVault OTX. Background enrichment of
+changed incidents' external IPs, domains and hashes, cached per organisation with the source's own verdict
+and the retrieval time. A read-only lookup API that never calls a provider.
+→ [module doc](modules/threatintel.md)
+
 ## Planned (in workflow order)
 
 | Module | Responsibility | Produces | Consumes |
 |--------|----------------|----------|----------|
-| `threatintel` | Reputation and related indicators for IPs, domains and hashes from configured providers, cached with source and retrieval time | enrichment records | incident entities |
 | `assistant` | Evidence-grounded AI analysis ([04](04-ai-investigation-assistant.md)) | FACT / INFERENCE / UNCERTAINTY statements with citations | evidence bundle |
 
 **Entities available to later modules:** each incident's entities with the event_uids they were seen

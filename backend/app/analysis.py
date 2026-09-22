@@ -6,10 +6,12 @@ sink, and this adapter turns them into the signals correlation understands.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from uuid import UUID
 
 from app.core.db.session import Database
+from app.core.events.bus import Event
+from app.core.events.topics import INCIDENTS_CHANGED
 from app.modules.correlation.application.correlation_service import CorrelationService
 from app.modules.correlation.domain.incidents import FindingSignal
 from app.modules.correlation.domain.ports import EvidenceLookup
@@ -36,13 +38,26 @@ def signal(finding: Finding) -> FindingSignal:
     )
 
 
+Publish = Callable[[Event], Awaitable[None]]
+
+
 def build_analysis(
-    rules: RuleSet, database: Database, windows: WindowStore, *, lookup: EvidenceLookup | None = None
+    rules: RuleSet,
+    database: Database,
+    windows: WindowStore,
+    *,
+    lookup: EvidenceLookup | None = None,
+    publish: Publish | None = None,
 ) -> DetectionService:
-    """`lookup` fetches stored events (the event store's `get_many`), for evidence from earlier batches."""
+    """`lookup` fetches stored events (the event store's `get_many`), for evidence from earlier batches.
+
+    `publish` announces changed incidents' indicators on `incidents.changed`, for threat-intel enrichment.
+    """
     correlation = CorrelationService(uow_factory=correlation_uow_factory(database), lookup=lookup)
 
     async def correlate(org_id: UUID, findings: Sequence[Finding], documents: Sequence[Document]) -> None:
-        await correlation.handle(org_id, [signal(finding) for finding in findings], documents)
+        indicators = await correlation.handle(org_id, [signal(finding) for finding in findings], documents)
+        if indicators and publish is not None:
+            await publish(Event(topic=INCIDENTS_CHANGED, org_id=org_id, payload={"indicators": indicators}))
 
     return DetectionService(rules, uow_factory=detection_uow_factory(database), windows=windows, on_findings=correlate)

@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     opensearch_replicas: int = Field(default=0, ge=0)
     event_retention_days: int = Field(default=90, ge=1, le=3650)
 
+    # --- threat intelligence (ADR-0018); every provider is optional and none is required
+    ti_local_feed: Path | None = None  # CSV or JSON indicator file
+    otx_api_key: SecretStr | None = None  # AlienVault OTX; external lookups are off without a key
+    otx_base_url: str = "https://otx.alienvault.com"
+    ti_cache_hours: int = Field(default=24, ge=1, le=720)
+    ti_timeout_seconds: float = Field(default=5.0, gt=0, le=30)
+
     # --- ingestion
     ingest_rate_limit: int = Field(default=600, ge=1)
     ingest_rate_window_seconds: int = Field(default=60, ge=1)
@@ -104,6 +111,8 @@ class Settings(BaseSettings):
             problems.append("SENTINELX_OPENSEARCH_URL is required (event store)")
         elif self.opensearch_url.startswith("https") and not self.opensearch_verify_certs:
             problems.append("SENTINELX_OPENSEARCH_VERIFY_CERTS must be true")
+        if not self.otx_base_url.startswith("https://"):
+            problems.append("SENTINELX_OTX_BASE_URL must use https")
         if problems:
             raise ValueError("insecure production configuration: " + "; ".join(problems))
         return self

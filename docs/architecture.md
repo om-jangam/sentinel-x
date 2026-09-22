@@ -1,6 +1,6 @@
 # Sentinel-X architecture
 
-*Current as of Phase 4 (September 2026). This document describes what is **built**. Planned work is in
+*Current as of Phase 5 (September 2026). This document describes what is **built**. Planned work is in
 [11 · Roadmap](11-development-roadmap.md); the product scope is fixed by
 [ADR-0014](adr/ADR-0014-lock-scope-security-investigation.md).*
 
@@ -23,7 +23,7 @@ connected, and what evidence should an analyst investigate?*
 | Detection | Sigma and threshold rules over normalised events → findings that cite their events | **Built**: 4 Sigma and 3 threshold rules, evaluated in-stream ([module doc](modules/detection.md)) |
 | Correlation | Group findings and events by shared entities and time → incidents | **Built**: entity extraction by role, 2 correlation rules, severity from named conditions, audited triage ([module doc](modules/correlation.md)) |
 | Attack reconstruction | Evidence-linked timeline and entity graph per incident | **Built**: computed from evidence digests; every step and edge lists its events ([ADR-0017](adr/ADR-0017-evidence-digests-timeline-graph.md)) |
-| Threat intelligence | Reputation and related indicators as investigation context | Not built (Phase 5) |
+| Threat intelligence | Reputation and related indicators as investigation context | **Built**: local feed and AlienVault OTX, enriched in the background, cached with source and time ([module doc](modules/threatintel.md)) |
 | AI investigation | Evidence-grounded assistant: FACT / INFERENCE / UNCERTAINTY | Not built (Phase 6); design in [04](04-ai-investigation-assistant.md) |
 | Incident workspace | Incident summary, timeline, graph, evidence, notes, status | **Built**: incidents list and workspace with an evidence inspector; append-only, audited notes |
 
@@ -51,7 +51,7 @@ Sentinel-X works without Aegis. Aegis is not connected yet ([§12](#12-known-lim
 | Component | Role | If absent |
 |-----------|------|-----------|
 | `api` (FastAPI) | REST API, authentication, ingestion, search, audit | — |
-| `worker` (`sentinelx-worker`) | Two Redis Streams consumer groups: `indexer` (events into OpenSearch) and `detection` (rules → findings, then correlation → incidents) | Without Redis the API does all of it in-process |
+| `worker` (`sentinelx-worker`) | Redis Streams consumer groups: `indexer` (events into OpenSearch), `detection` (rules → findings, then correlation → incidents) and, with a provider configured, `enrichment` (threat intel for changed incidents) | Without Redis the API does all of it in-process |
 | PostgreSQL | System of record: identity, RBAC, audit chain, ingest sources, findings, incidents | Dev and tests use SQLite; production refuses SQLite |
 | Redis | Event bus (Streams), threshold-rule windows, token blocklist, rate limits | Dev falls back to in-memory implementations; production requires Redis |
 | OpenSearch | Normalised event storage and search | Ingestion still authenticates and validates, but events are not stored; search returns `503` |
@@ -76,6 +76,7 @@ no module, and modules don't import each other.
 | `app/modules/ingestion` | Source registry, ingest API, indexing service, OpenSearch adapter, event search |
 | `app/modules/detection` | Rule loading (Sigma via pySigma, threshold YAML), in-stream evaluation, findings and the rule catalogue |
 | `app/modules/correlation` | Entity extraction, correlation rules, incidents with justified links, incident triage |
+| `app/modules/threatintel` | Intel providers (local feed, OTX), background enrichment, cached results |
 | `app/ingest_pipeline` | Framework-free OCSF model and source parsers, shared by every ingest path |
 | `app/cli.py`, `app/worker.py`, `app/analysis.py` | Operator CLI, the worker entry point, and the detection → correlation wiring (so neither module imports the other) |
 | `frontend/src` | React 19 console with an OpenAPI-generated typed client |
@@ -93,6 +94,7 @@ producer ──Bearer sxi_…──▶ POST /api/v1/ingest/events
 worker, group "indexer"   ──▶ OpenSearch bulk `create` into events-ocsf-<category>-write
 worker, group "detection" ──▶ Sigma + threshold rules ──▶ findings in PostgreSQL (citing event_uids)
                           ──▶ correlation ──▶ incidents, links (rule + entities + event_uids), entities
+                          ──▶ "incidents.changed" ──▶ worker, group "enrichment" ──▶ intel_results
 ```
 
 **Evidence identity.** A document's `_id` is a SHA-256 fingerprint of its org, source and canonical
@@ -119,7 +121,7 @@ reference events by `sx.event_uid`.
 |------------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | `platform:read` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `event:read` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `finding:read`, `incident:read` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| `finding:read`, `incident:read`, `intel:read` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | `source:read`, `rule:read`, `incident:update` | | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | `incident:resolve` | | | ✓ | ✓ | | ✓ | |
 | `audit:read` | | | ✓ | | | ✓ | |
@@ -131,7 +133,7 @@ reference events by `sx.event_uid`.
 
 | Store | Contents |
 |-------|----------|
-| PostgreSQL | `orgs`, `users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `refresh_tokens`, `audit_log` (migration 0001); `ingest_sources` (0002); `findings`, `finding_techniques` (0003); `incidents`, `incident_links`, `incident_entities` (0004); `incident_events` (evidence digests), `incident_notes` (0005) |
+| PostgreSQL | `orgs`, `users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `refresh_tokens`, `audit_log` (migration 0001); `ingest_sources` (0002); `findings`, `finding_techniques` (0003); `incidents`, `incident_links`, `incident_entities` (0004); `incident_events` (evidence digests), `incident_notes` (0005); `intel_results` (0006) |
 | Redis | `sx:events:*` streams with the `indexer` and `detection` consumer groups; `sx:det:*` threshold windows (hashed keys); token blocklist entries; rate-limit counters (hashed keys) |
 | OpenSearch | Rolling indices `events-ocsf-<category>-NNNNNN` behind write aliases; index template `sentinelx-events` (`dynamic: false`, `unmapped` not indexed); ISM policy rolls over at 20 GB or 1 day and deletes after the retention period (90 days by default) |
 
@@ -147,6 +149,7 @@ reference events by `sx.event_uid`.
 | Events | `POST /api/v1/events/search`, `GET /api/v1/events/{event_uid}` |
 | Detection | `GET /api/v1/findings`, `GET /api/v1/findings/{id}`, `GET /api/v1/detection/rules`, `GET /api/v1/detection/rules/{id}` |
 | Incidents | `GET /api/v1/incidents`, `GET /api/v1/incidents/{id}`, `PATCH /api/v1/incidents/{id}` (status only, versioned); `GET /api/v1/incidents/{id}/timeline`, `/graph`, `/evidence`; `GET, POST /api/v1/incidents/{id}/notes` |
+| Threat intel | `GET /api/v1/intel/providers`, `POST /api/v1/intel/lookup` (cached results only) |
 
 The OpenAPI document is committed (`backend/openapi.json`); CI fails if it or the generated TypeScript
 client drifts from the code.
@@ -171,7 +174,8 @@ image scans, and API and web image builds.
 
 ## 12. Known limitations
 
-- **No threat intelligence or AI yet** (Phases 5 and 6).
+- **No AI assistant yet** (Phase 6).
+- **Threat-intel limits** ([module doc](modules/threatintel.md#limitations)): intel is context only and doesn't raise severity; the OTX adapter has not run against the live service; no manual refresh.
 - **Workspace limits** (details in the [module doc](modules/correlation.md#limitations)):
   - Incidents from before Phase 4 have no evidence digests.
   - Events the event store couldn't return while they were being linked stay unresolved.

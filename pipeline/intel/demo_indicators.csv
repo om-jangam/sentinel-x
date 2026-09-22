@@ -1,0 +1,8 @@
+# FICTIONAL demo threat-intelligence feed for the sample attack stories in pipeline/samples.
+# Every address is from an RFC 5737 documentation range and every domain uses the reserved .example TLD:
+# nothing here describes real infrastructure. Load it with SENTINELX_TI_LOCAL_FEED=<path to this file>.
+type,value,verdict,confidence,source,description,tags,reference,first_seen,last_seen
+ip,203.0.113.45,malicious,80,Sentinel-X demo feed,SSH password-spraying source seen against several fictional customers,ssh;brute-force;demo,,2026-09-01T00:00:00Z,2026-09-15T09:14:19Z
+ip,198.51.100.23,suspicious,60,Sentinel-X demo feed,RDP password guessing reported by one fictional customer,rdp;brute-force;demo,,2026-09-10T00:00:00Z,2026-09-15T09:41:02Z
+ip,192.0.2.66,malicious,90,Sentinel-X demo feed,Command-and-control server for a fictional beaconing implant,c2;beacon;demo,,2026-08-20T00:00:00Z,2026-09-15T09:47:41Z
+domain,cdn-telemetry-sync.example,malicious,90,Sentinel-X demo feed,Command-and-control domain posing as a CDN telemetry endpoint,c2;masquerading;demo,,2026-08-20T00:00:00Z,2026-09-15T09:47:41Z

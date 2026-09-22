@@ -28,5 +28,6 @@ Superseded, Deferred}; an amended ADR keeps its original text and links the ADR 
 | [0015](ADR-0015-in-stream-detection.md) | In-stream detection: Sigma via pySigma plus platform threshold rules | Accepted |
 | [0016](ADR-0016-entity-correlation-into-incidents.md) | Entity correlation into incidents, run after detection in the same consumer | Accepted |
 | [0017](ADR-0017-evidence-digests-timeline-graph.md) | Timeline and entity graph derived from evidence digests in PostgreSQL | Accepted |
+| [0018](ADR-0018-threat-intelligence-providers.md) | Threat intelligence: local feed and AlienVault OTX, cached, enriched in the background | Accepted |
 
 New ADRs are added as implementation surfaces new significant decisions (per-phase).

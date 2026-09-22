@@ -26,6 +26,7 @@ class Permission(StrEnum):
     INCIDENT_READ = "incident:read"
     INCIDENT_UPDATE = "incident:update"
     INCIDENT_RESOLVE = "incident:resolve"
+    INTEL_READ = "intel:read"
 
 
 PERMISSION_DESCRIPTIONS: Mapping[Permission, str] = {
@@ -44,6 +45,7 @@ PERMISSION_DESCRIPTIONS: Mapping[Permission, str] = {
     Permission.INCIDENT_READ: "View incidents, their evidence links and entities",
     Permission.INCIDENT_UPDATE: "Move incidents into investigation",
     Permission.INCIDENT_RESOLVE: "Close incidents with a resolution, or reopen closed ones",
+    Permission.INTEL_READ: "View cached threat intelligence and the configured providers",
 }
 
 # Granting these to a machine principal would let a compromised agent escalate itself (docs/07 §3).
@@ -71,7 +73,13 @@ SYSTEM_ROLE_DESCRIPTIONS: Mapping[SystemRole, str] = {
 }
 
 _READ_ONLY = frozenset(
-    {Permission.PLATFORM_READ, Permission.EVENT_READ, Permission.FINDING_READ, Permission.INCIDENT_READ}
+    {
+        Permission.PLATFORM_READ,
+        Permission.EVENT_READ,
+        Permission.FINDING_READ,
+        Permission.INCIDENT_READ,
+        Permission.INTEL_READ,
+    }
 )
 _SOC = _READ_ONLY | {Permission.SOURCE_READ, Permission.RULE_READ, Permission.INCIDENT_UPDATE}
 

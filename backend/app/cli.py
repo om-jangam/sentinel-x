@@ -214,7 +214,7 @@ async def _load_demo(samples: Path, *, rebase: bool) -> int:
     from app.core.db.session import Database
     from app.core.events.bus import EventBus, InMemoryEventBus
     from app.core.events.redis_streams import RedisStreamsEventBus
-    from app.core.events.topics import EVENTS_NORMALIZED
+    from app.core.events.topics import EVENTS_NORMALIZED, INCIDENTS_CHANGED
     from app.core.ids import uuid7
     from app.core.security.tokens import hash_opaque_token
     from app.modules.detection.infrastructure.rule_loader import load_rules
@@ -225,6 +225,10 @@ async def _load_demo(samples: Path, *, rebase: bool) -> int:
     from app.modules.ingestion.domain.entities import IngestSource
     from app.modules.ingestion.infrastructure.opensearch_store import event_store_from_settings
     from app.modules.ingestion.infrastructure.unit_of_work import SqlIngestionUnitOfWork
+    from app.modules.threatintel.application.enrichment_service import EnrichmentService
+    from app.modules.threatintel.domain.ports import IntelProvider
+    from app.modules.threatintel.infrastructure.providers import providers_from_settings
+    from app.modules.threatintel.infrastructure.repositories import sql_uow_factory as intel_uow_factory
 
     settings = get_settings()
     missing = [filename for _, _, filename, _ in SAMPLE_SOURCES if not (samples / filename).is_file()]
@@ -246,6 +250,7 @@ async def _load_demo(samples: Path, *, rebase: bool) -> int:
     store = event_store_from_settings(settings)
     database = Database(settings.database_url)
     redis = Redis.from_url(settings.redis_url) if settings.redis_url else None
+    providers: list[IntelProvider] = []
     bus: EventBus
     if redis is not None:
         # The same path as live sources: the worker indexes, detects and correlates what is published.
@@ -255,8 +260,16 @@ async def _load_demo(samples: Path, *, rebase: bool) -> int:
         if store is not None:
             in_process.subscribe(EVENTS_NORMALIZED, IndexingService(store).handle)
         lookup = None if store is None else store.get_many
-        analysis = build_analysis(load_rules(), database, InMemoryWindowStore(), lookup=lookup)
+        analysis = build_analysis(
+            load_rules(), database, InMemoryWindowStore(), lookup=lookup, publish=in_process.publish
+        )
         in_process.subscribe(EVENTS_NORMALIZED, analysis.handle)
+        providers = providers_from_settings(settings)
+        if providers:
+            enrichment = EnrichmentService(
+                providers, uow_factory=intel_uow_factory(database), cache_ttl=timedelta(hours=settings.ti_cache_hours)
+            )
+            in_process.subscribe(INCIDENTS_CHANGED, enrichment.handle)
         bus = in_process
     if store is None:
         print(
@@ -327,6 +340,8 @@ async def _load_demo(samples: Path, *, rebase: bool) -> int:
             await store.aclose()
         if redis is not None:
             await redis.aclose()
+        for provider in providers:
+            await provider.aclose()
         await database.dispose()
     return 0
 

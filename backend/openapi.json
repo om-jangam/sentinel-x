@@ -1800,6 +1800,82 @@
         }
       }
     },
+    "/api/v1/intel/providers": {
+      "get": {
+        "tags": [
+          "threat intelligence"
+        ],
+        "summary": "The configured threat-intelligence providers (may be none)",
+        "operationId": "list_providers_api_v1_intel_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Providers Api V1 Intel Providers Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/intel/lookup": {
+      "post": {
+        "tags": [
+          "threat intelligence"
+        ],
+        "summary": "Cached intel for indicators. Never calls a provider: enrichment runs in the background",
+        "operationId": "lookup_api_v1_intel_lookup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntelLookup"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntelLookupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -3324,6 +3400,173 @@
         ],
         "title": "IngestResponse"
       },
+      "IntelLookup": {
+        "properties": {
+          "indicators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Indicators",
+            "description": "`ip:\u2026`, `domain:\u2026` or `hash:\u2026` keys"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicators"
+        ],
+        "title": "IntelLookup"
+      },
+      "IntelLookupResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/IntelResultRead"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "skipped": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skipped",
+            "description": "Keys that aren't indicators Sentinel-X looks up (e.g. internal IPs)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "results",
+          "skipped"
+        ],
+        "title": "IntelLookupResponse"
+      },
+      "IntelResultRead": {
+        "properties": {
+          "indicator": {
+            "type": "string",
+            "title": "Indicator",
+            "description": "`type:value`, matching incident entity keys"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "`found`, `not_found` (asked, nothing known) or `error` (couldn't ask)"
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict",
+            "description": "The provider's own classification; Sentinel-X does not merge providers"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "related": {
+            "items": {
+              "$ref": "#/components/schemas/RelatedRead"
+            },
+            "type": "array",
+            "title": "Related"
+          },
+          "references": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "References"
+          },
+          "provider_first_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider First Seen"
+          },
+          "provider_last_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Last Seen"
+          },
+          "retrieved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Retrieved At",
+            "description": "When the provider was asked"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "indicator",
+          "provider",
+          "status",
+          "verdict",
+          "confidence",
+          "summary",
+          "tags",
+          "related",
+          "references",
+          "provider_first_seen",
+          "provider_last_seen",
+          "retrieved_at",
+          "expires_at",
+          "error"
+        ],
+        "title": "IntelResultRead"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -3640,6 +3883,67 @@
         ],
         "title": "PlatformConfig",
         "description": "Non-secret runtime configuration only."
+      },
+      "ProviderRead": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "`local` (a file this deployment loads) or `external` (a third-party service)"
+          },
+          "supports": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Supports"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "title",
+          "kind",
+          "supports",
+          "detail"
+        ],
+        "title": "ProviderRead"
+      },
+      "RelatedRead": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "relation": {
+            "type": "string",
+            "title": "Relation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "value",
+          "relation"
+        ],
+        "title": "RelatedRead"
       },
       "Resolution": {
         "type": "string",

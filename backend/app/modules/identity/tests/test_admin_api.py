@@ -40,6 +40,7 @@ async def test_admin_creates_user_who_can_log_in(client: httpx.AsyncClient, admi
         "finding:read",
         "incident:read",
         "incident:update",
+        "intel:read",
         "platform:read",
         "rule:read",
         "source:read",

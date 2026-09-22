@@ -80,10 +80,22 @@ events.
 **Remaining:** a findings page and event search in the console; verifying the stored-event hop against a
 live OpenSearch.
 
-## Phase 5 — Threat intelligence
+## Phase 5 — Threat intelligence ✅
 Provider adapters for IP, domain and hash reputation and related indicators, cached with source and
 retrieval time and attached to incident entities. Results appear in the workspace as context and can
 feed correlation. Providers are configurable; the platform works with none configured.
+
+**Built** ([ADR-0018](adr/ADR-0018-threat-intelligence-providers.md), [module doc](modules/threatintel.md)):
+- **Providers:** a local indicator feed (CSV or JSON) and an AlienVault OTX adapter, behind one interface.
+- **Background enrichment:** after correlation, the changed incidents' external indicators are announced
+  on `incidents.changed` and enriched in their own consumer group.
+- **Cache:** per organisation, provider and indicator, with the source's verdict and the retrieval time.
+- **Console:** a Threat intel tab, entity badges and graph markers.
+- **Privacy:** only validated external IPs, domains and hashes ever reach a provider, and reading intel
+  never calls one.
+
+**Remaining:** letting intel feed correlation or severity (it is context only today); a live test of OTX
+with a real key; more adapters (AbuseIPDB, VirusTotal) if needed.
 
 ## Phase 6 — AI investigation assistant
 As designed in [04](04-ai-investigation-assistant.md): evidence bundle, FACT / INFERENCE / UNCERTAINTY

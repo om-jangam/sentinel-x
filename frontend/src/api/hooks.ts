@@ -19,6 +19,8 @@ export const queryKeys = {
   incidentPart: (id: string, part: "timeline" | "graph" | "evidence" | "notes") =>
     ["incident", id, part] as const,
   event: (uid: string) => ["event", uid] as const,
+  intelProviders: ["intel", "providers"] as const,
+  intel: (keys: string[]) => ["intel", "results", keys] as const,
 };
 
 export async function fetchMe() {
@@ -252,5 +254,25 @@ export function useStoredEvent(uid: string | null, enabled: boolean) {
       unwrap(await api.GET("/api/v1/events/{event_uid}", { params: { path: { event_uid: uid ?? "" } } })),
     enabled: enabled && uid !== null,
     retry: false,
+  });
+}
+
+// ------------------------------------------------------------------ threat intelligence
+export function useIntelProviders(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.intelProviders,
+    queryFn: async () => unwrap(await api.GET("/api/v1/intel/providers")),
+    enabled,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Cached answers only: reading never makes Sentinel-X contact a provider. */
+export function useIntel(keys: string[], enabled: boolean) {
+  const sorted = [...new Set(keys)].sort();
+  return useQuery({
+    queryKey: queryKeys.intel(sorted),
+    queryFn: async () => unwrap(await api.POST("/api/v1/intel/lookup", { body: { indicators: sorted } })),
+    enabled: enabled && sorted.length > 0,
   });
 }

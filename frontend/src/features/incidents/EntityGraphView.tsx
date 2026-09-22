@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from "react";
 
-import type { EntityGraph, GraphNode } from "@/api/types";
+import type { EntityGraph, GraphNode, IntelResult } from "@/api/types";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
@@ -55,12 +55,16 @@ function activate(handler: () => void) {
   };
 }
 
+const NO_INTEL = new Map<string, IntelResult>();
+
 export function EntityGraphView({
   graph,
+  intel = NO_INTEL,
   selectedId,
   onSelect,
 }: {
   graph: EntityGraph;
+  intel?: Map<string, IntelResult>;
   selectedId: string | null;
   onSelect: (selection: Selection) => void;
 }) {
@@ -124,12 +128,18 @@ export function EntityGraphView({
           {[...placed.values()].map(({ node, x, y }) => {
             const selection = nodeSelection(node);
             const selected = selectedId === selection.id;
+            const flag = intel.get(node.key);
+            const flagged =
+              flag && (flag.verdict === "malicious" || flag.verdict === "suspicious") ? flag : null;
+            const events = `${node.event_count} event${node.event_count === 1 ? "" : "s"}`;
             return (
               <g
                 key={node.key}
                 role="button"
                 tabIndex={0}
-                aria-label={`${node.type} ${node.value}, ${node.event_count} event${node.event_count === 1 ? "" : "s"}`}
+                aria-label={`${node.type} ${node.value}, ${events}${
+                  flagged ? `, ${flagged.verdict} according to ${flagged.provider}` : ""
+                }`}
                 aria-pressed={selected}
                 className="cursor-pointer focus:outline-none"
                 transform={`translate(${x} ${y})`}
@@ -150,6 +160,16 @@ export function EntityGraphView({
                 <text x={10} y={29} className="fill-foreground font-mono text-[12px]">
                   {truncate(node.value)}
                 </text>
+                {flagged ? (
+                  <circle
+                    cx={NODE_W - 10}
+                    cy={10}
+                    r={4.5}
+                    className={flagged.verdict === "malicious" ? "fill-danger" : "fill-warning"}
+                  >
+                    <title>{`${flagged.verdict} according to ${flagged.provider}`}</title>
+                  </circle>
+                ) : null}
               </g>
             );
           })}

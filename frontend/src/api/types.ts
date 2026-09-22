@@ -27,6 +27,8 @@ export type GraphEdge = Schemas["GraphEdgeRead"];
 export type EvidenceEvent = Schemas["EvidenceEventRead"];
 export type Evidence = Schemas["EvidenceResponse"];
 export type Note = Schemas["NoteRead"];
+export type IntelProvider = Schemas["ProviderRead"];
+export type IntelResult = Schemas["IntelResultRead"];
 
 export type PermissionName =
   | "platform:read"
@@ -43,4 +45,5 @@ export type PermissionName =
   | "rule:read"
   | "incident:read"
   | "incident:update"
-  | "incident:resolve";
+  | "incident:resolve"
+  | "intel:read";

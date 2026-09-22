@@ -10,5 +10,6 @@ from app.modules.correlation.infrastructure import models as _correlation_models
 from app.modules.detection.infrastructure import models as _detection_models  # noqa: F401
 from app.modules.identity.infrastructure import models as _identity_models  # noqa: F401
 from app.modules.ingestion.infrastructure import models as _ingestion_models  # noqa: F401
+from app.modules.threatintel.infrastructure import models as _threatintel_models  # noqa: F401
 
 metadata = Base.metadata

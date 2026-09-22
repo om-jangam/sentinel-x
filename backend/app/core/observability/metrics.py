@@ -69,6 +69,13 @@ DETECTION_SECONDS = Histogram(
     buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5),
     registry=REGISTRY,
 )
+INTEL_LOOKUPS = Histogram(
+    "sentinelx_intel_lookup_seconds",
+    "Threat-intelligence lookups by provider and outcome (found, not_found, error)",
+    ["provider", "status"],
+    buckets=(0.001, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10),
+    registry=REGISTRY,
+)
 CORRELATION_LINKS = Counter(
     "sentinelx_correlation_links_total",
     "Findings and events linked into incidents, by the correlation rule that justified the link",
