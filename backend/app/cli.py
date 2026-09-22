@@ -403,15 +403,19 @@ async def _evaluate_assistant() -> int:
         return "  n/a" if value is None else f"{value:5.0%}"
 
     print(f"model {model.provider}/{model.model}")
-    header = ("case", "status", "citations", "key events", "unsupported", "tech P", "tech R")
+    header = ("case", "status", "citations", "key events", "unsupported", "tech P", "tech R", "attrib?")
     print(
-        f"{header[0]:<24} {header[1]:<12} {header[2]:>9} {header[3]:>10} {header[4]:>11} {header[5]:>6} {header[6]:>6}"
+        f"{header[0]:<24} {header[1]:<12} {header[2]:>9} {header[3]:>10} {header[4]:>11} {header[5]:>6} "
+        f"{header[6]:>6} {header[7]:>8}"
     )
     for r in results:
         print(
             f"{r.case:<24} {r.status:<12} {pct(r.citation_validity):>9} {pct(r.key_event_recall):>10} "
-            f"{pct(r.unsupported_rate):>11} {pct(r.technique_precision):>6} {pct(r.technique_recall):>6}"
+            f"{pct(r.unsupported_rate):>11} {pct(r.technique_precision):>6} {pct(r.technique_recall):>6} "
+            f"{r.unverified_attribution:>8}"
         )
+        for claim in r.detail.get("attribution", []):
+            print(f"    attribution: {claim}")
         if r.missed_key_events:
             print(f"    missed: {', '.join(r.missed_key_events)}")
         if r.detail.get("reason"):

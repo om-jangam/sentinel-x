@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from app.modules.assistant.domain.analysis import Kind, parse_json, unknown_mentions, validate
-from app.modules.assistant.domain.bundle import BundleEvent, BundleIntel, EvidenceBundle
+from app.modules.assistant.domain.bundle import BundleEdge, BundleEvent, BundleIntel, EvidenceBundle
 
 
 def bundle() -> EvidenceBundle:
@@ -214,3 +214,31 @@ def test_repeated_techniques_are_merged() -> None:
     assert result.analysis is not None
     [technique] = result.analysis.techniques
     assert technique.evidence == ("e-ps", "e-logon")
+
+
+def test_a_statement_that_misattributes_the_action_is_kept_but_marked() -> None:
+    """Its citations are real, so it is not dropped; the claim itself is flagged for the analyst."""
+    evidence = bundle()
+    evidence.entities.extend(["process:powershell.exe", "ip:192.0.2.66"])
+    evidence.graph.append(BundleEdge("host:ws-fin-07", "connected_to", "ip:192.0.2.66", ["e-logon"]))
+
+    result = validate(
+        answer(
+            facts=[
+                {"text": "powershell.exe connected to 192.0.2.66.", "evidence": ["e-ps"]},
+                {"text": "ws-fin-07 connected to 192.0.2.66.", "evidence": ["e-logon"]},
+            ]
+        ),
+        evidence,
+    )
+
+    assert result.analysis is not None
+    kept = result.analysis.statements
+    assert [s.unverified_attribution for s in kept] == [
+        "no event states powershell.exe connected to 192.0.2.66",
+        None,
+    ]
+    assert result.stats["unverified_attribution"] == 1
+    assert result.citation_validity == 1.0, "the citations themselves are fine"
+    assert kept[0].text in result.analysis.as_json()["statements"][0]["text"]
+    assert result.analysis.as_json()["statements"][0]["unverified_attribution"]

@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
+from app.modules.assistant.domain.attribution import unsupported as unsupported_attribution
 from app.modules.assistant.domain.bundle import EvidenceBundle
 
 MAX_STATEMENTS = 40
@@ -48,6 +49,9 @@ class Statement:
     reasoning: str | None = None
     confidence: Confidence | None = None
     missing: str | None = None
+    # Set when the statement claims a relationship between two entities that no single event states.
+    # The statement is kept: its citations are valid, and the wording may simply be loose.
+    unverified_attribution: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,6 +87,7 @@ class Analysis:
                         ("reasoning", s.reasoning),
                         ("confidence", None if s.confidence is None else s.confidence.value),
                         ("missing", s.missing),
+                        ("unverified_attribution", s.unverified_attribution),
                     )
                     if v is not None
                 }
@@ -170,7 +175,7 @@ def validate(raw: str, bundle: EvidenceBundle) -> Validation:
 
     uids, known = bundle.event_uids, bundle.known_values
     dropped: list[Dropped] = []
-    total = valid = 0
+    total = valid = unverified = 0
 
     def check_citations(item: dict[str, Any], evidence: list[str]) -> str | None:
         nonlocal total, valid
@@ -213,6 +218,10 @@ def validate(raw: str, bundle: EvidenceBundle) -> Validation:
                 confidence = Confidence(str(item.get("confidence", "low")).lower())
             except ValueError:
                 confidence = Confidence.LOW
+        # Citations are valid; does the evidence say who did it? (domain/attribution.py)
+        attribution = unsupported_attribution(" ".join(filter(None, [text, reasoning])), bundle)
+        if attribution is not None:
+            unverified += 1
         statements.append(
             Statement(
                 kind=kind,
@@ -221,6 +230,7 @@ def validate(raw: str, bundle: EvidenceBundle) -> Validation:
                 reasoning=reasoning if kind is Kind.INFERENCE else None,
                 confidence=confidence,
                 missing=missing_info if kind is Kind.UNCERTAINTY else None,
+                unverified_attribution=attribution,
             )
         )
 
@@ -268,6 +278,8 @@ def validate(raw: str, bundle: EvidenceBundle) -> Validation:
         "statements_kept": len(statements),
         "techniques_kept": len(techniques),
         "dropped": len(dropped),
+        # Statements whose citations are valid but whose "who did what" no single event states.
+        "unverified_attribution": unverified,
     }
     if not statements:
         return Validation(

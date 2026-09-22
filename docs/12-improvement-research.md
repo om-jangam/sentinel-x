@@ -92,7 +92,12 @@ that show them.
   a STIX 2.1 extension): the timeline already is an attack flow. Each `attack-action` gets the technique,
   times, affected assets, and the event_uids that prove it; `effect_refs` follow timeline order.
 
-### 7. Check who did what in AI statements
+### 7. Check who did what in AI statements ✅ built
+*Done:* `assistant/domain/attribution.py` checks *entity verb entity* claims against the evidence graph;
+unsupported ones are marked (never dropped), shown in the console and counted by
+`sentinelx evaluate-assistant` ([ADR-0022](adr/ADR-0022-attribution-check.md)).
+*Not yet:* the analyst-checklist scoring from MESSALA; only attribution is measured.
+
 Recent work checks each claim against typed evidence rather than just its citations
 ([GSAR, 2026](https://arxiv.org/html/2604.23366)), and evaluates SOC reports against analyst checklists
 ([MESSALA, 2026](https://arxiv.org/abs/2601.03013)). Sentinel-X already has typed evidence: graph edges.

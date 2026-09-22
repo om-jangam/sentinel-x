@@ -64,6 +64,13 @@ whole answer was rejected. The validator still accepts the v1 shape. It keeps:
 | technique | a valid ATT&CK ID and ≥ 1 valid citation |
 | next step, summary | it names no IP or hash absent from the bundle |
 
+**Who did it.** A kept statement is checked once more, against the entity graph: if it claims *entity verb
+entity* ("PowerShell connected to 192.0.2.66") and no single event states that relationship, it is marked
+`unverified_attribution` and shown as *Unverified: who did it*. It is not dropped, because its citations
+are real and the wording may merely be loose. The check only recognises a fixed set of relational verbs,
+skips passive voice, and never flags a statement that makes no such claim
+([ADR-0022](../adr/ADR-0022-attribution-check.md)).
+
 Removed items are stored with their reason. An answer with no surviving statement is `rejected`. A model
 that can't be reached, times out or returns junk is `unavailable`, and nothing is guessed. The stored
 `citation_validity` is the share of the model's raw citations that existed.
@@ -124,7 +131,8 @@ That is why the console presents everything as the assistant's analysis for the 
 ## Limitations
 
 - **Content isn't verified, only grounding.** A small model's statements cite real events but can still
-  mislabel or misattribute, as above.
+  mislabel. Misattribution is now flagged where the wording is recognisable
+  ([ADR-0022](../adr/ADR-0022-attribution-check.md)); a wrong FACT/INFERENCE label is not.
 - Analyses are synchronous (nginx allows 610 s on that route).
 - The validator checks citations and named IPs and hashes. It cannot tell whether an INFERENCE is sound;
   that is what the labels, reasoning and the analyst are for.

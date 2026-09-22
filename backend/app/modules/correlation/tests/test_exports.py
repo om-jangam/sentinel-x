@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 import pytest
 
@@ -18,7 +20,7 @@ async def incident_id(client: httpx.AsyncClient, token: str) -> str:
     return str(windows["id"])
 
 
-def objects(bundle: dict, kind: str) -> list[dict]:
+def objects(bundle: dict[str, Any], kind: str) -> list[dict[str, Any]]:
     return [item for item in bundle["objects"] if item["type"] == kind]
 
 
@@ -76,7 +78,7 @@ async def test_attack_flow_follows_the_timeline_and_cites_its_events(
     assert hosts <= {entity["value"] for entity in (await _entities(client, admin_token, uid))}
 
 
-async def _entities(client: httpx.AsyncClient, token: str, uid: str) -> list[dict]:
+async def _entities(client: httpx.AsyncClient, token: str, uid: str) -> list[dict[str, Any]]:
     detail = (await client.get(f"/api/v1/incidents/{uid}", headers=bearer(token))).json()
     return list(detail["entities"])
 
@@ -85,7 +87,7 @@ async def test_exports_are_stable_between_runs(client: httpx.AsyncClient, admin_
     """Ids are derived from the incident, so two exports of an unchanged incident are identical."""
     uid = await incident_id(client, admin_token)
 
-    async def flow() -> dict:
+    async def flow() -> dict[str, Any]:
         response = await client.get(f"/api/v1/incidents/{uid}/exports/attack-flow", headers=bearer(admin_token))
         return dict(response.json())
 

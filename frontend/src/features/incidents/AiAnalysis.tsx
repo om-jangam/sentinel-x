@@ -20,6 +20,8 @@ interface Statement {
   reasoning?: string;
   confidence?: string;
   missing?: string;
+  /** Set when the statement claims a relationship no single event states (see the backend's attribution check). */
+  unverified_attribution?: string;
 }
 
 interface Technique {
@@ -101,6 +103,11 @@ function AnalysisView({
                 {statement.confidence ? (
                   <span className="text-xs text-muted">{statement.confidence} confidence</span>
                 ) : null}
+                {statement.unverified_attribution ? (
+                  <Badge tone="warning" title={statement.unverified_attribution}>
+                    Unverified: who did it
+                  </Badge>
+                ) : null}
               </div>
               <p>{statement.text}</p>
               {statement.reasoning ? (
@@ -108,6 +115,11 @@ function AnalysisView({
               ) : null}
               {statement.missing ? (
                 <p className="text-xs text-muted">Would resolve it: {statement.missing}</p>
+              ) : null}
+              {statement.unverified_attribution ? (
+                <p className="text-xs text-warning">
+                  The citations are real, but {statement.unverified_attribution}. Check this one.
+                </p>
               ) : null}
               <Citations
                 events={statement.evidence ?? []}
