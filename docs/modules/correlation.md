@@ -157,6 +157,9 @@ reaches correlation counts three things a single event states: the parent → ch
 host → external destination pair, and the destination alone. `entity_baselines` holds one row per
 organisation, kind and key with first seen, last seen and a count, in **event time**.
 
+Counts are close, not exact: the bus is at-least-once, so a redelivered batch is counted again. First
+seen is unaffected, because it is the earliest **event** time, which a repeat cannot move.
+
 `GET /api/v1/incidents/{id}/novelty` answers for one incident: which of those keys had never been seen
 before it started, how often the known ones have been seen, and since when the baseline has been
 counting. It is **context, not detection**: novelty raises no severity, opens no incident, and appears in

@@ -10,7 +10,7 @@ Walks the investigation workflow the way an analyst's tools would:
    the event store (the last hop from a timeline step to raw evidence);
 5. with --analyse, asks the AI assistant and prints what survived validation.
 
-It exits non-zero if a stage does not produce what the samples should: 12 findings and 2 incidents.
+It exits non-zero if a stage does not produce what the samples should: 15 findings and 2 incidents.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ import httpx
 
 from app.core.clock import utcnow
 
-EXPECTED_FINDINGS = 12
+EXPECTED_FINDINGS = 15  # 12 from the platform rules, 3 from the SigmaHQ pack on the same encoded command
 EXPECTED_INCIDENTS = 2
 
 

@@ -44,7 +44,7 @@ SENTINELX_DEMO_PASSWORD='…' uv run sentinelx demo --api-url http://localhost:8
 
 The demo registers three sources and sends the sample stories, shifted to now. It then waits for the
 worker and reports:
-- findings (12);
+- findings (15: 12 from the platform rules, 3 from the SigmaHQ pack);
 - incidents (2);
 - each incident's timeline, graph, threat intel and one event read back from OpenSearch;
 - with `--analyse`, an AI analysis.

@@ -41,6 +41,11 @@ rules out for this project.
 - **No time series, so no sliding window.** "Seen 412 times since 2026-08-30" is a lifetime count; "not
   in the last 30 days" would need a row per sighting or per day. A window can be added later without
   changing what is counted, and the current answer is already the one novelty needs.
+- **A redelivered batch counts twice.** The bus is at-least-once, and the baseline adds a batch's
+  sightings without recording which events it has already counted. So `observations` is a close count,
+  not an exact one. What novelty rests on is unaffected: `first_seen` is the earliest event time seen,
+  which a repeat cannot move, and "new here" is a comparison of that against the incident. Exact counts
+  would need a row per sighting, which is the same trade as the sliding window above.
 - **Counts follow ingestion, so a backfill moves them.** Replaying a month of old logs teaches the
   baseline as if it had been watching then, which is usually what an operator wants and always visible in
   `first_seen`.
