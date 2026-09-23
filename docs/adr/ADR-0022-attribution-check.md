@@ -40,6 +40,20 @@ Two forces pull against each other:
    "ws-fin-07" for `ws-fin-07.corp.example`, so those aliases match, and values under three characters
    never do.
 
+## What the first live run found
+
+The check passed its own tests and still did almost nothing, because the evidence bundle carries a
+relation's **label** ("connected to") where the check compared against its **name** ("connected_to"). Every
+true statement about a connection, a logon or a DNS query was therefore flagged as unverified, and only
+`spawned` and `started` — where label and name happen to match — behaved. The unit tests built their
+edges by hand with names, so they agreed with the check rather than with reality.
+
+The bundle now carries both (`relation` for the model to read, `name` for code to compare), and the
+regression test builds its bundle through the real pipeline
+(`app/tests/test_attribution_on_real_bundles.py`). A second fault surfaced with it: `powershell.exe` is
+both a process and a file in an incident, and the claim was being attributed to the file. Entity kinds
+now have a fixed precedence, with the actor first.
+
 ## Consequences
 
 - The known failure mode of small models here is now visible in the console and measurable in the

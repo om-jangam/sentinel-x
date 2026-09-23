@@ -23,7 +23,10 @@ def bundle(*edges: tuple[str, str, str]) -> EvidenceBundle:
         links=[],
         events=[],
         timeline=[],
-        graph=[BundleEdge(source=s, relation=r, target=t, events=["e1"]) for s, r, t in edges],
+        # As the real bundle carries them: the label the model reads, plus the relation's own name.
+        graph=[
+            BundleEdge(source=s, relation=r.replace("_", " "), target=t, events=["e1"], name=r) for s, r, t in edges
+        ],
         intel=[],
         entities=[HOST, PROCESS, PARENT, REMOTE, USER, DOMAIN],
     )

@@ -106,7 +106,13 @@ class SqlBundleSource:
             for step in build_timeline(kept, links)
         ]
         edges = [
-            BundleEdge(source=edge.source, relation=edge.label, target=edge.target, events=only_kept(edge.events))
+            BundleEdge(
+                source=edge.source,
+                relation=edge.label,
+                target=edge.target,
+                events=only_kept(edge.events),
+                name=edge.relation,
+            )
             for edge in build_graph(kept).edges
         ]
         indicators = [i for i in (Indicator.parse(entity.key) for entity in entities) if i is not None]

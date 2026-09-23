@@ -62,9 +62,12 @@ class BundleStep:
 @dataclass(frozen=True, slots=True)
 class BundleEdge:
     source: str
-    relation: str
+    relation: str  # the label the model reads, e.g. "connected to"
     target: str
     events: list[str]
+    # The relation's own name, e.g. "connected_to". The label reads better in a prompt; the name is what
+    # the attribution check compares against, and the two must not be confused (they were once).
+    name: str = ""
 
 
 @dataclass(frozen=True, slots=True)

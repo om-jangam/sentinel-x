@@ -56,6 +56,9 @@ RELATIONS: dict[str, frozenset[str]] = {
 SYMMETRIC = frozenset({"logon", "logon_as", "failed_logon", "failed_logon_as", "ran_as", "file_activity"})
 MAX_CLAIMS = 3
 MIN_VALUE = 3  # shorter entity values (a one-letter user name) match too much prose to be reliable
+# When one word names several entities — `powershell.exe` is both a process and its file — the claim is
+# about the actor, not the file on disk. Lower sorts first.
+KIND_ORDER = {"process": 0, "host": 1, "user": 2, "ip": 3, "domain": 4, "file": 5, "hash": 6}
 _PASSIVE = re.compile(r"\b(?:was|were|is|are|been|being|be)\s+(?:\w+\s+){0,2}$", re.IGNORECASE)
 
 
@@ -89,7 +92,8 @@ def _mentions(text: str, entities: list[str]) -> list[tuple[int, int, str]]:
     """Where each entity is named, longest spelling first so `corp\\jsmith` wins over `jsmith`."""
     lowered = text.lower()
     spellings = sorted(
-        ((alias, key) for key in entities for alias in aliases(key)), key=lambda pair: len(pair[0]), reverse=True
+        ((alias, key) for key in entities for alias in aliases(key)),
+        key=lambda pair: (-len(pair[0]), KIND_ORDER.get(pair[1].split(":", 1)[0], 9), pair[1]),
     )
     found: list[tuple[int, int, str]] = []
     for alias, key in spellings:
@@ -105,7 +109,9 @@ def claims(text: str, bundle: EvidenceBundle) -> list[Claim]:
     if len(mentions) < 2:
         return []
     lowered = text.lower()
-    edges = {(edge.source, edge.relation, edge.target) for edge in bundle.graph}
+    # `name` is the relation's own name ("connected_to"); `relation` is the label the model reads
+    # ("connected to"). Comparing against the label silently matched almost nothing.
+    edges = {(edge.source, edge.name or edge.relation, edge.target) for edge in bundle.graph}
 
     found: list[Claim] = []
     for verb, relations in RELATIONS.items():
