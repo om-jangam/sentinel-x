@@ -24,7 +24,12 @@ from app.modules.detection.domain.rules import (
     attack_from_tags,
 )
 from app.modules.detection.infrastructure.ocsf_paths import is_known_path
-from app.modules.detection.infrastructure.sigma_loader import LOGSOURCES, RuleLoadError, compile_sigma
+from app.modules.detection.infrastructure.sigma_loader import (
+    LOGSOURCES,
+    RuleLoadError,
+    compile_correlation,
+    compile_sigma,
+)
 
 RULES_DIR = Path(__file__).resolve().parents[1] / "rules"
 VENDOR_DIR = "sigmahq"  # community rules, unmodified, with their own manifest and licence notice
@@ -153,6 +158,16 @@ def _rule_files(directory: Path) -> tuple[tuple[Path, str], ...]:
     return tuple(own + vendor)
 
 
+def _rule_name(text: str) -> str | None:
+    """Sigma's `name:`, which a correlation rule refers to."""
+    try:
+        parsed = yaml.safe_load(text)
+    except yaml.YAMLError:
+        return None
+    name = parsed.get("name") if isinstance(parsed, dict) else None
+    return name if isinstance(name, str) and name else None
+
+
 def _source_urls(directory: Path) -> dict[str, str]:
     """`MANIFEST.json` in the vendor directory says where each community rule came from."""
     manifest = directory / VENDOR_DIR / MANIFEST
@@ -170,21 +185,80 @@ def load_rules(directory: Path = RULES_DIR) -> RuleSet:
     return _compile_rules(directory, fingerprint)
 
 
+def _documents(text: str, path: str) -> list[str]:
+    """A rule file may hold several YAML documents: Sigma keeps a correlation beside its base rule."""
+    try:
+        parsed = list(yaml.safe_load_all(text))
+    except yaml.YAMLError as exc:
+        raise RuleLoadError(f"{path}: not valid YAML: {exc}") from exc
+    if len(parsed) <= 1:
+        return [text]
+    return [yaml.safe_dump(document, sort_keys=False) for document in parsed if isinstance(document, dict)]
+
+
+def _is_correlation(text: str) -> bool:
+    try:
+        parsed = yaml.safe_load(text)
+    except yaml.YAMLError:
+        return False
+    return isinstance(parsed, dict) and "correlation" in parsed
+
+
+def _referenced(text: str) -> list[str]:
+    """The base rules a correlation names, so they are not also evaluated as detections of their own."""
+    try:
+        parsed = yaml.safe_load(text)
+    except yaml.YAMLError:
+        return []
+    correlation = parsed.get("correlation") if isinstance(parsed, dict) else None
+    rules = correlation.get("rules") if isinstance(correlation, dict) else None
+    if isinstance(rules, str):
+        return [rules]
+    return [rule for rule in rules or [] if isinstance(rule, str)]
+
+
 @lru_cache(maxsize=4)
 def _compile_rules(directory: Path, _fingerprint: tuple[tuple[Path, int, int], ...]) -> RuleSet:
     problems = check_field_mappings()
     single_event: list[SingleEventRule] = []
     threshold: list[ThresholdRule] = []
     sources = _source_urls(directory)
+    named: dict[str, SingleEventRule] = {}
+    documents: list[tuple[str, str, str]] = []  # (text, where, file path)
     for file, path in _rule_files(directory):
         try:
-            rule = compile_sigma(file.read_text(encoding="utf-8"), path=path)
+            texts = _documents(file.read_text(encoding="utf-8"), path)
+        except RuleLoadError as exc:
+            problems.append(str(exc))
+            continue
+        documents += [
+            (text, path if len(texts) == 1 else f"{path}#{index + 1}", path) for index, text in enumerate(texts)
+        ]
+
+    correlations = [(text, where) for text, where, _ in documents if _is_correlation(text)]
+    # A rule a correlation counts is support, not a detection: on its own it would flag every event it
+    # matches ("an outbound connection happened"), which is noise, not a finding.
+    referenced = {name for text, _ in correlations for name in _referenced(text)}
+    for text, where, path in documents:
+        if _is_correlation(text):
+            continue
+        try:
+            rule = compile_sigma(text, path=where)
         except RuleLoadError as exc:
             problems.append(str(exc))
             continue
         if (source := sources.get(path)) is not None:
             rule = replace(rule, meta=replace(rule.meta, source_url=source))
-        single_event.append(rule)
+        name = _rule_name(text)
+        if name is not None:
+            named[name] = rule
+        if name not in referenced:
+            single_event.append(rule)
+    for text, where in correlations:
+        try:
+            threshold.append(compile_correlation(text, path=where, base_rules=named))
+        except RuleLoadError as exc:
+            problems.append(str(exc))
     for file in sorted((directory / "threshold").glob("*.yml")):
         try:
             threshold.append(compile_threshold(file.read_text(encoding="utf-8"), path=f"threshold/{file.name}"))

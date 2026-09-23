@@ -20,6 +20,11 @@ from sigma.conditions import (
     ConditionOR,
     ConditionValueExpression,
 )
+from sigma.correlations import (
+    SigmaCorrelationCondition,
+    SigmaCorrelationConditionOperator,
+    SigmaCorrelationRule,
+)
 from sigma.exceptions import SigmaError
 from sigma.rule import SigmaLogSource, SigmaRule
 from sigma.types import (
@@ -57,7 +62,13 @@ from app.modules.detection.domain.predicates import (
     Regex,
     Wildcard,
 )
-from app.modules.detection.domain.rules import LEVEL_SEVERITY, RuleMeta, SingleEventRule, attack_from_tags
+from app.modules.detection.domain.rules import (
+    LEVEL_SEVERITY,
+    RuleMeta,
+    SingleEventRule,
+    ThresholdRule,
+    attack_from_tags,
+)
 
 
 class RuleLoadError(ValueError):
@@ -474,6 +485,92 @@ class _Translator:
         if isinstance(value, SigmaNumber):
             return FieldMatch(paths, Glob.contains(str(value.number)))
         return FieldMatch(paths, _matcher(value))
+
+
+SUPPORTED_CORRELATIONS = ("event_count", "value_count")
+MAX_CORRELATION_WINDOW_MS = 24 * 3600 * 1000
+
+
+def compile_correlation(text: str, *, path: str, base_rules: Mapping[str, SingleEventRule]) -> ThresholdRule:
+    """A Sigma correlation rule (`event_count` / `value_count`) over one named base rule.
+
+    Sigma expresses "enough of these events in a window" the way Sentinel-X's own threshold rules do, so a
+    correlation rule compiles to the same `ThresholdRule` the engine already evaluates. What the standard
+    ties to a logsource, it cannot say across sources; `temporal` correlations need several rules at once
+    and are refused with that reason.
+    """
+    try:
+        rule = SigmaCorrelationRule.from_yaml(text)
+    except (SigmaError, yaml.YAMLError) as exc:
+        raise RuleLoadError(f"{path}: not a valid Sigma correlation rule: {exc}") from exc
+
+    if rule.id is None:
+        raise RuleLoadError(f"{path}: Sigma correlation rules must have an id")
+    if rule.level is None:
+        raise RuleLoadError(f"{path}: Sigma correlation rules must have a level")
+    kind = str(rule.type.name).lower()
+    if kind not in SUPPORTED_CORRELATIONS:
+        raise RuleLoadError(
+            f"{path}: unsupported correlation type '{kind}' (supported: {', '.join(SUPPORTED_CORRELATIONS)})"
+        )
+    references = [reference.reference for reference in rule.rules or []]
+    if len(references) != 1:
+        raise RuleLoadError(f"{path}: one correlation rule over one base rule; this names {len(references)}")
+    base = base_rules.get(references[0])
+    if base is None:
+        raise RuleLoadError(f"{path}: no rule named '{references[0]}' (a base rule needs a `name:`)")
+
+    window_ms = int(rule.timespan.seconds * 1000)
+    if window_ms <= 0 or window_ms > MAX_CORRELATION_WINDOW_MS:
+        raise RuleLoadError(f"{path}: timespan must be more than zero and at most 24h")
+    condition = rule.condition
+    if not isinstance(condition, SigmaCorrelationCondition):
+        raise RuleLoadError(f"{path}: extended correlation conditions are not supported")
+    if condition.op is not SigmaCorrelationConditionOperator.GTE:
+        raise RuleLoadError(f"{path}: only 'gte' conditions are supported, not '{condition.op.name.lower()}'")
+    if not isinstance(condition.count, int) or condition.count < 2:
+        raise RuleLoadError(f"{path}: the condition count must be 2 or more")
+
+    mapping = next((candidate for candidate in LOGSOURCES if candidate.name == base.logsource), None)
+    if mapping is None:  # pragma: no cover - a compiled base rule always has a mapped logsource
+        raise RuleLoadError(f"{path}: the base rule's logsource is not mapped")
+
+    def path_of(field: str, what: str) -> str:
+        paths = mapping.fields.get(field)
+        if not paths:
+            raise RuleLoadError(f"{path}: {what} field '{field}' is not mapped for logsource {mapping.name}")
+        return paths[0]
+
+    if not rule.group_by:
+        raise RuleLoadError(f"{path}: a correlation rule must group by at least one field")
+    group_by = tuple(path_of(field, "group-by") for field in rule.group_by)
+    distinct = None
+    if kind == "value_count":
+        if not isinstance(condition.fieldref, str) or not condition.fieldref:
+            raise RuleLoadError(f"{path}: a value_count condition must name one field to count")
+        distinct = path_of(condition.fieldref, "counted")
+
+    level = rule.level.name.lower()
+    return ThresholdRule(
+        meta=RuleMeta(
+            id=str(rule.id),
+            title=rule.title or base.meta.title,
+            description=rule.description or base.meta.description,
+            level=level,
+            severity_id=LEVEL_SEVERITY[level],
+            attack=attack_from_tags(str(tag) for tag in rule.tags),
+            version=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            path=path,
+            references=tuple(rule.references or ()),
+            false_positives=tuple(rule.falsepositives or ()),
+            author=str(rule.author or ""),
+        ),
+        match=base.predicate,
+        group_by=group_by,
+        threshold=condition.count,
+        window_ms=window_ms,
+        count_distinct=distinct,
+    )
 
 
 def compile_sigma(text: str, *, path: str) -> SingleEventRule:

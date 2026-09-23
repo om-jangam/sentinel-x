@@ -11,6 +11,7 @@ hand; the report is not.
 | Industry-priority techniques detected | 2 of 5 | **3 of 5** |
 | Techniques a shipped rule claims | 1 of 3 | 1 of 3 |
 | Rules that fired on the T1059.001 recording | 1 | 11 |
+| Rules shipped | 7 (4 Sigma, 3 threshold) | 170 (166 Sigma, 4 threshold, one of them a Sigma correlation rule) |
 | Events parsed | 46,588 of 46,794 (99.6%) | unchanged |
 
 Of the 47,281 events read, 46,794 are in logs Sentinel-X parses (46,793 Sysmon and one Security);
@@ -28,7 +29,9 @@ rules, chosen by a fixed rule and shipped with their authors named.
   in recordings nobody made for this project: downloads through `bitsadmin` and `certutil` (T1105),
   eleven distinct PowerShell techniques (T1059.001), and SharpView's domain-group discovery (T1069.002).
 - **Detection on other people's data.** The project's own encoded-PowerShell rule flagged Atomic Red
-  Team's T1059.001 tests and its T1027 test, which decodes to `Write-Host "Hey, Atomic!"`.
+  Team's T1059.001 tests and its T1027 test, which decodes to `Write-Host "Hey, Atomic!"`. The shipped
+  Sigma correlation rule ("many distinct external destinations from one host") fired once, on the WMI
+  recording, which is the first evidence that the correlation path works outside its own tests.
 
 ## What it exposed
 
@@ -71,13 +74,14 @@ uv run sentinelx evaluate-detection --report ../docs/evaluation/detection-baseli
 
 The recordings are cached under `backend/.cache/` and ignored by git. Nothing in the evaluation needs a
 database, Redis, OpenSearch or Docker: it runs the real parsers and the real `DetectionService` in memory,
-in about 80 seconds with 169 rules.
+in about 80 seconds with 170 rules.
 
 ## What would move the numbers next
 
 - A rule for plain `whoami`, or a narrower tag on the one that exists (finding 2).
 - Reading Splunk's classic Security text and the NTLM log (finding 4), which would put T1110.003 and
   several thousand Security events back in scope.
-- Rarity scoring ([step 5](../12-improvement-research.md#5-evidence-backed-rarity-first-seen)): `wmic
-  process call create notepad.exe` is unremarkable alone, but "first time on this host in 30 days" is
-  evidence a precision-first rule set cannot express.
+- Rarity ([step 5](../12-improvement-research.md#5-evidence-backed-rarity-first-seen), built): `wmic
+  process call create notepad.exe` is unremarkable alone, and the baseline can now say whether this
+  organisation has ever seen it. Wiring that into the evaluation as a second signal, so a missed
+  technique can be reported as "no rule, but never seen here", is the next measurable step.

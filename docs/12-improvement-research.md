@@ -64,7 +64,14 @@ Import selected SigmaHQ rules that the normaliser can evaluate. They are under t
 findings from a licensed rule must name the rule's author, and redistributed rules must keep the author and
 a link. Findings would gain `rule_author` and `rule_source_url`, shown in the workspace.
 
-### 4. Adopt Sigma correlation rules instead of custom thresholds
+### 4. Adopt Sigma correlation rules ✅ built (alongside, not instead)
+*Done:* `event_count` and `value_count` correlation rules load and compile to the same threshold engine,
+with the base rule they count excluded from detection. One ships: "many distinct external destinations
+from one host" ([detection](modules/detection.md#sigma-correlation-rules)).
+*Not instead:* the three platform threshold rules match normalised OCSF fields across sources (Windows and
+OpenSSH at once), which Sigma's logsource-scoped model cannot express, so they stay in the platform
+format. `temporal` correlations are refused with that reason.
+
 The [Sigma correlation specification](https://sigmahq.io/sigma-specification/specification/sigma-correlation-rules-specification.html)
 defines `event_count`, `value_count`, `temporal` and `temporal_ordered`. The last one expresses
 "failures, then a success, same account, within 10 minutes" in a standard, portable form. The three

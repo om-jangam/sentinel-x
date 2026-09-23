@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from app.modules.detection.domain.rules import RuleType
+from app.modules.detection.domain.rules import RuleType, SingleEventRule
 from app.modules.detection.infrastructure.ocsf_paths import is_known_path
 from app.modules.detection.infrastructure.rule_loader import (
     RULES_DIR,
@@ -15,7 +15,7 @@ from app.modules.detection.infrastructure.rule_loader import (
     compile_threshold,
     load_rules,
 )
-from app.modules.detection.infrastructure.sigma_loader import RuleLoadError, compile_sigma
+from app.modules.detection.infrastructure.sigma_loader import RuleLoadError, compile_correlation, compile_sigma
 from app.modules.detection.tests.conftest import document
 
 WINDOWS_4688 = {
@@ -196,8 +196,8 @@ def test_every_shipped_rule_loads_and_every_mapping_points_at_a_real_field() -> 
     rules = load_rules()
     own = [rule for rule in rules.all() if not rule.meta.path.startswith("sigmahq/")]
     community = [rule for rule in rules.all() if rule.meta.path.startswith("sigmahq/")]
-    assert len([r for r in own if r.type is RuleType.SIGMA]) == 4
-    assert len(rules.threshold) == 3
+    assert len([r for r in own if r.type is RuleType.SIGMA]) == 4  # the correlation's base rule is not one
+    assert len(rules.threshold) == 4  # 3 in the platform format, 1 as a Sigma correlation rule
     assert len(community) >= 150, "the SigmaHQ pack is shipped"
     for rule in rules.all():
         assert rule.meta.attack.techniques, f"{rule.meta.path} names no ATT&CK technique"
@@ -261,3 +261,91 @@ def test_duplicate_rule_ids_are_refused(tmp_path: Path) -> None:
 )
 def test_known_paths(path: str, known: bool) -> None:
     assert is_known_path(path) is known
+
+
+BASE = """
+title: outbound connection
+name: outbound
+id: 0c9c3b58-4b45-4f0e-9a3f-1d6e0b6b7c21
+status: test
+logsource:
+  category: network_connection
+detection:
+  connection:
+    DestinationIp|exists: true
+  condition: connection
+level: informational
+"""
+
+CORRELATION = """
+title: many destinations
+id: 93a0a5b2-1f4d-4a6e-9c7b-2b0e1d8a4f55
+status: test
+correlation:
+  type: value_count
+  rules:
+    - outbound
+  group-by:
+    - SourceIp
+  timespan: 5m
+  condition:
+    gte: 10
+    field: DestinationIp
+level: low
+tags:
+  - attack.discovery
+  - attack.t1046
+"""
+
+
+def base_rules() -> dict[str, SingleEventRule]:
+    return {"outbound": compile_sigma(BASE, path="base.yml")}
+
+
+def test_a_sigma_correlation_rule_becomes_a_threshold_rule() -> None:
+    rule = compile_correlation(CORRELATION, path="c.yml", base_rules=base_rules())
+
+    assert rule.type is RuleType.THRESHOLD
+    assert (rule.threshold, rule.window_ms) == (10, 300_000)
+    assert rule.group_by == ("src_endpoint.ip",), "Sigma field names map to OCSF paths"
+    assert rule.count_distinct == "dst_endpoint.ip"
+    assert rule.meta.attack.techniques == ("T1046",)
+    assert rule.match.evaluate({"class_uid": 4001, "dst_endpoint": {"ip": "192.0.2.66"}}), "the base rule matches"
+
+
+def test_the_shipped_correlation_rule_loads_with_its_base_rule() -> None:
+    rules = load_rules()
+    shipped = next(rule for rule in rules.threshold if "distinct external destinations" in rule.meta.title)
+    assert shipped.meta.path.endswith("#2"), "the correlation is the second document in its file"
+    assert shipped.count_distinct == "dst_endpoint.ip"
+    titles = [rule.meta.title for rule in rules.single_event]
+    assert "Outbound connection to an external address" not in titles, "a counted base rule is not a detection"
+
+
+@pytest.mark.parametrize(
+    ("change", "reason"),
+    [
+        (("type: value_count", "type: temporal"), "unsupported correlation type 'temporal'"),
+        (("    - outbound", "    - outbound\n    - other"), "one base rule; this names 2"),
+        (("    - outbound", "    - nope"), "no rule named 'nope'"),
+        (("timespan: 5m", "timespan: 2d"), "at most 24h"),
+        (("gte: 10", "lt: 10"), "only 'gte' conditions"),
+        (("gte: 10", "gte: 1"), "count must be 2 or more"),
+        (("    - SourceIp", "    - Nope"), "group-by field 'Nope' is not mapped"),
+        (("field: DestinationIp", "field: Nope"), "counted field 'Nope' is not mapped"),
+        (("id: 93a0a5b2-1f4d-4a6e-9c7b-2b0e1d8a4f55", "x: 1"), "must have an id"),
+    ],
+)
+def test_unsupported_correlation_rules_are_refused_with_a_reason(change: tuple[str, str], reason: str) -> None:
+    with pytest.raises(RuleLoadError, match=reason):
+        compile_correlation(CORRELATION.replace(*change), path="c.yml", base_rules=base_rules())
+
+
+def test_an_event_count_correlation_needs_no_counted_field() -> None:
+    rule = compile_correlation(
+        CORRELATION.replace("type: value_count", "type: event_count").replace("    field: DestinationIp\n", ""),
+        path="c.yml",
+        base_rules=base_rules(),
+    )
+    assert rule.count_distinct is None
+    assert rule.threshold == 10

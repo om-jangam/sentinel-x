@@ -88,6 +88,32 @@ Keyword searches look in `message` and `raw_data` (for `process_creation`: `proc
 **Refused:** unmapped logsources and fields, `fieldref`, placeholders (`expand`), query expressions, and
 any value type not listed. Sigma correlation rules aren't supported; use threshold rules.
 
+## Sigma correlation rules
+
+Sigma's own format for "enough of these events in a window" is supported for `event_count` and
+`value_count`. A correlation rule names a base rule by its `name:`, and the two usually live in one file
+as two YAML documents:
+
+```yaml
+correlation:
+  type: value_count
+  rules: [outbound_external_connection]
+  group-by: [SourceIp]
+  timespan: 5m
+  condition: {gte: 10, field: DestinationIp}
+```
+
+It compiles to the same `ThresholdRule` the engine already evaluates: `group-by` and the counted field
+are mapped to OCSF paths through the base rule's logsource. A rule a correlation counts is **support, not
+a detection**, so it does not also fire on its own.
+
+Refused with the reason: `temporal` and `temporal_ordered` (they need several rules at once), more than
+one base rule, conditions other than `gte`, timespans over 24 hours, and unmapped fields.
+
+The three platform threshold rules below stay in Sentinel-X's own format because they match normalised
+OCSF fields **across sources** — a failed logon is a failed logon whether it came from Windows or
+OpenSSH — which Sigma's logsource-scoped model cannot express.
+
 ## Threshold rules
 
 A Sentinel-X format for patterns a single-event rule can't see:

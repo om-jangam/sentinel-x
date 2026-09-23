@@ -1,0 +1,56 @@
+title: Outbound connection to an external address
+name: outbound_external_connection
+id: 2b7f4a91-3c6d-4e58-9a17-8f0d25b3c6e4
+status: test
+description: >
+  A connection whose destination is outside every private, loopback and link-local range. On its own this
+  is ordinary traffic; it exists as the base rule the correlation below counts.
+author: Sentinel-X
+logsource:
+  category: network_connection
+detection:
+  connection:
+    DestinationIp|exists: true
+  internal:
+    DestinationIp|cidr:
+      - '10.0.0.0/8'
+      - '172.16.0.0/12'
+      - '192.168.0.0/16'
+      - '127.0.0.0/8'
+      - '169.254.0.0/16'
+      - '::1/128'
+      - 'fc00::/7'
+      - 'fe80::/10'
+  condition: connection and not internal
+level: informational
+tags:
+  - attack.command-and-control
+---
+title: Many distinct external destinations from one host
+id: 7d4c1e58-9a02-4b63-8f15-2c6e0b9a4d37
+status: test
+description: >
+  One host opening connections to ten or more different external addresses within five minutes: the shape
+  of a sweep, a scanner, or malware working through a list of servers. The rule counts distinct
+  destinations and nothing else, so what it claims is exactly what the events show.
+author: Sentinel-X
+references:
+  - https://attack.mitre.org/techniques/T1046/
+correlation:
+  type: value_count
+  rules:
+    - outbound_external_connection
+  group-by:
+    - SourceIp
+  timespan: 5m
+  condition:
+    gte: 10
+    field: DestinationIp
+falsepositives:
+  - Browsers, update services and anything that uses a content delivery network
+  - Vulnerability scanners, asset discovery and monitoring agents
+  - Tune the count and window to the environment; ten in five minutes is a starting point, not a truth
+level: low
+tags:
+  - attack.discovery
+  - attack.t1046
