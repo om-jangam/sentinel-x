@@ -107,13 +107,15 @@ It exits non-zero on failure. Key events are labelled by what they are, not by e
 
 ## Results on the development machine (GTX 1650, 4 GB)
 
-| Model | Prompt | Case | Citations valid | Key events | Dropped | Technique precision / recall |
-|-------|--------|------|-----------------|------------|---------|------------------------------|
-| `deepseek-r1:8b` | v1 | any | — | — | — | timed out: over 600 s, mostly on the CPU; it ignores `think: false` |
-| `qwen2.5:3b` | v1 | ws-fin-07 | 100% | 100% | 22% | 100% / 50% |
-| `qwen2.5:3b` | v1 | web-01 | 100% | 100% | 0% | 100% / 33% |
-| `qwen2.5:3b` | v2 | ws-fin-07 | 100% | 83% (missed `net`) | 0% | 100% / 62% |
-| `qwen2.5:3b` | v2 | web-01 | 100% | 100% | 0% | 100% / 33% |
+| Model | Prompt | Case | Citations valid | Key events | Dropped | Technique precision / recall | Unverified attribution |
+|-------|--------|------|-----------------|------------|---------|------------------------------|------------------------|
+| `deepseek-r1:8b` | v1 | any | — | — | — | timed out: over 600 s, mostly on the CPU; it ignores `think: false` | — |
+| `qwen2.5:3b` | v1 | ws-fin-07 | 100% | 100% | 22% | 100% / 50% | not measured |
+| `qwen2.5:3b` | v1 | web-01 | 100% | 100% | 0% | 100% / 33% | not measured |
+| `qwen2.5:3b` | v2 | ws-fin-07 | 100% | 83% (missed `net`) | 0% | 100% / 62% | not measured |
+| `qwen2.5:3b` | v2 | web-01 | 100% | 100% | 0% | 100% / 33% | not measured |
+| `qwen2.5:3b` | v2 | ws-fin-07 (23 Sep) | 100% | 100% | 0% | 100% / 62% | 0 |
+| `qwen2.5:3b` | v2 | web-01 (23 Sep) | 100% | 100% | 0% | 100% / 33% | 0 |
 
 Each analysis took 140–380 s. Live in Compose, the merged 28-event WS-FIN-07 incident under v2 kept 12 of
 12 statements, all citing real events.
