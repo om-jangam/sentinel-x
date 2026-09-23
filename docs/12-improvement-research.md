@@ -138,7 +138,21 @@ the analyst's notes, with every line citing event_uids. It is the equivalent of 
 - **More AI features** (chat, agents) before item 7: the assistant should get more accurate before it
   gets bigger.
 
-## Suggested order
+## Where this got to (23 September 2026)
 
-1 → 2 → 3 give a measured claim ("detected N of M techniques in public attack recordings"). 4 and 5 improve
-detection quality. 6 and 8 make results shareable. 7 is independent and can go anywhere.
+All eight are built. What they changed, in order:
+
+| # | Built | Effect |
+|---|-------|--------|
+| 1 | Sysmon normalisation | 914 of 1,377 SigmaHQ core rules became loadable |
+| 2 | Evaluation on public recordings | a measured baseline: 2 of 5 priority techniques, 99.6% of events parsed |
+| 3 | 162 attributed SigmaHQ rules | 3 of 5 priority techniques |
+| 4 | Sigma correlation rules | the standard's multi-event format, alongside the cross-source platform rules |
+| 5 | Baseline novelty | "has this ever happened here?", as counted context |
+| 6 | Navigator and Attack Flow exports | incidents open in MITRE's own tools |
+| 7 | Attribution check | the model's "who did it" is checked against the graph |
+| 8 | Incident report | a handover document where every line cites its events |
+
+**Still open, and deliberately so:** the two log formats the evaluation named (Splunk's classic Security
+text and `Microsoft-Windows-NTLM/Operational`), a sliding window for novelty, a rule-coverage Navigator
+layer, and MESSALA-style checklist scoring for the assistant. Each is written up under its step above.

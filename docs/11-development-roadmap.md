@@ -138,6 +138,16 @@ Live Compose verification, PostgreSQL CI run, end-to-end demo script (load sampl
   - the AI output contract let small models omit an inference's reasoning (prompt v2).
 - **Hardening:** a per-user rate limit on AI analyses.
 
+## After the seven phases
+
+The roadmap's phases are finished. What was built next came from measurement rather than a plan written
+in advance: [12 · Improvement research](12-improvement-research.md) compares Sentinel-X with what
+comparable tools and recent papers do, and its eight steps are built (Sysmon normalisation, an evaluation
+on public attack recordings, a curated SigmaHQ rule set, Sigma correlation rules, baseline novelty,
+ATT&CK Navigator and Attack Flow exports, an AI attribution check, and an incident report). The measured
+results live in [docs/evaluation](evaluation/README.md). Splunk can also be a source
+([ADR-0021](adr/ADR-0021-splunk-as-a-pull-source.md)).
+
 ## Definition of done (every phase)
 - Unit, integration and negative/security tests; coverage gate met.
 - ruff, mypy `--strict`, import-linter contracts and bandit clean.
