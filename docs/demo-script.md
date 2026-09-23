@@ -1,6 +1,6 @@
 # Demo script
 
-A 10–12 minute walkthrough of Sentinel-X for a project review, using the two sample attacks. Each step
+A 12–15 minute walkthrough of Sentinel-X for a project review, using the two sample attacks. Each step
 says what to click, what the audience sees, and what to say.
 
 ## Before the audience arrives (15 minutes ahead)
@@ -74,7 +74,19 @@ Click any step. The inspector shows the **original log record** behind it.
 > the outside server. A line only exists if a single log event states that relationship."
 
 **Findings & links tab.** Show why the findings were joined: *shared entity* (same host and account) and
-*logon after failures*, each with its events.
+*logon after failures*, each with its events. The same encoded command is flagged by the project's own
+rule **and** by three SigmaHQ community rules, each naming its author with a link to the published rule.
+> "162 community rules ship here. Their licence says every match must credit the author, so every finding
+> does, and the link goes to the original."
+
+**"How unusual is this?" (under the summary).** The baseline counts what this organisation has seen
+before, so the workspace can say what was never seen until now.
+> "A rule asks 'is this bad?'. This asks 'has this ever happened here?'. It is a count an analyst can
+> check, and it deliberately changes no severity."
+
+**Export buttons (top right).** Download the incident as an **ATT&CK Navigator layer**, an **Attack Flow**
+bundle, or an **incident report**. Open the layer at mitre-attack.github.io/attack-navigator to show the
+techniques lighting up in MITRE's own tool, and open the report to show every line citing its events.
 
 **Threat intel tab** (if the env file was used). Each source's answer is shown separately, with when it
 was retrieved.
@@ -85,8 +97,11 @@ was retrieved.
   missing);
 - click a citation to open the real event;
 - show **removed items**, if any: what the model said that code threw out because it couldn't be backed
-  up.
-> "The AI can be wrong, but it cannot show an analyst a claim without evidence behind it."
+  up;
+- if a statement carries **Unverified: who did it**, that is the attribution check: the citations are
+  real, but no single event says that thing did that action.
+> "The AI can be wrong, but it cannot show an analyst a claim without evidence behind it. And when it
+> says the wrong thing did it — its most common mistake here — that is flagged too."
 
 ### 4. Work the incident (1 minute)
 
@@ -123,7 +138,10 @@ Back on **Incidents**, open the **High** one: SSH password guessing against `web
 | Which model? | `qwen2.5:3b`, running locally through Ollama, so incident data never leaves the machine. It scored 100% citation validity on both samples. |
 | Does it scale? | It's a modular monolith with a Redis Streams worker and OpenSearch for events. Tested with Docker Compose on one machine, not load-tested at scale. |
 | Can it stop the attack? | No, by design. Response is out of scope. |
-| How is it tested? | 471 backend tests (including PostgreSQL) and 50 frontend tests, plus an AI evaluation (`sentinelx evaluate-assistant`). |
+| How is it tested? | 646 backend tests (including PostgreSQL) and 53 frontend tests, plus two evaluations: `sentinelx evaluate-detection` on public attack recordings and `sentinelx evaluate-assistant` on the model. |
+| How do you know detection works? | It is measured on recordings of real attacks from Splunk's public collection: 3 of 5 of the most common Windows techniques are detected, and 99.6% of ~47,000 events parse. The numbers, and what they exposed, are in `docs/evaluation/`. |
+| Where do the rules come from? | 4 written here, plus 162 from SigmaHQ's community set — 914 of their 1,377 core rules load in this engine unchanged. Each community finding credits its author, as their licence requires. |
+| Isn't "first seen here" just anomaly detection? | It is a count, not a model: how many times this organisation has seen a parent/child process pair or an outside address, and when it first did. It never changes severity or opens an incident. |
 
 ## If something goes wrong
 
@@ -135,3 +153,5 @@ Back on **Incidents**, open the **High** one: SSH password guessing against `web
 | Page looks old or a link is missing | Ctrl+Shift+R. |
 | AI analysis says unavailable | Ollama isn't running, or the env file wasn't passed. Show the analysis you ran in advance. |
 | Threat intel tab says not configured | The env file wasn't passed. Say it's optional and move on. |
+| "How unusual is this?" says everything is new | Expected on a fresh database: the baseline only knows what it has seen. Say so; it is why novelty never changes severity. |
+| The Navigator layer will not open | Use **Open Existing Layer → Upload from local** at mitre-attack.github.io/attack-navigator. |
