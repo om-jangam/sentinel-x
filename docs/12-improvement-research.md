@@ -70,7 +70,13 @@ defines `event_count`, `value_count`, `temporal` and `temporal_ordered`. The las
 "failures, then a success, same account, within 10 minutes" in a standard, portable form. The three
 threshold rules become standard Sigma. The custom format stays only for anything the standard can't express.
 
-### 5. Evidence-backed rarity ("first seen")
+### 5. Evidence-backed rarity ("first seen") ✅ built
+*Done:* `entity_baselines` counts process pairs and external destinations from every batch, in event time;
+`GET /api/v1/incidents/{id}/novelty` and the workspace card report what was never seen before this
+incident, with the coverage window ([ADR-0023](adr/ADR-0023-baseline-novelty.md)).
+*Not yet:* a sliding window ("not in the last 30 days") — that needs a row per sighting, and the lifetime
+count already answers "has this ever happened here?".
+
 Elastic's [higher-order rules](https://www.elastic.co/security-labs/higher-order-detection-rules) and the
 NDSS paper [NoDoze](https://www.ndss-symposium.org/ndss-paper/nodoze-combatting-threat-alert-fatigue-with-automated-provenance-triage/)
 rank alerts by how rare their context is, for example a parent→child process pair or destination never seen

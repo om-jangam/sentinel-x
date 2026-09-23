@@ -37,6 +37,40 @@ function workspace(me: Me, overrides: Record<string, unknown> = {}) {
 }
 
 describe("IncidentPage", () => {
+  it("says what the organisation had not seen before, as context", async () => {
+    workspace(analystMe, {
+      [`GET ${base}/novelty`]: {
+        items: [
+          {
+            kind: "process_pair",
+            key: "winword.exe -> powershell.exe",
+            observations: 0,
+            first_seen: null,
+            new_here: true,
+            summary: "winword.exe -> powershell.exe: never seen outside this incident",
+          },
+          {
+            kind: "remote",
+            key: "192.0.2.66",
+            observations: 12,
+            first_seen: "2026-08-20T10:00:00Z",
+            new_here: false,
+            summary: "192.0.2.66: seen 12 times, first on 2026-08-20",
+          },
+        ],
+        coverage_from: "2026-08-01T00:00:00Z",
+        coverage_to: "2026-09-15T00:00:00Z",
+        new_count: 1,
+      },
+    });
+
+    expect(await screen.findByText("How unusual is this?")).toBeInTheDocument();
+    expect(screen.getByText(/1 of 2 things here were never seen before/)).toBeInTheDocument();
+    expect(screen.getByText(/never raises severity or opens an incident/)).toBeInTheDocument();
+    expect(screen.getByText("new here")).toBeInTheDocument();
+    expect(screen.getByText("known")).toBeInTheDocument();
+  });
+
   it("exports the incident in MITRE's formats", async () => {
     const api = workspace(analystMe, {
       [`GET ${base}/exports/attack-navigator`]: {

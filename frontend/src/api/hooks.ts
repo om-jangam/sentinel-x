@@ -16,7 +16,7 @@ export const queryKeys = {
   auditVerification: ["audit", "verification"] as const,
   incidents: (filters: IncidentFilters) => ["incidents", filters] as const,
   incident: (id: string) => ["incident", id] as const,
-  incidentPart: (id: string, part: "timeline" | "graph" | "evidence" | "notes") =>
+  incidentPart: (id: string, part: "timeline" | "graph" | "evidence" | "notes" | "novelty") =>
     ["incident", id, part] as const,
   event: (uid: string) => ["event", uid] as const,
   intelProviders: ["intel", "providers"] as const,
@@ -194,6 +194,14 @@ export function useIncident(id: string) {
   return useQuery({
     queryKey: queryKeys.incident(id),
     queryFn: async () => unwrap(await api.GET("/api/v1/incidents/{incident_id}", incidentPath(id))),
+  });
+}
+
+/** What the organisation had seen before of what this incident involves: context, never detection. */
+export function useIncidentNovelty(id: string) {
+  return useQuery({
+    queryKey: queryKeys.incidentPart(id, "novelty"),
+    queryFn: async () => unwrap(await api.GET("/api/v1/incidents/{incident_id}/novelty", incidentPath(id))),
   });
 }
 

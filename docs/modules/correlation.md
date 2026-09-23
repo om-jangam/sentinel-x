@@ -137,6 +137,7 @@ written.
 | `GET /api/v1/incidents/{id}/exports/attack-navigator`: the incident as an ATT&CK Navigator layer (v4.5) | `incident:read` |
 | `GET /api/v1/incidents/{id}/exports/attack-flow`: the incident as a STIX 2.1 Attack Flow bundle | `incident:read` |
 | `GET /api/v1/incidents/{id}/exports/report.md`: the incident as a Markdown report | `incident:read` |
+| `GET /api/v1/incidents/{id}/novelty`: what the organisation had seen before (context, not detection) | `incident:read` |
 | `GET /api/v1/incidents/{id}/evidence`: digests, each with the links citing it, plus `unresolved_events` | `incident:read`; the `raw` excerpt of the original record also needs `event:read` |
 | `GET, POST /api/v1/incidents/{id}/notes`: `{body}` (1–10,000 characters) | read: `incident:read`; write: `incident:update` |
 
@@ -147,6 +148,19 @@ incident responders and admins can close and reopen.
 - `incident.opened` and `incident.correlated`, with the system as actor and before/after counts;
 - `incident.status_changed`, with the user as actor;
 - `incident.note_added`, with the user as actor.
+
+## How unusual is this?
+
+Correlation also keeps a **baseline** of what the organisation has seen before, so an investigation can
+say what is new ([ADR-0023](../adr/ADR-0023-baseline-novelty.md), `domain/baseline.py`). Every batch that
+reaches correlation counts three things a single event states: the parent → child process pair, the
+host → external destination pair, and the destination alone. `entity_baselines` holds one row per
+organisation, kind and key with first seen, last seen and a count, in **event time**.
+
+`GET /api/v1/incidents/{id}/novelty` answers for one incident: which of those keys had never been seen
+before it started, how often the known ones have been seen, and since when the baseline has been
+counting. It is **context, not detection**: novelty raises no severity, opens no incident, and appears in
+the workspace under "How unusual is this?" with the coverage window beside it.
 
 ## Exports
 

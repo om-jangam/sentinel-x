@@ -23,6 +23,7 @@ from app.core.audit.port import AuditEvent
 from app.core.clock import Clock, utcnow
 from app.core.ids import uuid7
 from app.core.observability.metrics import CORRELATION_LINKS
+from app.modules.correlation.domain.baseline import batch_observations
 from app.modules.correlation.domain.entities import (
     Document,
     EntityType,
@@ -118,8 +119,19 @@ class CorrelationService:
                     known[uid] = fetched[uid]
         return known
 
+    async def _observe(self, org_id: UUID, documents: Sequence[Document]) -> None:
+        counted = batch_observations(documents)
+        if not counted:
+            return
+        async with self._uow_factory() as uow:
+            await uow.baselines.observe(org_id, counted)
+            await uow.commit()
+
     async def handle(self, org_id: UUID, findings: Sequence[FindingSignal], documents: Sequence[Document]) -> list[str]:
         """Returns the linking indicators (external IPs, domains, hashes) of the incidents that changed."""
+        # The baseline counts every batch, not only ones that produced a finding: what is normal here is
+        # made of ordinary activity, and counting only suspicious batches would make everything look rare.
+        await self._observe(org_id, documents)
         logons = [
             identity
             for document in documents

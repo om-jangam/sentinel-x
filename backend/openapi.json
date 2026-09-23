@@ -1791,6 +1791,54 @@
         }
       }
     },
+    "/api/v1/incidents/{incident_id}/novelty": {
+      "get": {
+        "tags": [
+          "incidents"
+        ],
+        "summary": "What the organisation had seen before of what this incident involves (context, not detection)",
+        "operationId": "get_novelty_api_v1_incidents__incident_id__novelty_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoveltyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/incidents/{incident_id}/graph": {
       "get": {
         "tags": [
@@ -4231,6 +4279,105 @@
           "created_at"
         ],
         "title": "NoteRead"
+      },
+      "NoveltyItem": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "`process_pair`, `host_remote` or `remote`"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "observations": {
+            "type": "integer",
+            "title": "Observations",
+            "description": "How often the organisation has seen this, in total"
+          },
+          "first_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen",
+            "description": "When it was first seen anywhere in the organisation"
+          },
+          "new_here": {
+            "type": "boolean",
+            "title": "New Here",
+            "description": "Nothing was seen before this incident started"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "key",
+          "observations",
+          "first_seen",
+          "new_here",
+          "summary"
+        ],
+        "title": "NoveltyItem"
+      },
+      "NoveltyResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NoveltyItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "coverage_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage From",
+            "description": "Since when the baseline has been counting"
+          },
+          "coverage_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage To"
+          },
+          "new_count": {
+            "type": "integer",
+            "title": "New Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "coverage_from",
+          "coverage_to",
+          "new_count"
+        ],
+        "title": "NoveltyResponse",
+        "description": "Context, never detection: counts of what the organisation had seen before this incident."
       },
       "Page_AuditEntryRead_": {
         "properties": {

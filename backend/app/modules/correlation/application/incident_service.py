@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass, replace
+from datetime import datetime
 from uuid import UUID
 
 from app.core.audit.port import AuditEvent
@@ -12,6 +13,7 @@ from app.core.errors import NotFoundError
 from app.core.ids import uuid7
 from app.core.security.permissions import Permission
 from app.core.security.principal import Principal
+from app.modules.correlation.domain.baseline import Novelty, evidence_observations, novelty
 from app.modules.correlation.domain.evidence import EvidenceEvent
 from app.modules.correlation.domain.graph import EntityGraph, build_graph
 from app.modules.correlation.domain.incidents import (
@@ -46,6 +48,15 @@ def _evidence(links: list[IncidentLink], events: list[EvidenceEvent]) -> Inciden
     return IncidentEvidence(
         events=events, cited_by=cited_by, unresolved=sorted(uid for uid in cited_by if uid not in recorded)
     )
+
+
+@dataclass(frozen=True, slots=True)
+class NoveltyReport:
+    """What is new about an incident, and since when the baseline has been watching."""
+
+    items: list[Novelty]
+    coverage_from: datetime | None
+    coverage_to: datetime | None
 
 
 class IncidentService:
@@ -85,6 +96,20 @@ class IncidentService:
         principal.require(Permission.INCIDENT_READ)
         incident = await self._require(principal.org_id, incident_id)
         return build_graph(await self._uow.incidents.evidence(incident.id))
+
+    async def novelty(self, principal: Principal, incident_id: UUID) -> NoveltyReport:
+        """What the organisation had seen before of what this incident involves (`domain/baseline.py`)."""
+        principal.require(Permission.INCIDENT_READ)
+        incident = await self._require(principal.org_id, incident_id)
+        events = await self._uow.incidents.evidence(incident.id)
+        keys = [observation for event in events for observation in evidence_observations(event)]
+        baselines = await self._uow.baselines.get(principal.org_id, keys)
+        coverage = await self._uow.baselines.coverage(principal.org_id)
+        return NoveltyReport(
+            items=novelty(keys, baselines, incident_first_seen=incident.first_seen),
+            coverage_from=None if coverage is None else coverage[0],
+            coverage_to=None if coverage is None else coverage[1],
+        )
 
     async def notes(self, principal: Principal, incident_id: UUID) -> list[IncidentNote]:
         principal.require(Permission.INCIDENT_READ)

@@ -510,6 +510,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/incidents/{incident_id}/novelty": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the organisation had seen before of what this incident involves (context, not detection) */
+        get: operations["get_novelty_api_v1_incidents__incident_id__novelty_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/incidents/{incident_id}/graph": {
         parameters: {
             query?: never;
@@ -1452,6 +1469,50 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** NoveltyItem */
+        NoveltyItem: {
+            /**
+             * Kind
+             * @description `process_pair`, `host_remote` or `remote`
+             */
+            kind: string;
+            /** Key */
+            key: string;
+            /**
+             * Observations
+             * @description How often the organisation has seen this, in total
+             */
+            observations: number;
+            /**
+             * First Seen
+             * @description When it was first seen anywhere in the organisation
+             */
+            first_seen: string | null;
+            /**
+             * New Here
+             * @description Nothing was seen before this incident started
+             */
+            new_here: boolean;
+            /** Summary */
+            summary: string;
+        };
+        /**
+         * NoveltyResponse
+         * @description Context, never detection: counts of what the organisation had seen before this incident.
+         */
+        NoveltyResponse: {
+            /** Items */
+            items: components["schemas"]["NoveltyItem"][];
+            /**
+             * Coverage From
+             * @description Since when the baseline has been counting
+             */
+            coverage_from: string | null;
+            /** Coverage To */
+            coverage_to: string | null;
+            /** New Count */
+            new_count: number;
         };
         /** Page[AuditEntryRead] */
         Page_AuditEntryRead_: {
@@ -2949,6 +3010,37 @@ export interface operations {
                 content: {
                     "text/plain": string;
                     "text/markdown": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_novelty_api_v1_incidents__incident_id__novelty_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoveltyResponse"];
                 };
             };
             /** @description Validation Error */

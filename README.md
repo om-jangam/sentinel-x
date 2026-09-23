@@ -21,6 +21,7 @@ security data → ingestion → normalisation → detection → correlation
 | Platform: identity, RBAC, hash-chained audit trail, console shell, CI | ✅ Built |
 | Ingestion: per-source tokens, limits, validation, audited source management | ✅ Built |
 | Ingest from an existing Splunk deployment (pull, on demand) | ✅ Built ([how](docs/modules/ingestion.md#pulling-from-splunk)) |
+| "Has this ever happened here?": counted novelty, as context not detection | ✅ Built ([how](docs/modules/correlation.md#how-unusual-is-this)) |
 | Hand over an incident as a Markdown report, every line citing its events | ✅ Built ([how](docs/modules/correlation.md#exports)) |
 | Export an incident as an ATT&CK Navigator layer or STIX Attack Flow | ✅ Built ([how](docs/modules/correlation.md#exports)) |
 | Detection: own rules plus 162 attributed SigmaHQ community rules | ✅ Built ([notice](backend/app/modules/detection/rules/sigmahq/NOTICE.md)) |

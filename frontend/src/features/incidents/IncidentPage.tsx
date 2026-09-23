@@ -10,6 +10,7 @@ import {
   useIncident,
   useIncidentEvidence,
   useIncidentGraph,
+  useIncidentNovelty,
   useIncidentNotes,
   useIncidentTimeline,
   useIntel,
@@ -163,6 +164,40 @@ function ExportMenu({ incidentId }: { incidentId: string }) {
         </Button>
       ))}
     </>
+  );
+}
+
+/** "Has this ever happened here?" — counts from the baseline, with how long it has been watching. */
+function Novelty({ incidentId }: { incidentId: string }) {
+  const novelty = useIncidentNovelty(incidentId);
+  const data = novelty.data;
+  if (!data || data.items.length === 0) return null;
+  const isNew = data.items.filter((item) => item.new_here);
+  const watching = data.coverage_from ? formatDateTime(data.coverage_from) : null;
+  return (
+    <Card className="p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-semibold">How unusual is this?</h2>
+        <p className="text-xs text-muted">
+          {watching ? `Counting what this organisation has seen since ${watching}` : "No baseline yet"}
+        </p>
+      </div>
+      <p className="mt-1 text-sm text-muted">
+        {isNew.length === 0
+          ? "Everything here has been seen before."
+          : `${isNew.length} of ${data.items.length} things here were never seen before this incident.`}{" "}
+        Context only: novelty never raises severity or opens an incident.
+      </p>
+      <ul className="mt-2 space-y-1 text-sm">
+        {data.items.slice(0, 6).map((item) => (
+          <li key={`${item.kind}:${item.key}`} className="flex flex-wrap items-center gap-2">
+            <Badge tone={item.new_here ? "warning" : "neutral"}>{item.new_here ? "new here" : "known"}</Badge>
+            <span className="font-mono text-xs">{item.key}</span>
+            <span className="text-xs text-muted">{item.summary}</span>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 
@@ -429,6 +464,7 @@ function Workspace({ incidentId }: { incidentId: string }) {
         <StatusActions incident={detail} />
       </div>
       <Summary incident={detail} />
+      <Novelty incidentId={incidentId} />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)]">
         <Card className="min-w-0">
           <div

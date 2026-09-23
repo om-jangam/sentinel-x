@@ -111,3 +111,17 @@ class IncidentNoteModel(UUIDPrimaryKeyMixin, Base):
     author_email: Mapped[str] = mapped_column(String(320))
     body: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime]
+
+
+class EntityBaselineModel(Base):
+    """How often this organisation has seen one thing before: context for novelty, never detection."""
+
+    __tablename__ = "entity_baselines"
+    __table_args__ = (Index("ix_entity_baselines_org_id_last_seen", "org_id", "last_seen"),)
+
+    org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orgs.id", ondelete="RESTRICT"), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(24), primary_key=True)
+    key: Mapped[str] = mapped_column(String(280), primary_key=True)
+    first_seen: Mapped[datetime]
+    last_seen: Mapped[datetime]
+    observations: Mapped[int] = mapped_column(Integer)

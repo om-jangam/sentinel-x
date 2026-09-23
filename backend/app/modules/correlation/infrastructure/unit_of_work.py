@@ -8,18 +8,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.audit.writer import SqlAuditRecorder
 from app.core.db.session import Database
 from app.modules.correlation.domain.ports import CorrelationUnitOfWork, UnitOfWorkFactory
-from app.modules.correlation.infrastructure.repositories import SqlIncidentRepository
+from app.modules.correlation.infrastructure.repositories import SqlBaselineRepository, SqlIncidentRepository
 
 
 class SqlCorrelationUnitOfWork:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
         self._incidents = SqlIncidentRepository(session)
+        self._baselines = SqlBaselineRepository(session)
         self._audit = SqlAuditRecorder(session)
 
     @property
     def incidents(self) -> SqlIncidentRepository:
         return self._incidents
+
+    @property
+    def baselines(self) -> SqlBaselineRepository:
+        return self._baselines
 
     @property
     def audit(self) -> SqlAuditRecorder:

@@ -27,6 +27,7 @@ from app.modules.correlation.interface.schemas import (
     IncidentStatusChange,
     NoteCreate,
     NoteRead,
+    NoveltyResponse,
     TimelineResponse,
     TimelineStepRead,
 )
@@ -141,6 +142,18 @@ async def get_report(
     notes = await service.notes(principal, incident_id)
     markdown = render_markdown(detail, steps, notes, generated=utcnow())
     return PlainTextResponse(markdown, media_type="text/markdown; charset=utf-8")
+
+
+@router.get(
+    "/{incident_id}/novelty",
+    summary="What the organisation had seen before of what this incident involves (context, not detection)",
+)
+async def get_novelty(
+    incident_id: UUID,
+    principal: Principal = Depends(require_permission(Permission.INCIDENT_READ)),
+    service: IncidentService = Depends(get_incident_service),
+) -> NoveltyResponse:
+    return NoveltyResponse.from_report(await service.novelty(principal, incident_id))
 
 
 @router.get("/{incident_id}/graph", summary="The entity graph: every edge cites the events that state it")

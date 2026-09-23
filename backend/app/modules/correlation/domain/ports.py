@@ -7,6 +7,7 @@ from typing import Protocol
 from uuid import UUID
 
 from app.core.audit.port import AuditRecorder
+from app.modules.correlation.domain.baseline import Baseline, BatchSighting, Observation
 from app.modules.correlation.domain.entities import Document, Sighting
 from app.modules.correlation.domain.evidence import EvidenceEvent
 from app.modules.correlation.domain.incidents import (
@@ -61,9 +62,22 @@ class IncidentRepository(Protocol):
     async def notes(self, incident_id: UUID) -> list[IncidentNote]: ...
 
 
+class BaselineRepository(Protocol):
+    """Counts of what the organisation has seen before (`domain/baseline.py`)."""
+
+    async def observe(self, org_id: UUID, counted: Mapping[Observation, BatchSighting]) -> None: ...
+
+    async def get(self, org_id: UUID, keys: Sequence[Observation]) -> dict[tuple[str, str], Baseline]: ...
+
+    async def coverage(self, org_id: UUID) -> tuple[datetime, datetime] | None: ...
+
+
 class CorrelationUnitOfWork(Protocol):
     @property
     def incidents(self) -> IncidentRepository: ...
+
+    @property
+    def baselines(self) -> BaselineRepository: ...
 
     @property
     def audit(self) -> AuditRecorder: ...

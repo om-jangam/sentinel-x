@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, or_, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import ensure_utc
+from app.modules.correlation.domain.baseline import Baseline, BatchSighting, Observation
 from app.modules.correlation.domain.entities import Sighting
 from app.modules.correlation.domain.evidence import EvidenceEvent
 from app.modules.correlation.domain.incidents import (
@@ -25,6 +27,7 @@ from app.modules.correlation.domain.incidents import (
     Resolution,
 )
 from app.modules.correlation.infrastructure.models import (
+    EntityBaselineModel,
     IncidentEntityModel,
     IncidentEventModel,
     IncidentLinkModel,
@@ -371,3 +374,64 @@ class SqlIncidentRepository:
             )
             for row in rows
         ]
+
+
+class SqlBaselineRepository:
+    """Counts of what an organisation has seen before (`domain/baseline.py`)."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def observe(self, org_id: UUID, counted: Mapping[Observation, BatchSighting]) -> None:
+        """Add a batch's sightings, in the events' own time. One statement per key."""
+        for observation, sighting in sorted(counted.items(), key=lambda item: (item[0].kind, item[0].key)):
+            row = await self._session.get(EntityBaselineModel, (org_id, observation.kind, observation.key))
+            if row is None:
+                self._session.add(
+                    EntityBaselineModel(
+                        org_id=org_id,
+                        kind=observation.kind,
+                        key=observation.key,
+                        first_seen=sighting.first_seen,
+                        last_seen=sighting.last_seen,
+                        observations=sighting.count,
+                    )
+                )
+                continue
+            row.observations += sighting.count
+            row.first_seen = min(ensure_utc(row.first_seen), sighting.first_seen)
+            row.last_seen = max(ensure_utc(row.last_seen), sighting.last_seen)
+        await self._session.flush()
+
+    async def get(self, org_id: UUID, keys: Sequence[Observation]) -> dict[tuple[str, str], Baseline]:
+        if not keys:
+            return {}
+        rows = await self._session.scalars(
+            select(EntityBaselineModel).where(
+                EntityBaselineModel.org_id == org_id,
+                tuple_(EntityBaselineModel.kind, EntityBaselineModel.key).in_(
+                    [(observation.kind, observation.key) for observation in dict.fromkeys(keys)]
+                ),
+            )
+        )
+        return {
+            (row.kind, row.key): Baseline(
+                kind=row.kind,
+                key=row.key,
+                first_seen=ensure_utc(row.first_seen),
+                last_seen=ensure_utc(row.last_seen),
+                observations=row.observations,
+            )
+            for row in rows
+        }
+
+    async def coverage(self, org_id: UUID) -> tuple[datetime, datetime] | None:
+        """Since when the baseline has been watching, so "never seen before" can be read in context."""
+        row = (
+            await self._session.execute(
+                select(func.min(EntityBaselineModel.first_seen), func.max(EntityBaselineModel.last_seen)).where(
+                    EntityBaselineModel.org_id == org_id
+                )
+            )
+        ).one()
+        return None if row[0] is None else (ensure_utc(row[0]), ensure_utc(row[1]))

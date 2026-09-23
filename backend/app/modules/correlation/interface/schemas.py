@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.pagination import encode_cursor
-from app.modules.correlation.application.incident_service import IncidentEvidence
+from app.modules.correlation.application.incident_service import IncidentEvidence, NoveltyReport
 from app.modules.correlation.domain.graph import EntityGraph
 from app.modules.correlation.domain.incidents import (
     MAX_NOTE_LENGTH,
@@ -347,3 +347,40 @@ class NoteCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     body: str = Field(min_length=1, max_length=MAX_NOTE_LENGTH)
+
+
+class NoveltyItem(BaseModel):
+    kind: str = Field(description="`process_pair`, `host_remote` or `remote`")
+    key: str
+    observations: int = Field(description="How often the organisation has seen this, in total")
+    first_seen: datetime | None = Field(description="When it was first seen anywhere in the organisation")
+    new_here: bool = Field(description="Nothing was seen before this incident started")
+    summary: str
+
+
+class NoveltyResponse(BaseModel):
+    """Context, never detection: counts of what the organisation had seen before this incident."""
+
+    items: list[NoveltyItem]
+    coverage_from: datetime | None = Field(description="Since when the baseline has been counting")
+    coverage_to: datetime | None
+    new_count: int
+
+    @classmethod
+    def from_report(cls, report: NoveltyReport) -> NoveltyResponse:
+        return cls(
+            items=[
+                NoveltyItem(
+                    kind=item.kind,
+                    key=item.key,
+                    observations=item.observations,
+                    first_seen=item.first_seen,
+                    new_here=item.new_here,
+                    summary=item.describe(),
+                )
+                for item in report.items
+            ],
+            coverage_from=report.coverage_from,
+            coverage_to=report.coverage_to,
+            new_count=sum(item.new_here for item in report.items),
+        )
