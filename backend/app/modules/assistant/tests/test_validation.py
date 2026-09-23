@@ -242,3 +242,25 @@ def test_a_statement_that_misattributes_the_action_is_kept_but_marked() -> None:
     assert result.citation_validity == 1.0, "the citations themselves are fine"
     assert kept[0].text in result.analysis.as_json()["statements"][0]["text"]
     assert result.analysis.as_json()["statements"][0]["unverified_attribution"]
+
+
+def test_the_stats_say_how_many_claims_were_checked_not_just_how_many_failed() -> None:
+    """ "None flagged" is only meaningful next to how many relationship claims were recognised."""
+    evidence = bundle()
+    evidence.entities.extend(["process:powershell.exe", "ip:192.0.2.66"])
+    evidence.graph.append(BundleEdge("host:ws-fin-07", "connected to", "ip:192.0.2.66", ["e-logon"], "connected_to"))
+
+    result = validate(
+        answer(
+            facts=[
+                {"text": "ws-fin-07 connected to 192.0.2.66.", "evidence": ["e-logon"]},
+                {"text": "powershell.exe connected to 192.0.2.66.", "evidence": ["e-ps"]},
+                {"text": "The logon came from an external address.", "evidence": ["e-logon"]},
+            ]
+        ),
+        evidence,
+    )
+
+    assert result.analysis is not None
+    assert result.stats["attribution_claims"] == 2, "two statements make a recognised claim"
+    assert result.stats["unverified_attribution"] == 1, "one of those two is not stated by any event"

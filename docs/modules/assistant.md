@@ -114,8 +114,19 @@ It exits non-zero on failure. Key events are labelled by what they are, not by e
 | `qwen2.5:3b` | v1 | web-01 | 100% | 100% | 0% | 100% / 33% | not measured |
 | `qwen2.5:3b` | v2 | ws-fin-07 | 100% | 83% (missed `net`) | 0% | 100% / 62% | not measured |
 | `qwen2.5:3b` | v2 | web-01 | 100% | 100% | 0% | 100% / 33% | not measured |
-| `qwen2.5:3b` | v2 | ws-fin-07 (23 Sep) | 100% | 100% | 0% | 100% / 62% | 0 |
-| `qwen2.5:3b` | v2 | web-01 (23 Sep) | 100% | 100% | 0% | 100% / 33% | 0 |
+| `qwen2.5:3b` | v2 | ws-fin-07 (23 Sep) | 100% | 100%, 67% across runs | 0% | 100% / 62% | 0 of 0 claims |
+| `qwen2.5:3b` | v2 | web-01 (23 Sep) | 100% | 100% | 0% | 100% / 33% | 0 of 0 claims |
+
+**Attribution, measured (23 September).** Across the runs that day the model made **no statement of the
+shape the check recognises** ("entity verb entity"), so it flagged nothing and had nothing to flag: `0 of
+0`. That is not evidence that the check works, which is why the number is reported as *flagged of
+checked* and why the regression test pins the wording from an earlier run
+(`PowerShell connected to 192.0.2.66`) against a bundle built by the real pipeline. Widening the
+recognised wording, or measuring over many runs, is the next step if this stays at zero.
+
+**Run-to-run variance.** The same model on the same evidence cited every key event in two runs and missed
+two discovery steps (`whoami`, `net`) in a third. A single run is an anecdote; the evaluation exists so
+the claim can be a measurement.
 
 Each analysis took 140–380 s. Live in Compose, the merged 28-event WS-FIN-07 incident under v2 kept 12 of
 12 statements, all citing real events.

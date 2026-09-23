@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
-from app.modules.assistant.domain.attribution import unsupported as unsupported_attribution
+from app.modules.assistant.domain.attribution import claims as attribution_claims
 from app.modules.assistant.domain.bundle import EvidenceBundle
 
 MAX_STATEMENTS = 40
@@ -175,7 +175,7 @@ def validate(raw: str, bundle: EvidenceBundle) -> Validation:
 
     uids, known = bundle.event_uids, bundle.known_values
     dropped: list[Dropped] = []
-    total = valid = unverified = 0
+    total = valid = unverified = checked = 0
 
     def check_citations(item: dict[str, Any], evidence: list[str]) -> str | None:
         nonlocal total, valid
@@ -219,7 +219,10 @@ def validate(raw: str, bundle: EvidenceBundle) -> Validation:
             except ValueError:
                 confidence = Confidence.LOW
         # Citations are valid; does the evidence say who did it? (domain/attribution.py)
-        attribution = unsupported_attribution(" ".join(filter(None, [text, reasoning])), bundle)
+        found = attribution_claims(" ".join(filter(None, [text, reasoning])), bundle)
+        checked += len(found)
+        unproven = [claim for claim in found if not claim.supported]
+        attribution = ("no event states " + "; ".join(c.describe() for c in unproven)) if unproven else None
         if attribution is not None:
             unverified += 1
         statements.append(
@@ -278,7 +281,9 @@ def validate(raw: str, bundle: EvidenceBundle) -> Validation:
         "statements_kept": len(statements),
         "techniques_kept": len(techniques),
         "dropped": len(dropped),
-        # Statements whose citations are valid but whose "who did what" no single event states.
+        # Relationship claims the check recognised, and how many of those no single event states.
+        # Both, because "none flagged" only means something next to how many were checked at all.
+        "attribution_claims": checked,
         "unverified_attribution": unverified,
     }
     if not statements:

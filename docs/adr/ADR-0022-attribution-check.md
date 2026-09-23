@@ -54,6 +54,10 @@ regression test builds its bundle through the real pipeline
 both a process and a file in an incident, and the claim was being attributed to the file. Entity kinds
 now have a fixed precedence, with the actor first.
 
+Measured after the fix, on the same two incidents, the model made **no claims of the recognised shape at
+all** (`0 of 0`). The check is therefore unproven against this model's usual wording, and the evaluation
+now reports *flagged of checked* so that distinction cannot hide.
+
 ## Consequences
 
 - The known failure mode of small models here is now visible in the console and measurable in the

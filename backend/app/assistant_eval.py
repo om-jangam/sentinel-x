@@ -105,6 +105,7 @@ class CaseResult:
     unsupported_rate: float | None = None
     # Statements kept (their citations are real) that claim a relationship no single event states.
     unverified_attribution: int = 0
+    attribution_claims: int = 0
     technique_precision: float | None = None
     technique_recall: float = 0.0
     missed_key_events: list[str] = field(default_factory=list)
@@ -133,6 +134,7 @@ def score(case: Case, bundle: EvidenceBundle, raw: str) -> CaseResult:
         key_event_recall=sum(found.values()) / len(found),
         unsupported_rate=None if not returned else result.stats.get("dropped", 0) / returned,
         unverified_attribution=result.stats.get("unverified_attribution", 0),
+        attribution_claims=result.stats.get("attribution_claims", 0),
         technique_precision=None if not suggested else len(suggested & case.techniques) / len(suggested),
         technique_recall=len(suggested & case.techniques) / len(case.techniques),
         missed_key_events=[label for label, hit in found.items() if not hit],
