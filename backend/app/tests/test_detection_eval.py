@@ -64,14 +64,18 @@ async def test_replay_uses_the_real_rules_and_counts_what_it_could_not_parse() -
         dataset, [("a.log", f"{SYSMON_1}\n{SECURITY_4688}\n{WMI_NOISE}\n{NTLM_4776}\n"), ("classic.log", classic)]
     )
 
-    assert result.events == 4
-    assert result.channels["Security"] == 2
-    assert result.accepted == 2, "the WMI log is not a parsed source; 4776 is not a supported Security event"
-    assert result.rejected == {"unsupported Windows Security event 4776": 1}
+    assert result.events == 5
+    assert result.channels["Security"] == 3, "two XML events and one rendered as text"
+    assert result.accepted == 2, "the WMI log is not a parsed source, and two Security events don't map"
+    # The two ways an event can fail to become evidence are counted apart: 4776 is an event type no parser
+    # maps, while the rendered 4688 is one Sentinel-X does map and could not read, because it names no
+    # process. Only the second is a defect, and only the second belongs in the report's "rejected" column.
+    assert result.unsupported == {"unsupported Windows Security event 4776": 1}
+    assert result.rejected == {"4688 event has no NewProcessName": 1}
     assert result.detected
     assert "PowerShell started with an encoded command" in {f.rule_title for f in result.matching}
     assert {f.rule_title for f in result.other} == {"whoami used to list privileges or groups"}
-    assert result.unread_files == ["classic.log: no Windows event XML (another format, e.g. Splunk's classic text)"]
+    assert result.unread_files == [], "the rendered text is read, not reported as another format"
 
 
 async def test_evaluate_needs_the_recordings_to_be_fetched(tmp_path: Path) -> None:
@@ -126,8 +130,8 @@ async def test_report_summarises_both_sets() -> None:
     assert "with 7 shipped rules" in report
     assert "**Industry priority** (Red Canary top-10, Windows-observable): 1 of 1 recorded techniques" in report
     assert "**Claims check** (techniques a shipped rule claims): 0 of 1 recorded techniques" in report
-    assert "| T1033 System Owner/User Discovery | claims | 1 | 1 | 0 | **no** | — |" in report
-    assert "| T1204.004 Malicious Copy and Paste | priority | — | — | — | not measured |" in report
+    assert "| T1033 System Owner/User Discovery | claims | 1 | 1 | 0 | 0 | **no** | — |" in report
+    assert "| T1204.004 Malicious Copy and Paste | priority | — | — | — | — | not measured |" in report
 
 
 def _encoded(script: str) -> str:

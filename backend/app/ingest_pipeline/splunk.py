@@ -7,11 +7,14 @@ guessed from the text itself, so an event Sentinel-X cannot read is reported rat
 | Splunk sourcetype | `_raw` holds | Parser |
 |---|---|---|
 | `XmlWinEventLog…` (any suffix) | a Windows `<Event>` element | by Channel: `windows_sysmon`, `windows_security` |
+| `WinEventLog:Security` | the message Windows renders for a person | `windows_security` |
 | `linux_secure`, `syslog`, `sshd`, `auth` | one syslog line | `linux_auth` |
 | `ocsf`, `_json` with `class_uid` | an OCSF event as JSON | `ocsf` |
 
-Windows events forwarded as the older `WinEventLog:…` key-value text are **not** read: that format renders
-each event as localised prose, and reading it would mean guessing. They are counted and named instead.
+The older `WinEventLog:…` text renders each event as prose for a person. It is read only where that prose
+is structured — labelled values under named sections, mapped explicitly per event by
+[`wineventlog_text`](wineventlog_text.py) — and only in English, because Windows renders the labels in the
+machine's language. Forwarding `XmlWinEventLog` avoids both limits and keeps the event's real time zone.
 """
 
 from __future__ import annotations
@@ -20,6 +23,7 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+from app.ingest_pipeline.wineventlog_text import WinEventLogTextError, parse_record
 from app.ingest_pipeline.winxml import WindowsXmlError, parse_event
 
 XML_SOURCETYPE = "xmlwineventlog"
@@ -70,15 +74,23 @@ def to_record(result: dict[str, Any]) -> SplunkRecord:
         return SplunkRecord(parser, event.record)
 
     if name.startswith(CLASSIC_WINDOWS_SOURCETYPE):
-        raise SplunkMappingError(
-            f"{sourcetype}: Splunk's classic WinEventLog text is not read; forward it as XmlWinEventLog"
-        )
+        time = result.get("_time") if isinstance(result.get("_time"), str) else None
+        try:
+            record = parse_record(raw, default_time=time or None)
+        except WinEventLogTextError as exc:
+            raise SplunkMappingError(f"{sourcetype}: {exc}") from exc
+        # The header names the log; if it does not, the sourcetype does (`WinEventLog:Security`).
+        channel = record.pop("Channel", None) or sourcetype.partition(":")[2]
+        parser = CHANNEL_PARSERS.get(str(channel))
+        if parser is None:
+            raise SplunkMappingError(f"{sourcetype}: no parser for channel {channel or '(none)'}")
+        return SplunkRecord(parser, record)
 
     if any(name.startswith(prefix) for prefix in SYSLOG_SOURCETYPES):
-        record: dict[str, Any] = {"message": raw}
+        syslog: dict[str, Any] = {"message": raw}
         if isinstance(result.get("_time"), str) and result["_time"]:
-            record["timestamp"] = result["_time"]
-        return SplunkRecord("linux_auth", record)
+            syslog["timestamp"] = result["_time"]
+        return SplunkRecord("linux_auth", syslog)
 
     if any(name.startswith(prefix) for prefix in OCSF_SOURCETYPES):
         try:

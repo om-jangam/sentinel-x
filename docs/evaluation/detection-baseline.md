@@ -9,18 +9,20 @@ Recordings: [splunk/attack_data](https://github.com/splunk/attack_data) (Apache 
 - **Industry priority** (Red Canary top-10, Windows-observable): 3 of 5 recorded techniques (1 more has no public recording) detected.
 - **Claims check** (techniques a shipped rule claims): 2 of 3 recorded techniques (1 more has no public recording) detected.
 
-| Technique | Set | Events read | Parsed | Rejected | Detected | By |
-|-----------|-----|-------------|--------|----------|----------|----|
-| T1059.001 PowerShell | priority | 21,926 | 21,808 | 118 | yes | Base64 Encoded PowerShell Command Detected; HackTool - Bloodhound/Sharphound Execution; Malicious PowerShell Commandlets - ProcessCreation; Potential PowerShell Command Line Obfuscation; Potential Powershell ReverseShell Connection; PowerShell Download and Execution Cradles; PowerShell started with an encoded command; Suspicious PowerShell Download and Execute Pattern; Suspicious PowerShell IEX Execution Patterns; Suspicious PowerShell Parameter Substring; Suspicious Program Names |
-| T1059.003 Windows Command Shell | priority | 8 | 8 | 0 | **no** | — |
-| T1105 Ingress Tool Transfer | priority | 2,290 | 2,238 | 52 | yes | File Download Via Bitsadmin To A Suspicious Target Folder; File Download Via Windows Defender MpCmpRun.EXE; File With Suspicious Extension Downloaded Via Bitsadmin; Suspicious Download From File-Sharing Website Via Bitsadmin; Suspicious File Downloaded From File-Sharing Website Via Certutil.EXE |
-| T1047 Windows Management Instrumentation | priority | 6,571 | 6,560 | 11 | **no** | — |
-| T1027 Obfuscated Files or Information | priority | 6,235 | 6,224 | 11 | yes | Base64 Encoded PowerShell Command Detected; PowerShell started with an encoded command |
-| T1033 System Owner/User Discovery | claims | 6,606 | 6,595 | 11 | **no** | — |
-| T1069.002 Domain Groups | claims | 3,158 | 3,155 | 3 | yes | HackTool - SharpView Execution; net.exe lists the Domain Admins group |
-| T1110.003 Password Spraying | claims | 487 | 487 | 0 | yes | NTLM authentication tried for many accounts from one workstation |
-| T1204.004 Malicious Copy and Paste | priority | — | — | — | not measured | no recording in splunk/attack_data |
-| T1071 Application Layer Protocol | claims | — | — | — | not measured | no Windows event log recording (the T1071.001 folders hold proxy and web logs) |
+Events are counted as **parsed** when they became OCSF, **unmapped** when they are an event type no parser maps (most of a Windows Security log is audit types no rule reads), and **rejected** when a record Sentinel-X should read could not be read.
+
+| Technique | Set | Events read | Parsed | Unmapped type | Rejected | Detected | By |
+|-----------|-----|-------------|--------|---------------|----------|----------|----|
+| T1059.001 PowerShell | priority | 22,569 | 21,908 | 661 | 0 | yes | Base64 Encoded PowerShell Command Detected; HackTool - Bloodhound/Sharphound Execution; Malicious PowerShell Commandlets - ProcessCreation; Potential PowerShell Command Line Obfuscation; Potential Powershell ReverseShell Connection; PowerShell Download and Execution Cradles; PowerShell started with an encoded command; Suspicious PowerShell Download and Execute Pattern; Suspicious PowerShell IEX Execution Patterns; Suspicious PowerShell Parameter Substring; Suspicious Program Names |
+| T1059.003 Windows Command Shell | priority | 8 | 8 | 0 | 0 | **no** | — |
+| T1105 Ingress Tool Transfer | priority | 2,383 | 2,331 | 52 | 0 | yes | File Download Via Bitsadmin To A Suspicious Target Folder; File Download Via Windows Defender MpCmpRun.EXE; File With Suspicious Extension Downloaded Via Bitsadmin; Suspicious Curl.EXE Download; Suspicious Download From File-Sharing Website Via Bitsadmin; Suspicious File Downloaded From File-Sharing Website Via Certutil.EXE; Suspicious Invoke-WebRequest Execution |
+| T1047 Windows Management Instrumentation | priority | 12,783 | 8,831 | 3,952 | 0 | **no** | — |
+| T1027 Obfuscated Files or Information | priority | 11,390 | 7,782 | 3,608 | 0 | yes | Base64 Encoded PowerShell Command Detected; PowerShell started with an encoded command |
+| T1033 System Owner/User Discovery | claims | 11,920 | 8,214 | 3,706 | 0 | **no** | — |
+| T1069.002 Domain Groups | claims | 3,406 | 3,279 | 127 | 0 | yes | HackTool - SharpView Execution; net.exe lists the Domain Admins group |
+| T1110.003 Password Spraying | claims | 487 | 487 | 0 | 0 | yes | NTLM authentication tried for many accounts from one workstation |
+| T1204.004 Malicious Copy and Paste | priority | — | — | — | — | not measured | no recording in splunk/attack_data |
+| T1071 Application Layer Protocol | claims | — | — | — | — | not measured | no Windows event log recording (the T1071.001 folders hold proxy and web logs) |
 
 ## Per recording
 
@@ -28,10 +30,9 @@ Recordings: [splunk/attack_data](https://github.com/splunk/attack_data) (Apache 
 
 Files: `T1059.001/atomic_red_team/windows-sysmon.log`, `T1059.001/atomic_red_team/windows-security.log`
 
-- Events by log: Microsoft-Windows-Sysmon/Operational 21,926
-- **Not read:** `T1059.001/atomic_red_team/windows-security.log: no Windows event XML (another format, e.g. Splunk's classic text)`
-- Not parsed (most common): unsupported Sysmon event 17: 118
-- Findings for this technique: Suspicious PowerShell Parameter Substring: 58, Suspicious Program Names: 21, PowerShell Download and Execution Cradles: 19, PowerShell started with an encoded command: 18, Suspicious PowerShell Download and Execute Pattern: 15, Malicious PowerShell Commandlets - ProcessCreation: 9, HackTool - Bloodhound/Sharphound Execution: 6, Suspicious PowerShell IEX Execution Patterns: 6, Potential PowerShell Command Line Obfuscation: 3, Base64 Encoded PowerShell Command Detected: 3, Potential Powershell ReverseShell Connection: 1
+- Events by log: Microsoft-Windows-Sysmon/Operational 21,926, Security 643
+- Event types no parser maps (most common): unsupported Windows Security event 5156: 260; unsupported Windows Security event 5158: 133; unsupported Sysmon event 17: 118; unsupported Windows Security event 4689: 71; unsupported Windows Security event 4674: 26
+- Findings for this technique: Suspicious PowerShell Parameter Substring: 60, Suspicious Program Names: 28, PowerShell Download and Execution Cradles: 24, PowerShell started with an encoded command: 20, Suspicious PowerShell Download and Execute Pattern: 19, Malicious PowerShell Commandlets - ProcessCreation: 12, Suspicious PowerShell IEX Execution Patterns: 8, HackTool - Bloodhound/Sharphound Execution: 6, Potential PowerShell Command Line Obfuscation: 4, Base64 Encoded PowerShell Command Detected: 3, Potential Powershell ReverseShell Connection: 1
 - Test-lab automation (not counted): none
 - Other findings: Repeated connections from one host to the same external destination (T1071): 3
 
@@ -48,10 +49,9 @@ Files: `T1059.003/atomic_red_team/sqlcmd_windows_sysmon.log`
 
 Files: `T1105/atomic_red_team/windows-sysmon.log`, `T1105/atomic_red_team/windows-security.log`
 
-- Events by log: Microsoft-Windows-Sysmon/Operational 2,289, Security 1
-- **Not read:** `T1105/atomic_red_team/windows-security.log: no Windows event XML (another format, e.g. Splunk's classic text)`
-- Not parsed (most common): unsupported Sysmon event 17: 26; unsupported Sysmon event 18: 26
-- Findings for this technique: Suspicious File Downloaded From File-Sharing Website Via Certutil.EXE: 11, File Download Via Windows Defender MpCmpRun.EXE: 2, File Download Via Bitsadmin To A Suspicious Target Folder: 1, File With Suspicious Extension Downloaded Via Bitsadmin: 1, Suspicious Download From File-Sharing Website Via Bitsadmin: 1
+- Events by log: Microsoft-Windows-Sysmon/Operational 2,289, Security 94
+- Event types no parser maps (most common): unsupported Sysmon event 17: 26; unsupported Sysmon event 18: 26
+- Findings for this technique: Suspicious Curl.EXE Download: 64, Suspicious File Downloaded From File-Sharing Website Via Certutil.EXE: 11, Suspicious Invoke-WebRequest Execution: 3, File Download Via Windows Defender MpCmpRun.EXE: 2, File Download Via Bitsadmin To A Suspicious Target Folder: 1, File With Suspicious Extension Downloaded Via Bitsadmin: 1, Suspicious Download From File-Sharing Website Via Bitsadmin: 1
 - Test-lab automation (not counted): none
 - Other findings: Windows Shell/Scripting Processes Spawning Suspicious Programs (T1059.001, T1059.005, T1218): 10, Suspicious WmiPrvSE Child Process (T1047, T1204.002, T1218.010): 9, Repeated connections from one host to the same external destination (T1071): 2, Many distinct external destinations from one host (T1046): 1
 
@@ -59,43 +59,39 @@ Files: `T1105/atomic_red_team/windows-sysmon.log`, `T1105/atomic_red_team/window
 
 Files: `T1047/atomic_red_team/windows-sysmon.log`, `T1047/atomic_red_team/windows-security.log`
 
-- Events by log: Microsoft-Windows-Sysmon/Operational 6,571
-- **Not read:** `T1047/atomic_red_team/windows-security.log: no Windows event XML (another format, e.g. Splunk's classic text)`
-- Not parsed (most common): unsupported Sysmon event 6: 8; unsupported Sysmon event 4: 2; unsupported Sysmon event 16: 1
+- Events by log: Microsoft-Windows-Sysmon/Operational 6,571, Security 6,212
+- Event types no parser maps (most common): unsupported Windows Security event 4672: 1,176; unsupported Windows Security event 4907: 695; unsupported Windows Security event 4648: 610; unsupported Windows Security event 4769: 470; unsupported Windows Security event 4768: 457
 - Findings for this technique: none
 - Test-lab automation (not counted): PowerShell started with an encoded command: 37, PowerShell Base64 Encoded Invoke Keyword: 4, Suspicious Encoded PowerShell Command Line: 1
-- Other findings: Windows Shell/Scripting Application File Write to Suspicious Folder (T1059): 2, Network Connection Initiated From Process Located In Potentially Suspicious Or Uncommon Location (T1105): 2, Repeated connections from one host to the same external destination (T1071): 2, Potentially Suspicious Execution From Parent Process In Public Folder (T1059, T1564): 1, Malicious PowerShell Scripts - FileCreation (T1059.001): 1
+- Other findings: External Remote SMB Logon from Public IP (T1078, T1110, T1133): 92, Windows Shell/Scripting Application File Write to Suspicious Folder (T1059): 2, Network Connection Initiated From Process Located In Potentially Suspicious Or Uncommon Location (T1105): 2, Repeated connections from one host to the same external destination (T1071): 2, Potentially Suspicious Execution From Parent Process In Public Folder (T1059, T1564): 1, Malicious PowerShell Scripts - FileCreation (T1059.001): 1
 
 ### T1027 Obfuscated Files or Information
 
 Files: `T1027/atomic_red_team/windows-sysmon.log`, `T1027/atomic_red_team/windows-security.log`
 
-- Events by log: Microsoft-Windows-Sysmon/Operational 6,235
-- **Not read:** `T1027/atomic_red_team/windows-security.log: no Windows event XML (another format, e.g. Splunk's classic text)`
-- Not parsed (most common): unsupported Sysmon event 6: 8; unsupported Sysmon event 4: 2; unsupported Sysmon event 16: 1
+- Events by log: Microsoft-Windows-Sysmon/Operational 6,235, Security 5,155
+- Event types no parser maps (most common): unsupported Windows Security event 4672: 820; unsupported Windows Security event 4907: 695; unsupported Windows Security event 4648: 611; unsupported Windows Security event 4769: 474; unsupported Windows Security event 4768: 459
 - Findings for this technique: PowerShell started with an encoded command: 2, Base64 Encoded PowerShell Command Detected: 2
 - Test-lab automation (not counted): PowerShell started with an encoded command: 37, PowerShell Base64 Encoded Invoke Keyword: 4, Suspicious Encoded PowerShell Command Line: 1
-- Other findings: Windows Shell/Scripting Application File Write to Suspicious Folder (T1059): 2, Repeated connections from one host to the same external destination (T1071): 2, Potentially Suspicious Execution From Parent Process In Public Folder (T1059, T1564): 1, Network Connection Initiated From Process Located In Potentially Suspicious Or Uncommon Location (T1105): 1, Malicious PowerShell Scripts - FileCreation (T1059.001): 1, Suspicious Invoke-WebRequest Execution (T1105): 1
+- Other findings: External Remote SMB Logon from Public IP (T1078, T1110, T1133): 3, Windows Shell/Scripting Application File Write to Suspicious Folder (T1059): 2, Repeated connections from one host to the same external destination (T1071): 2, Potentially Suspicious Execution From Parent Process In Public Folder (T1059, T1564): 1, Network Connection Initiated From Process Located In Potentially Suspicious Or Uncommon Location (T1105): 1, Malicious PowerShell Scripts - FileCreation (T1059.001): 1, Suspicious Invoke-WebRequest Execution (T1105): 1
 
 ### T1033 System Owner/User Discovery
 
 Files: `T1033/atomic_red_team/windows-sysmon.log`, `T1033/atomic_red_team/windows-security.log`
 
-- Events by log: Microsoft-Windows-Sysmon/Operational 6,606
-- **Not read:** `T1033/atomic_red_team/windows-security.log: no Windows event XML (another format, e.g. Splunk's classic text)`
-- Not parsed (most common): unsupported Sysmon event 6: 8; unsupported Sysmon event 4: 2; unsupported Sysmon event 16: 1
+- Events by log: Microsoft-Windows-Sysmon/Operational 6,606, Security 5,314
+- Event types no parser maps (most common): unsupported Windows Security event 4672: 853; unsupported Windows Security event 4907: 695; unsupported Windows Security event 4648: 633; unsupported Windows Security event 4769: 492; unsupported Windows Security event 4768: 478
 - Findings for this technique: none
 - Test-lab automation (not counted): PowerShell started with an encoded command: 37, PowerShell Base64 Encoded Invoke Keyword: 4, Suspicious Encoded PowerShell Command Line: 1
-- Other findings: Windows Shell/Scripting Application File Write to Suspicious Folder (T1059): 2, Repeated connections from one host to the same external destination (T1071): 2, Potentially Suspicious Execution From Parent Process In Public Folder (T1059, T1564): 1, Network Connection Initiated From Process Located In Potentially Suspicious Or Uncommon Location (T1105): 1, Malicious PowerShell Scripts - FileCreation (T1059.001): 1, Malicious PowerShell Commandlets - ProcessCreation (T1059.001, T1069, T1069.001, T1069.002, T1087, T1087.001, T1087.002, T1482): 1, PowerShell Download and Execution Cradles (T1059): 1, Suspicious Program Names (T1059): 1
+- Other findings: External Remote SMB Logon from Public IP (T1078, T1110, T1133): 6, Windows Shell/Scripting Application File Write to Suspicious Folder (T1059): 2, Repeated connections from one host to the same external destination (T1071): 2, Potentially Suspicious Execution From Parent Process In Public Folder (T1059, T1564): 1, Network Connection Initiated From Process Located In Potentially Suspicious Or Uncommon Location (T1105): 1, Malicious PowerShell Scripts - FileCreation (T1059.001): 1, Malicious PowerShell Commandlets - ProcessCreation (T1059.001, T1069, T1069.001, T1069.002, T1087, T1087.001, T1087.002, T1482): 1, PowerShell Download and Execution Cradles (T1059): 1, Suspicious Program Names (T1059): 1
 
 ### T1069.002 Domain Groups
 
 Files: `T1069.002/AD_discovery/windows-sysmon.log`, `T1069.002/AD_discovery/windows-security.log`
 
-- Events by log: Microsoft-Windows-Sysmon/Operational 3,158
-- **Not read:** `T1069.002/AD_discovery/windows-security.log: no Windows event XML (another format, e.g. Splunk's classic text)`
-- Not parsed (most common): unsupported Sysmon event 17: 3
-- Findings for this technique: net.exe lists the Domain Admins group: 2, HackTool - SharpView Execution: 2
+- Events by log: Microsoft-Windows-Sysmon/Operational 3,158, Security 248
+- Event types no parser maps (most common): unsupported Windows Security event 4689: 124; unsupported Sysmon event 17: 3
+- Findings for this technique: net.exe lists the Domain Admins group: 4, HackTool - SharpView Execution: 4
 - Test-lab automation (not counted): none
 - Other findings: none
 

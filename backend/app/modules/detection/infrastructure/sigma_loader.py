@@ -469,6 +469,12 @@ class _Translator:
     def _field(self, paths: tuple[str, ...], value: Any) -> Predicate:
         if isinstance(value, SigmaNull):
             return FieldIsNull(paths)
+        if isinstance(value, SigmaString) and not value.contains_special() and str(value) in RENDERED_ABSENT:
+            # Windows writes "-" where nothing was recorded, and normalisation drops it rather than storing
+            # a dash in, say, an IP field. A rule testing for "-" has to match the absent field too: without
+            # this, a filter meaning "exclude logons with no source address" excludes nothing, and the rule
+            # fires on exactly the events it was written to leave out.
+            return AnyOf((FieldMatch(paths, _matcher(value)), FieldIsNull(paths)))
         if isinstance(value, SigmaExists):
             return FieldExists(paths, value.exists)
         if isinstance(value, SigmaExpansion):
@@ -486,6 +492,9 @@ class _Translator:
             return FieldMatch(paths, Glob.contains(str(value.number)))
         return FieldMatch(paths, _matcher(value))
 
+
+RENDERED_ABSENT = ("-",)
+"""What Windows renders in place of a value it did not record."""
 
 SUPPORTED_CORRELATIONS = ("event_count", "value_count")
 MAX_CORRELATION_WINDOW_MS = 24 * 3600 * 1000

@@ -31,5 +31,9 @@ Superseded, Deferred}; an amended ADR keeps its original text and links the ADR 
 | [0018](ADR-0018-threat-intelligence-providers.md) | Threat intelligence: local feed and AlienVault OTX, cached, enriched in the background | Accepted |
 | [0019](ADR-0019-ai-assistant-local-model-grounding-validator.md) | AI assistant: local model by default, grounding enforced in code | Accepted |
 | [0020](ADR-0020-bus-reclaim-and-dead-letter.md) | Event bus: reclaim failed messages, dead-letter after five attempts | Accepted |
+| [0021](ADR-0021-splunk-as-a-pull-source.md) | Splunk is a source Sentinel-X pulls from, on demand | Amended by 0024 |
+| [0022](ADR-0022-attribution-check.md) | Check who did what in AI statements against the evidence graph | Accepted |
+| [0023](ADR-0023-baseline-novelty.md) | "Has this ever happened here?" — counted, cited, never a detector | Accepted |
+| [0024](ADR-0024-rendered-wineventlog-text.md) | Windows events rendered as prose are read where the prose is structured | Accepted |
 
 New ADRs are added as implementation surfaces new significant decisions (per-phase).

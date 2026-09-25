@@ -15,7 +15,7 @@ from pathlib import PureWindowsPath
 from typing import Any
 
 from app.ingest_pipeline.ocsf import MAX_RAW_DATA_CHARS, OCSF_VERSION, EventClass, Severity, Status
-from app.ingest_pipeline.parsers.base import ParseError, Record, as_int, as_ip, clean
+from app.ingest_pipeline.parsers.base import ParseError, Record, UnsupportedEventError, as_int, as_ip, clean
 
 LOGON_TYPES = {
     2: "Interactive",
@@ -153,7 +153,7 @@ def parse(record: Record) -> dict[str, Any]:
         raise ParseError("record has no numeric EventID")
     handler = _HANDLERS.get(event_id)
     if handler is None:
-        raise ParseError(f"unsupported Windows Security event {event_id}")
+        raise UnsupportedEventError(f"unsupported Windows Security event {event_id}")
     data = record.get("EventData")
     if data is None:
         data = {}

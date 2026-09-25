@@ -12,6 +12,15 @@ class ParseError(ValueError):
     """The record is well-formed input but can't be mapped to OCSF by this parser."""
 
 
+class UnsupportedEventError(ParseError):
+    """The record is of a kind this parser does not map — a limit of the mapping, not a broken record.
+
+    Worth separating: a Windows Security log is mostly event types no rule reads (privilege assignment,
+    Kerberos service tickets, filtering-platform connections). Counting those as parse failures would
+    make the evaluation's parse rate say Sentinel-X is failing where it is simply not interested.
+    """
+
+
 def clean(value: Any) -> Any:
     """Windows and syslog use '-' and empty strings for "no value"."""
     if value is None:

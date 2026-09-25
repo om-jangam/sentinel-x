@@ -13,9 +13,13 @@ hand; the report is not.
 | Rules that fired on the T1059.001 recording | 1 | 11 |
 | Rules shipped | 7 (4 Sigma, 3 threshold) | 170 (166 Sigma, 4 threshold, one of them a Sigma correlation rule) |
 | Events parsed | 46,588 of 46,794 (99.6%) | unchanged |
+| Events read at all | 47,281 | **64,946** (after reading the rendered Security logs, below) |
 
-Of the 47,281 events read, 46,794 are in logs Sentinel-X parses (46,793 Sysmon and one Security);
-46,588 of those became normalised events. The gain came from
+Of the 64,946 events now read, **0 are rejected**: every event of a type Sentinel-X maps became a
+normalised event. The other 12,106 are audit types no parser maps — Kerberos service tickets, special
+privileges assigned, filtering-platform connections — which the report counts separately, because
+"we don't map this event type" and "we failed to read this event" are different admissions.
+The detection gain came from
 [step 3](../12-improvement-research.md#3-ship-a-curated-sigmahq-rule-set-with-attribution): 162 community
 rules, chosen by a fixed rule and shipped with their authors named.
 
@@ -49,15 +53,29 @@ rules, chosen by a fixed rule and shipped with their authors named.
    program looks suspicious (`rundll32`, `cmd /c`, `\Users\Public\`, …); the Atomic test launches
    `notepad.exe`. That is a deliberate choice by the rule's authors, and the evaluation makes it visible
    rather than hiding it behind an overall percentage.
-4. **Two log sources were read as nothing** — one is now read. The password-spraying recording is in
+4. **Two log sources were read as nothing** — both are now read. The password-spraying recording is in
    `Microsoft-Windows-NTLM/Operational`; those 487 events now parse, and a rule counting distinct accounts
    per workstation flags the three machines that worked through 116, 47 and 12 accounts in 26 minutes,
    while leaving the two-account machines alone. The audit record says who was tried and from where but
-   **not whether it worked**, so the rule counts attempts and says so. Splunk's `windows-security.log`
-   files are still unread: they are its older rendered-text format, not XML.
+   **not whether it worked**, so the rule counts attempts and says so.
+   The six `windows-security.log` files are Splunk's rendered text, which
+   [ADR-0021](../adr/ADR-0021-splunk-as-a-pull-source.md) had refused as prose. It is prose, but it is
+   *structured* prose — labelled values under named sections — so it is now read by an explicit
+   per-event, per-section map, in English only, with everything unmapped left out. That added 17,665
+   events and put process creation from the Security log next to Sysmon's: T1105 picked up
+   `Suspicious Curl.EXE Download` (64 findings) and `Suspicious Invoke-WebRequest Execution`, and
+   T1059.001 gained findings on every PowerShell rule it already had. No technique verdict changed.
 5. **T1059.003 stays missed** because its recording holds 8 events: too little of the command-shell
    activity a rule would need. A miss on a thin recording is not the same as a blind spot, and the report
    shows the event count next to the verdict so the two can be told apart.
+
+6. **A Sigma filter that could never match.** SigmaHQ's "External Remote SMB Logon from Public IP"
+   excludes anonymous logons with `filter_main_empty: IpAddress: '-'`. Windows writes `-` for "not
+   recorded" and normalisation drops it, so against OCSF that filter matched nothing and the rule fired on
+   exactly the logons it was written to exclude — 666 findings in one recording, 2,041 across four. A
+   rendered `-` now also matches an absent field, and the same recordings produce 101 between them, all
+   logons that really do name a public address. Nothing but the real data would have shown this: the rule
+   had passed every test, because no test had an event with no source address.
 
 ## Bugs this found in the evaluator itself
 
@@ -82,8 +100,9 @@ in about 80 seconds with 170 rules.
 ## What would move the numbers next
 
 - A rule for plain `whoami`, or a narrower tag on the one that exists (finding 2).
-- Reading Splunk's classic Security text and the NTLM log (finding 4), which would put T1110.003 and
-  several thousand Security events back in scope.
+- More Windows Security event types. 12,106 events read are audit types no parser maps; 4672 (special
+  privileges), 4648 (explicit credentials) and 4769/4768 (Kerberos tickets) are the common ones, and each
+  is a lateral-movement signal SigmaHQ has rules for.
 - Rarity ([step 5](../12-improvement-research.md#5-evidence-backed-rarity-first-seen), built): `wmic
   process call create notepad.exe` is unremarkable alone, and the baseline can now say whether this
   organisation has ever seen it. Wiring that into the evaluation as a second signal, so a missed

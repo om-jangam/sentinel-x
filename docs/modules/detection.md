@@ -85,8 +85,16 @@ Keyword searches look in `message` and `raw_data` (for `process_creation`: `proc
 `lt`/`lte`/`gt`/`gte`/`neq`, `exists`, `null`, numbers, booleans, and conditions with `and`/`or`/`not`,
 `1 of`/`all of` and `them`.
 
+**`-` means "not recorded".** Windows writes a dash where it has no value, and normalisation drops it
+rather than storing a dash in, say, an IP field. So a rule testing a field for `'-'` also matches the
+event where that field is absent. Without this, SigmaHQ's own `filter_main_empty: IpAddress: '-'` could
+never match, and "External Remote SMB Logon from Public IP" fired on exactly the anonymous logons it was
+written to exclude — 2,041 times across four public recordings
+([what the evaluation showed](../evaluation/README.md#what-it-exposed)).
+
 **Refused:** unmapped logsources and fields, `fieldref`, placeholders (`expand`), query expressions, and
-any value type not listed. Sigma correlation rules aren't supported; use threshold rules.
+any value type not listed. Of the correlation rules, only `event_count` and `value_count` are supported
+(below); `temporal` and `temporal_ordered` are refused with that reason.
 
 ## Sigma correlation rules
 

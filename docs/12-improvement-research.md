@@ -34,8 +34,13 @@ so each mapped event type unlocks a whole category of community rules.
 [`app/ingest_pipeline/winxml.py`](../backend/app/ingest_pipeline/winxml.py)). Baseline with 7 rules:
 2 of 5 priority techniques and 1 of 3 claimed techniques, 99.6% of events parsed
 ([results](evaluation/detection-baseline.md), [what they mean](evaluation/README.md)).
-*Since:* `Microsoft-Windows-NTLM/Operational` is now read, and password spraying in it is detected
-(claims check 1 of 3 → 2 of 3). Splunk's classic key-value Security logs are still unread.
+*Since:* both formats the first run reported as unread are read. `Microsoft-Windows-NTLM/Operational`
+brought password spraying into scope (claims check 1 of 3 → 2 of 3), and Splunk's rendered Security text
+([ADR-0024](adr/ADR-0024-rendered-wineventlog-text.md)) added 17,665 events and new findings on T1105 and
+T1059.001. 64,946 events are now read with **0 rejected**; the 12,106 that do not become evidence are
+audit types no parser maps, counted in their own column. Reading real Security logs also exposed a Sigma
+filter that could never match (`IpAddress: '-'`), which had been firing 2,041 times on the logons it was
+written to exclude.
 
 Replay public datasets and publish per-technique results: which rules fired, which techniques were
 missed, and false positives on the benign background events.
@@ -154,6 +159,10 @@ All eight are built. What they changed, in order:
 | 7 | Attribution check | the model's "who did it" is checked against the graph |
 | 8 | Incident report | a handover document where every line cites its events |
 
-**Still open, and deliberately so:** the two log formats the evaluation named (Splunk's classic Security
-text and `Microsoft-Windows-NTLM/Operational`), a sliding window for novelty, a rule-coverage Navigator
-layer, and MESSALA-style checklist scoring for the assistant. Each is written up under its step above.
+**Since then,** both log formats the evaluation named are read ([ADR-0024](adr/ADR-0024-rendered-wineventlog-text.md)
+and the NTLM parser), which took events read from 47,281 to 64,946 with nothing rejected.
+
+**Still open, and deliberately so:** more Windows Security event types (4672, 4648, 4769/4768 are the
+common unmapped ones, and each is a lateral-movement signal SigmaHQ has rules for), a sliding window for
+novelty, a rule-coverage Navigator layer, and MESSALA-style checklist scoring for the assistant. Each is
+written up under its step above.

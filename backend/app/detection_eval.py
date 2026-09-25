@@ -39,7 +39,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Self
+from typing import Any, NamedTuple, Self
 from uuid import UUID
 
 import httpx
@@ -48,7 +48,8 @@ from pydantic import ValidationError
 from app.core.events.bus import Event
 from app.core.events.topics import EVENTS_NORMALIZED
 from app.ingest_pipeline.ocsf import event_uid_for
-from app.ingest_pipeline.parsers import ParseError, normalize
+from app.ingest_pipeline.parsers import ParseError, UnsupportedEventError, normalize
+from app.ingest_pipeline.wineventlog_text import iter_records as iter_rendered
 from app.ingest_pipeline.winxml import WindowsXmlError, iter_events
 from app.modules.detection.application.detection_service import DetectionService
 from app.modules.detection.domain.findings import Finding
@@ -365,6 +366,7 @@ class DatasetResult:
     channels: Counter[str] = field(default_factory=Counter)
     accepted: int = 0
     rejected: Counter[str] = field(default_factory=Counter)
+    unsupported: Counter[str] = field(default_factory=Counter)
     unread_files: list[str] = field(default_factory=list)
     findings: list[Finding] = field(default_factory=list)
     harness_events: set[str] = field(default_factory=set)
@@ -419,23 +421,43 @@ def _reason(exc: Exception) -> str:
     return str(exc)[:120]
 
 
+class _Read(NamedTuple):
+    """One event a reader recovered from a file: its channel, and the record the parsers read."""
+
+    channel: str | None
+    record: dict[str, Any]
+
+
+def _read(text: str) -> tuple[list[_Read | Exception], str] | None:
+    """Every event in a file, using whichever reader fits it. None if neither recognises the file."""
+    xml = list(iter_events(text))  # raises WindowsXmlError only when the whole file is refused
+    if xml:
+        return ([item if isinstance(item, Exception) else _Read(item.channel, item.record) for item in xml], "XML")
+    # No XML: try Splunk's rendered WinEventLog text, which names its channel in the header.
+    rendered: list[_Read | Exception] = [
+        item if isinstance(item, Exception) else _Read(item.pop("Channel", None), item) for item in iter_rendered(text)
+    ]
+    return (rendered, "rendered text") if rendered else None
+
+
 def _documents(result: DatasetResult, files: Iterable[tuple[str, str]], *, source_id: str) -> list[dict[str, Any]]:
     documents: list[dict[str, Any]] = []
     ingested_at = datetime.now(UTC)
     for name, text in files:
         try:
-            items = list(iter_events(text))
+            read = _read(text)
         except WindowsXmlError as exc:
             result.unread_files.append(f"{name}: refused ({exc})")
             continue
-        if not items:
-            # Not silently zero: say the file held nothing this reader understands.
-            result.unread_files.append(f"{name}: no Windows event XML (another format, e.g. Splunk's classic text)")
+        if read is None:
+            # Not silently zero: say the file held nothing either reader understands.
+            result.unread_files.append(f"{name}: neither Windows event XML nor rendered WinEventLog text")
             continue
+        items, form = read
         for item in items:
             result.events += 1
-            if isinstance(item, WindowsXmlError):
-                result.rejected[f"unreadable XML: {item}"[:120]] += 1
+            if isinstance(item, Exception):
+                result.rejected[f"unreadable {form}: {item}"[:120]] += 1
                 continue
             channel = item.channel or "(none)"
             result.channels[channel] += 1
@@ -444,6 +466,9 @@ def _documents(result: DatasetResult, files: Iterable[tuple[str, str]], *, sourc
                 continue  # another log (System, PowerShell, …): not a source Sentinel-X parses
             try:
                 event = normalize(parser, item.record)
+            except UnsupportedEventError as exc:
+                result.unsupported[str(exc)] += 1
+                continue
             except (ParseError, ValidationError) as exc:
                 result.rejected[_reason(exc)] += 1
                 continue
@@ -514,17 +539,22 @@ def render_report(results: Sequence[DatasetResult], *, rule_count: int, generate
         f"- **Industry priority** (Red Canary top-10, Windows-observable): {_score(results, 'priority')} detected.",
         f"- **Claims check** (techniques a shipped rule claims): {_score(results, 'claims')} detected.",
         "",
-        "| Technique | Set | Events read | Parsed | Rejected | Detected | By |",
-        "|-----------|-----|-------------|--------|----------|----------|----|",
+        "Events are counted as **parsed** when they became OCSF, **unmapped** when they are an event type "
+        "no parser maps (most of a Windows Security log is audit types no rule reads), and **rejected** when "
+        "a record Sentinel-X should read could not be read.",
+        "",
+        "| Technique | Set | Events read | Parsed | Unmapped type | Rejected | Detected | By |",
+        "|-----------|-----|-------------|--------|---------------|----------|----------|----|",
     ]
     for r in results:
         rules = sorted({f.rule_title for f in r.matching})
         lines.append(
             f"| {r.dataset.technique} {r.dataset.name} | {r.dataset.purpose} | {r.events:,} | {r.accepted:,} | "
-            f"{sum(r.rejected.values()):,} | {'yes' if r.detected else '**no**'} | {'; '.join(rules) or '—'} |"
+            f"{sum(r.unsupported.values()):,} | {sum(r.rejected.values()):,} | "
+            f"{'yes' if r.detected else '**no**'} | {'; '.join(rules) or '—'} |"
         )
     for u in UNAVAILABLE:
-        lines.append(f"| {u.technique} {u.name} | {u.purpose} | — | — | — | not measured | {u.reason} |")
+        lines.append(f"| {u.technique} {u.name} | {u.purpose} | — | — | — | — | not measured | {u.reason} |")
 
     lines += ["", "## Per recording", ""]
     for r in results:
@@ -535,6 +565,11 @@ def render_report(results: Sequence[DatasetResult], *, rule_count: int, generate
         lines.append(f"- Events by log: {channels or 'none'}")
         for unread in r.unread_files:
             lines.append(f"- **Not read:** `{unread}`")
+        if r.unsupported:
+            lines.append(
+                "- Event types no parser maps (most common): "
+                + "; ".join(f"{reason}: {n:,}" for reason, n in r.unsupported.most_common(5))
+            )
         if r.rejected:
             lines.append(
                 "- Not parsed (most common): "

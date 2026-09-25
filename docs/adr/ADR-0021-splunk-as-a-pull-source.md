@@ -1,6 +1,7 @@
 # ADR-0021 · Splunk is a source Sentinel-X pulls from, on demand
 
-**Status:** Accepted · **Date:** 2026-09 · **Builds on:** [ADR-0013](ADR-0013-vector-http-ingest-and-python-ocsf-mapping.md),
+**Status:** Accepted · **Amended by** [ADR-0024](ADR-0024-rendered-wineventlog-text.md) (point 2: the
+classic `WinEventLog:` text is now read) · **Date:** 2026-09 · **Builds on:** [ADR-0013](ADR-0013-vector-http-ingest-and-python-ocsf-mapping.md),
 [ADR-0014](ADR-0014-lock-scope-security-investigation.md)
 
 ## Context
@@ -31,8 +32,10 @@ Four forces:
      year a BSD syslog line lacks;
    - `ocsf`, `_json` holding `class_uid` → `ocsf`.
 
-   Anything else, including Splunk's classic `WinEventLog:` key-value text, is **counted and named**, not
-   guessed at. That text renders each event as localised prose; reading it would be invention.
+   Anything else is **counted and named**, not guessed at. *(Amended by
+   [ADR-0024](ADR-0024-rendered-wineventlog-text.md): the classic `WinEventLog:` text was refused here as
+   localised prose. It is prose, but it is structured prose, and it is now read from an explicit
+   per-event, per-section label map — in English only.)*
 3. **One pull serves one ingest source,** because a source has one parser and its events are attributed to
    it. Records for another parser are reported ("`windows_security` events need a source with that
    parser"), not sent under the wrong source.
@@ -49,9 +52,10 @@ Four forces:
 
 - An analyst can investigate with the logs an organisation already collects, without changing its
   collection. The demo story becomes "point it at your Splunk and pull the last day of Sysmon".
-- **Coverage is honest but partial:** if Windows events were forwarded as classic `WinEventLog` text, a
-  pull returns nothing usable and says so. Reading that format is a separate decision, not a silent
-  fallback.
+- **Coverage is honest but partial:** an event in a sourcetype no parser maps returns nothing usable and
+  says so. *(The classic `WinEventLog` text named here is read as of
+  [ADR-0024](ADR-0024-rendered-wineventlog-text.md), which was the separate decision this paragraph
+  anticipated.)*
 - **No checkpointing yet.** Repeating a pull re-sends the same events; ingestion's content fingerprint
   means they land as the same `event_uid`, so nothing is duplicated in the event store, but the work is
   repeated. A stored "last pulled time" per source, and a scheduled pull, are the next step if pulling

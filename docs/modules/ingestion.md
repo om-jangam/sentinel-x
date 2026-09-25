@@ -150,6 +150,15 @@ Input: one event object with `EventID`, `TimeCreated` (or `@timestamp` / `timest
 `-` and empty values are treated as absent. Rejected: any other `EventID`, a missing `EventID` or
 time, non-object `EventData`, and a 4688 without `NewProcessName`.
 
+**Two readers produce this record shape.** `winxml.py` reads Windows event XML.
+[`wineventlog_text.py`](../../backend/app/ingest_pipeline/wineventlog_text.py) reads the message Windows
+renders for a person — Splunk's older `WinEventLog:` format — from an explicit map of (section, label) to
+field, so "Account Name" under `New Logon:` is the account that logged on and the one under `Subject:` is
+the account that asked. Unmapped labels are left out. Two limits, both in
+[ADR-0024](../adr/ADR-0024-rendered-wineventlog-text.md): the labels are English only, and the rendered
+timestamp carries no time zone, so it is read as UTC and may be out by the host's offset. Forward
+`XmlWinEventLog` where that is a choice.
+
 ### `windows_sysmon` — Sysmon Operational log JSON
 
 Input: the same shape as `windows_security` (`EventID`, `TimeCreated` or Sysmon's `UtcTime`, `Computer`,
@@ -246,7 +255,9 @@ sentinelx pull-splunk   --search 'index=windows sourcetype=XmlWinEventLog*' --pa
   refused in production) and `SENTINELX_SPLUNK_TIMEOUT_SECONDS` configure the connection.
 - The pull is bounded: an explicit time window, `--limit` results (10,000 by default), preview-free export.
 - The **sourcetype** chooses the parser; a result for another parser is reported, not sent under the wrong
-  source. Splunk's classic `WinEventLog:` key-value text is not read (see the ADR).
+  source. `XmlWinEventLog…` and `WinEventLog:Security` both work — the second through the rendered-text
+  reader ([ADR-0024](../adr/ADR-0024-rendered-wineventlog-text.md)), with Splunk's `_time` as the fallback
+  when a result's `_raw` begins at the header.
 - Events go through `POST /api/v1/ingest/events` like any other producer, so validation, rejection reasons
   and the audit trail are identical.
 - Repeating a pull is safe: the same record keeps the same `event_uid`, so the event store stores it once.

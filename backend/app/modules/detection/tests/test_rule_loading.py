@@ -83,6 +83,31 @@ def test_sigma_semantics_against_a_normalised_windows_event(detection: str, fire
     assert rule.predicate.evaluate(PROCESS) is fires
 
 
+def test_a_dash_matches_a_field_normalisation_dropped() -> None:
+    """Windows writes "-" for "not recorded"; normalisation drops it, so a rule testing "-" needs both.
+
+    SigmaHQ's "External Remote SMB Logon from Public IP" excludes anonymous logons with
+    `filter_main_empty: IpAddress: '-'`. Read literally against OCSF that filter can never match, and the
+    rule then fires on every network logon with no source address at all — 666 of them in one recording.
+    """
+    from app.ingest_pipeline.tests.test_wineventlog_text import LOGON
+    from app.ingest_pipeline.wineventlog_text import parse_record
+
+    anonymous = dict(parse_record(LOGON))
+    anonymous["EventData"] = {**anonymous["EventData"], "IpAddress": "-", "IpPort": "-"}
+    no_address = document(anonymous, "windows_security")
+    assert (no_address.get("src_endpoint") or {}).get("ip") is None, "a dash is not stored as an address"
+
+    detection = (
+        "  sel:\n    EventID: 4624\n    LogonType: 3\n  filter:\n    IpAddress: '-'\n  condition: sel and not filter"
+    )
+    rule = compile_sigma(sigma(detection, "{product: windows, service: security}"), path="t.yml")
+    assert not rule.predicate.evaluate(no_address), "the filter excludes the logon that names no address"
+
+    from_outside = document(parse_record(LOGON.replace("10.0.1.15", "203.0.113.45")), "windows_security")
+    assert rule.predicate.evaluate(from_outside), "a logon that does name an address still fires"
+
+
 def test_logsource_scope_keeps_rules_on_their_own_events() -> None:
     rule = compile_sigma(sigma("  keywords:\n    - 'admin'\n  condition: keywords"), path="t.yml")
     assert not rule.predicate.evaluate(SSHD), "a process_creation rule never matches an authentication event"

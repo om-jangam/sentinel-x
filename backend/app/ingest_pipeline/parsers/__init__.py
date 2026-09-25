@@ -8,9 +8,9 @@ from types import MappingProxyType
 
 from app.ingest_pipeline.ocsf import MAX_RAW_DATA_CHARS, OcsfEvent
 from app.ingest_pipeline.parsers import linux_auth, ocsf_passthrough, windows_ntlm, windows_security, windows_sysmon
-from app.ingest_pipeline.parsers.base import ParseError, Parser, Record
+from app.ingest_pipeline.parsers.base import ParseError, Parser, Record, UnsupportedEventError
 
-__all__ = ["PARSERS", "PARSER_DESCRIPTIONS", "ParseError", "normalize"]
+__all__ = ["PARSERS", "PARSER_DESCRIPTIONS", "ParseError", "UnsupportedEventError", "normalize"]
 
 PARSERS: Mapping[str, Parser] = MappingProxyType(
     {

@@ -10,6 +10,7 @@ import pytest
 
 from app.ingest_pipeline.splunk import to_record
 from app.ingest_pipeline.tests.test_splunk_mapping import OCSF_EVENT, SYSLOG_LINE, result
+from app.ingest_pipeline.tests.test_wineventlog_text import PROCESS as RENDERED_4688
 from app.ingest_pipeline.tests.test_winxml import SECURITY_4688, SYSMON_1
 from app.splunk_collector import SplunkError, pull, search_events, splunk_client
 
@@ -75,7 +76,7 @@ def test_pull_sends_only_the_records_this_source_parser_reads() -> None:
         splunk_lines(
             result("XmlWinEventLog:Microsoft-Windows-Sysmon/Operational", SYSMON_1),
             result("XmlWinEventLog:Security", SECURITY_4688),
-            result("WinEventLog:Security", "LogName=Security\nEventCode=4688"),
+            result("WinEventLog:Security", RENDERED_4688),
             result("cisco:asa", "%ASA-6-302013"),
             result("ocsf", json.dumps(OCSF_EVENT)),
         )
@@ -98,8 +99,8 @@ def test_pull_sends_only_the_records_this_source_parser_reads() -> None:
     ]
     assert requests[0].headers["authorization"] == "Bearer ingest-token"
     assert outcome.unmapped == {
-        "windows_security events need a source with that parser": 1,
-        "WinEventLog:Security: Splunk's classic WinEventLog text is not read; forward it as XmlWinEventLog": 1,
+        # Both Security results — the XML one and the rendered-text one — need a windows_security source.
+        "windows_security events need a source with that parser": 2,
         "cisco:asa: no parser is mapped to this sourcetype": 1,
         "ocsf events need a source with that parser": 1,
     }

@@ -23,7 +23,7 @@ import json
 from typing import Any
 
 from app.ingest_pipeline.ocsf import MAX_RAW_DATA_CHARS, OCSF_VERSION, EventClass, Severity, Status
-from app.ingest_pipeline.parsers.base import ParseError, Record, as_int, clean
+from app.ingest_pipeline.parsers.base import ParseError, Record, UnsupportedEventError, as_int, clean
 
 LOG_NAME = "Microsoft-Windows-NTLM/Operational"
 AUDIT_EVENT = 8004
@@ -42,7 +42,7 @@ def parse(record: Record) -> dict[str, Any]:
     if event_id is None:
         raise ParseError("record has no numeric EventID")
     if event_id != AUDIT_EVENT:
-        raise ParseError(f"unsupported Windows NTLM event {event_id}")
+        raise UnsupportedEventError(f"unsupported Windows NTLM event {event_id}")
     data = record.get("EventData")
     if data is None:
         data = {}
