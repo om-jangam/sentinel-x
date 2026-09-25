@@ -30,6 +30,7 @@ OCSF_SOURCETYPES = ("ocsf", "_json", "json")
 CHANNEL_PARSERS = {
     "Security": "windows_security",
     "Microsoft-Windows-Sysmon/Operational": "windows_sysmon",
+    "Microsoft-Windows-NTLM/Operational": "windows_ntlm",
 }
 
 

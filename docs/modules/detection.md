@@ -181,6 +181,9 @@ separately and never counted as detections.
 - **Sigma coverage** is the table above. Sysmon events 1, 3, 5, 7, 8, 10–14, 22, 23 and 26 are
   normalised; named pipes (17, 18), WMI (19–21), `pipe_created`, `wmi_event`, `ps_script` and other
   Windows logs are not, so rules for them are refused.
+- **NTLM spraying is counted from attempts, not failures.** Event 8004 does not say whether the
+  authentication worked, so the rule reports how many accounts one workstation tried, and an analyst has
+  to read the logon records for the outcome.
 - **`whoami used to list privileges or groups` is tagged T1033 but narrower than the technique:** it needs
   `/all`, `/priv` or `/groups`, so plain `whoami` (what the public T1033 recording runs) does not fire it.
 - **Threshold evidence** is the window at the moment of firing; later events in the same window do not

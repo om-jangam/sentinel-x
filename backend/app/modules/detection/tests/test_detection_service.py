@@ -18,6 +18,7 @@ from app.modules.detection.tests.conftest import (
     SAMPLE_SETS,
     MemoryFindings,
     bus_event,
+    document,
     memory_uow_factory,
     sample_documents,
 )
@@ -220,3 +221,29 @@ async def test_the_sink_sees_stored_findings_for_every_batch_even_when_redeliver
     assert [f.id for f in again[0]] == [f.id for f in first[0]]
     assert len(findings.all) == 7
     assert quiet == ([], len(benign))
+
+
+async def test_ntlm_spray_fires_on_many_accounts_from_one_workstation_but_not_on_normal_use() -> None:
+    """The audit records show attempts, not failures; what marks a spray is how many accounts are tried."""
+    from app.ingest_pipeline.tests.test_windows_ntlm import AUDIT, EVENT_DATA
+
+    def attempt(user: str, station: str, second: int) -> dict[str, Any]:
+        record = {
+            **AUDIT,
+            "TimeCreated": f"2024-01-18T05:00:{second:02d}Z",
+            "EventRecordID": f"{station}-{user}",
+            "EventData": {**EVENT_DATA, "UserName": user, "WorkstationName": station},
+        }
+        return document(record, "windows_ntlm")
+
+    spray = [attempt(f"user{i:02d}", "WIN-ATTACKER", i) for i in range(12)]
+    normal = [attempt(user, "WIN-DESK-01", 30) for user in ("jsmith", "backup")]
+
+    findings = MemoryFindings()
+    await service(findings).handle(bus_event(spray + normal))
+
+    fired = [f for f in findings.all if "NTLM" in f.rule_title]
+    assert len(fired) == 1, "one spray, one finding"
+    assert fired[0].entities["src_endpoint.hostname"] == ["WIN-ATTACKER"]
+    assert len(fired[0].entities["user.name"]) >= 10, "the accounts it worked through"
+    assert fired[0].techniques == ("T1110.003",)

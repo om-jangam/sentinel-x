@@ -9,7 +9,7 @@ hand; the report is not.
 | | Own rules only (7) | With the SigmaHQ pack (169) |
 |---|---|---|
 | Industry-priority techniques detected | 2 of 5 | **3 of 5** |
-| Techniques a shipped rule claims | 1 of 3 | 1 of 3 |
+| Techniques a shipped rule claims | 1 of 3 | **2 of 3** (after reading the NTLM log, below) |
 | Rules that fired on the T1059.001 recording | 1 | 11 |
 | Rules shipped | 7 (4 Sigma, 3 threshold) | 170 (166 Sigma, 4 threshold, one of them a Sigma correlation rule) |
 | Events parsed | 46,588 of 46,794 (99.6%) | unchanged |
@@ -49,9 +49,12 @@ rules, chosen by a fixed rule and shipped with their authors named.
    program looks suspicious (`rundll32`, `cmd /c`, `\Users\Public\`, …); the Atomic test launches
    `notepad.exe`. That is a deliberate choice by the rule's authors, and the evaluation makes it visible
    rather than hiding it behind an overall percentage.
-4. **Two log sources are read as nothing.** The password-spraying recording is in
-   `Microsoft-Windows-NTLM/Operational` (487 events, no parser), and Splunk's `windows-security.log`
-   files are its older key-value text format, not XML. Both are named in the report.
+4. **Two log sources were read as nothing** — one is now read. The password-spraying recording is in
+   `Microsoft-Windows-NTLM/Operational`; those 487 events now parse, and a rule counting distinct accounts
+   per workstation flags the three machines that worked through 116, 47 and 12 accounts in 26 minutes,
+   while leaving the two-account machines alone. The audit record says who was tried and from where but
+   **not whether it worked**, so the rule counts attempts and says so. Splunk's `windows-security.log`
+   files are still unread: they are its older rendered-text format, not XML.
 5. **T1059.003 stays missed** because its recording holds 8 events: too little of the command-shell
    activity a rule would need. A miss on a thin recording is not the same as a blind spot, and the report
    shows the event count next to the verdict so the two can be told apart.

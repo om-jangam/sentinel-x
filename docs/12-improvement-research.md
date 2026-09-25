@@ -34,7 +34,8 @@ so each mapped event type unlocks a whole category of community rules.
 [`app/ingest_pipeline/winxml.py`](../backend/app/ingest_pipeline/winxml.py)). Baseline with 7 rules:
 2 of 5 priority techniques and 1 of 3 claimed techniques, 99.6% of events parsed
 ([results](evaluation/detection-baseline.md), [what they mean](evaluation/README.md)).
-*Not yet:* Splunk's classic key-value Security logs and `Microsoft-Windows-NTLM/Operational` are unread.
+*Since:* `Microsoft-Windows-NTLM/Operational` is now read, and password spraying in it is detected
+(claims check 1 of 3 → 2 of 3). Splunk's classic key-value Security logs are still unread.
 
 Replay public datasets and publish per-technique results: which rules fired, which techniques were
 missed, and false positives on the benign background events.

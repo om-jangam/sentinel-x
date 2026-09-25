@@ -78,6 +78,7 @@ _SWITCH_ARGUMENT = re.compile(r"(?i)(?:^|\s)[-/]([a-z]+)\s+\"?([A-Za-z0-9+=][A-Z
 CHANNEL_PARSERS = {
     "Security": "windows_security",
     "Microsoft-Windows-Sysmon/Operational": "windows_sysmon",
+    "Microsoft-Windows-NTLM/Operational": "windows_ntlm",
 }
 
 

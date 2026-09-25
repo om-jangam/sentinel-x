@@ -205,6 +205,27 @@ Rejected with a reason: any other `EventID` (for example 15, 17, 18 and 25), a m
 `EventData`, and events without their key field (`Image`, `TargetImage`, `TargetFilename`,
 `TargetObject`, `QueryName`, or both endpoints).
 
+### `windows_ntlm` — NTLM auditing on a domain controller
+
+Input: the same shape as the other Windows parsers (`EventID`, `TimeCreated`, `Computer`, `EventData`).
+
+| EventID | Meaning | OCSF |
+|---------|---------|------|
+| 8004 | NTLM authentication audited by the domain controller | Authentication · Logon · **Unknown** |
+
+| Source | OCSF field |
+|--------|------------|
+| `UserName`, `DomainName` | `user.name`, `user.domain` |
+| `WorkstationName` | `src_endpoint.hostname` |
+| `Computer` (the domain controller) | `device.hostname`, `dst_endpoint.hostname` |
+| — | `auth_protocol` = `NTLM` |
+| `SChannelName`, `SChannelType` | `unmapped.secure_channel_name`, `.secure_channel_type` |
+
+The status is **Unknown** on purpose: 8004 records that NTLM was used for an account from a workstation,
+never whether it succeeded. Windows and Splunk render an absent value here as `NULL` or `-`, and both are
+read as absent, so a workstation genuinely called `NULL` would be lost — the trade for not inventing a
+source for anonymous attempts. Rejected: any other event ID, a missing time or `UserName`.
+
 ### `ocsf` — already-normalised events
 
 Passes the record to OCSF validation unchanged. It must contain `class_uid`; everything in *Coverage

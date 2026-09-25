@@ -25,6 +25,7 @@ security data → ingestion → normalisation → detection → correlation
 | Hand over an incident as a Markdown report, every line citing its events | ✅ Built ([how](docs/modules/correlation.md#exports)) |
 | Export an incident as an ATT&CK Navigator layer or STIX Attack Flow | ✅ Built ([how](docs/modules/correlation.md#exports)) |
 | Detection: own rules plus 162 attributed SigmaHQ community rules | ✅ Built ([notice](backend/app/modules/detection/rules/sigmahq/NOTICE.md)) |
+| Read Windows NTLM auditing, so password spraying is visible from the domain controller | ✅ Built ([how](docs/modules/ingestion.md)) |
 | Detection measured on public attack recordings (splunk/attack_data) | ✅ Built ([baseline](docs/evaluation/detection-baseline.md)) |
 | Normalisation: OCSF 1.6 subset for OpenSSH auth logs, Windows Security events, Sysmon (13 event types), native OCSF | ✅ Built ([mappings](docs/modules/ingestion.md#ocsf-mappings)) |
 | Storage and search: immutable events in OpenSearch, constrained search API | ✅ Built (not yet run against a live cluster) |

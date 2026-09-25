@@ -197,7 +197,7 @@ def test_every_shipped_rule_loads_and_every_mapping_points_at_a_real_field() -> 
     own = [rule for rule in rules.all() if not rule.meta.path.startswith("sigmahq/")]
     community = [rule for rule in rules.all() if rule.meta.path.startswith("sigmahq/")]
     assert len([r for r in own if r.type is RuleType.SIGMA]) == 4  # the correlation's base rule is not one
-    assert len(rules.threshold) == 4  # 3 in the platform format, 1 as a Sigma correlation rule
+    assert len(rules.threshold) == 5  # 4 in the platform format, 1 as a Sigma correlation rule
     assert len(community) >= 150, "the SigmaHQ pack is shipped"
     for rule in rules.all():
         assert rule.meta.attack.techniques, f"{rule.meta.path} names no ATT&CK technique"
