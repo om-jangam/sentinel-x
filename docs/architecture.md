@@ -20,7 +20,7 @@ connected, and what evidence should an analyst investigate?*
 | Ingestion | Authenticated, rate-limited intake of security telemetry from registered sources | **Built** (API, worker, source registry) |
 | Normalisation | Map source records to a documented OCSF 1.6 subset; reject what can't be mapped, with a reason | **Built** for 3 parsers and 6 event classes ([mappings](modules/ingestion.md#ocsf-mappings)) |
 | Storage | Immutable, org-scoped event documents in OpenSearch; constrained search | **Built**; adapter tested against a stubbed client only |
-| Detection | Sigma and threshold rules over normalised events → findings that cite their events | **Built**: 4 Sigma and 3 threshold rules, evaluated in-stream ([module doc](modules/detection.md)) |
+| Detection | Sigma and threshold rules over normalised events → findings that cite their events | **Built**: 9 own rules (4 Sigma, 5 threshold) plus 917 attributed SigmaHQ community rules, evaluated in-stream ([module doc](modules/detection.md)) |
 | Correlation | Group findings and events by shared entities and time → incidents | **Built**: entity extraction by role, 2 correlation rules, severity from named conditions, audited triage ([module doc](modules/correlation.md)) |
 | Attack reconstruction | Evidence-linked timeline and entity graph per incident | **Built**: computed from evidence digests; every step and edge lists its events ([ADR-0017](adr/ADR-0017-evidence-digests-timeline-graph.md)) |
 | Threat intelligence | Reputation and related indicators as investigation context | **Built**: local feed and AlienVault OTX, enriched in the background, cached with source and time ([module doc](modules/threatintel.md)) |

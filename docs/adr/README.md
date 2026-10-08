@@ -35,5 +35,6 @@ Superseded, Deferred}; an amended ADR keeps its original text and links the ADR 
 | [0022](ADR-0022-attribution-check.md) | Check who did what in AI statements against the evidence graph | Accepted |
 | [0023](ADR-0023-baseline-novelty.md) | "Has this ever happened here?" — counted, cited, never a detector | Accepted |
 | [0024](ADR-0024-rendered-wineventlog-text.md) | Windows events rendered as prose are read where the prose is structured | Accepted |
+| [0025](ADR-0025-every-evaluable-community-rule.md) | Ship every community rule the engine can evaluate | Accepted |
 
 New ADRs are added as implementation surfaces new significant decisions (per-phase).

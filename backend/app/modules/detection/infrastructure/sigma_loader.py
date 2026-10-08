@@ -216,6 +216,21 @@ WINDOWS_SECURITY_FIELDS: Mapping[str, tuple[str, ...]] = {
     "SubStatus": ("unmapped.sub_status",),
     "FailureReason": ("unmapped.failure_reason",),
     "Computer": ("device.hostname",),
+    # Credential use: explicit credentials (4648), privileges (4672), Kerberos (4768/4769/4771) and NTLM
+    # credential validation (4776). Only fields the parsers actually fill are mapped — a field named here
+    # that no record fills would make a rule's `not filter` exclude nothing, which is how the
+    # "External Remote SMB Logon" rule came to fire on the logons it was written to exclude.
+    "TargetServerName": ("dst_endpoint.hostname",),
+    "ProcessName": ("actor.process.file.path",),
+    "PrivilegeList": ("privileges",),
+    "ServiceName": ("service.name",),
+    "ServiceSid": ("service.uid",),
+    "TicketOptions": ("unmapped.ticket_options",),
+    "TicketEncryptionType": ("unmapped.ticket_encryption_type",),
+    "PreAuthType": ("unmapped.pre_auth_type",),
+    "TransmittedServices": ("unmapped.transmitted_services",),
+    "PackageName": ("auth_protocol",),
+    "Workstation": ("src_endpoint.hostname",),
 }
 
 NETWORK_CONNECTION_FIELDS: Mapping[str, tuple[str, ...]] = {

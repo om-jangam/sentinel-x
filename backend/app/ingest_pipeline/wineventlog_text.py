@@ -43,8 +43,15 @@ MAX_RECORD_CHARS = 200_000
 # "12/04/2020 01:19:21 PM" at the start of a line begins a record.
 _RECORD_START = re.compile(r"(?m)^(?=\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2} [AP]M\s*$)")
 _HEADER = re.compile(r"(?m)^([A-Za-z][A-Za-z0-9_]*)=(.*)$")
-_SECTION = re.compile(r"(?m)^([A-Z][A-Za-z /()]*):\s*$")
-_LABELLED = re.compile(r"(?m)^[ \t]+([A-Za-z][A-Za-z0-9 /()\-.]*?):[ \t]+(.*?)\s*$")
+# These four are matched against one line at a time; see `_values`.
+_SECTION = re.compile(r"([A-Z][A-Za-z /()]*):\s*")
+_LABELLED = re.compile(r"[ \t]+([A-Za-z][A-Za-z0-9 /()\-.]*?):[ \t]+(.*?)\s*")
+# 4672 and 4776 put labelled values hard against the left margin: "Logon Account:\tAdministrator".
+_UNINDENTED = re.compile(r"([A-Z][A-Za-z0-9 /()\-.]*?):[ \t]+(\S.*?)\s*")
+# A list value continues on the following indented lines, which carry no label of their own:
+#     Privileges:		SeAssignPrimaryTokenPrivilege
+#     			SeAuditPrivilege
+_CONTINUATION = re.compile(r"[ \t]+([A-Za-z][A-Za-z0-9_]*)\s*")
 _TIME = re.compile(r"^(\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2} [AP]M)\s*$", re.MULTILINE)
 # The rendering resolves a SID to an account where it can, so "Security ID" is sometimes
 # `NT AUTHORITY\SYSTEM` and sometimes `S-1-5-18`. A SID field only takes an actual SID.
@@ -100,6 +107,65 @@ LABELS: dict[int, tuple[tuple[str | None, str, str], ...]] = {
         (None, "Creator Process Name", "ParentProcessName"),
         (None, "Creator Process ID", "ProcessId"),
     ),
+    4648: (
+        ("Subject", "Security ID", "SubjectUserSid"),
+        ("Subject", "Account Name", "SubjectUserName"),
+        ("Subject", "Account Domain", "SubjectDomainName"),
+        ("Account Whose Credentials Were Used", "Account Name", "TargetUserName"),
+        ("Account Whose Credentials Were Used", "Account Domain", "TargetDomainName"),
+        (None, "Target Server Name", "TargetServerName"),
+        ("Process Information", "Process Name", "ProcessName"),
+        ("Process Information", "Process ID", "ProcessId"),
+        ("Network Information", "Network Address", "IpAddress"),
+        ("Network Information", "Port", "IpPort"),
+    ),
+    4672: (
+        ("Subject", "Security ID", "SubjectUserSid"),
+        ("Subject", "Account Name", "SubjectUserName"),
+        ("Subject", "Account Domain", "SubjectDomainName"),
+        (None, "Privileges", "PrivilegeList"),
+    ),
+    4768: (
+        ("Account Information", "Account Name", "TargetUserName"),
+        ("Account Information", "Supplied Realm Name", "TargetDomainName"),
+        ("Service Information", "Service Name", "ServiceName"),
+        ("Service Information", "Service ID", "ServiceSid"),
+        (None, "Client Address", "IpAddress"),
+        (None, "Client Port", "IpPort"),
+        (None, "Result Code", "Status"),
+        (None, "Ticket Options", "TicketOptions"),
+        (None, "Ticket Encryption Type", "TicketEncryptionType"),
+        (None, "Pre-Authentication Type", "PreAuthType"),
+    ),
+    4769: (
+        ("Account Information", "Account Name", "TargetUserName"),
+        ("Account Information", "Account Domain", "TargetDomainName"),
+        ("Service Information", "Service Name", "ServiceName"),
+        ("Service Information", "Service ID", "ServiceSid"),
+        (None, "Client Address", "IpAddress"),
+        (None, "Client Port", "IpPort"),
+        (None, "Failure Code", "Status"),
+        (None, "Ticket Options", "TicketOptions"),
+        (None, "Ticket Encryption Type", "TicketEncryptionType"),
+        (None, "Transited Services", "TransmittedServices"),
+    ),
+    4771: (
+        ("Account Information", "Account Name", "TargetUserName"),
+        ("Account Information", "Security ID", "TargetUserSid"),
+        ("Service Information", "Service Name", "ServiceName"),
+        (None, "Client Address", "IpAddress"),
+        (None, "Client Port", "IpPort"),
+        (None, "Failure Code", "Status"),
+        (None, "Ticket Options", "TicketOptions"),
+        (None, "Pre-Authentication Type", "PreAuthType"),
+    ),
+    # 4776 renders as four labelled lines with no sections at all.
+    4776: (
+        (None, "Authentication Package", "PackageName"),
+        (None, "Logon Account", "TargetUserName"),
+        (None, "Source Workstation", "Workstation"),
+        (None, "Error Code", "Status"),
+    ),
 }
 LABELS[4647] = LABELS[4634]
 
@@ -109,19 +175,31 @@ class WinEventLogTextError(ValueError):
 
 
 def _values(message: str) -> tuple[dict[tuple[str, str], str], dict[str, list[str]]]:
-    """Labelled values by (section, label), and by label alone so ambiguity can be detected."""
+    """Labelled values by (section, label), and by label alone so a repeated label can be spotted."""
     by_section: dict[tuple[str, str], str] = {}
-    by_label: dict[str, list[str]] = {}
     section = ""
-    position = 0
-    for match in _SECTION.finditer(message):
-        for label, value in _LABELLED.findall(message[position : match.start()]):
-            by_section.setdefault((section, label), value)
-            by_label.setdefault(label, []).append(value)
-        section = match.group(1)
-        position = match.end()
-    for label, value in _LABELLED.findall(message[position:]):
-        by_section.setdefault((section, label), value)
+    listed: tuple[str, str] | None = None  # the value that an indented bare line continues
+    for line in message.splitlines():
+        if (heading := _SECTION.fullmatch(line)) is not None:
+            section, listed = heading.group(1), None
+            continue
+        if (labelled := _LABELLED.fullmatch(line) or _UNINDENTED.fullmatch(line)) is not None:
+            label, value = labelled.group(1), labelled.group(2).strip()
+            key = (section, label)
+            listed = None
+            if key not in by_section:
+                by_section[key] = value
+                listed = key
+            continue
+        if listed is not None and (more := _CONTINUATION.fullmatch(line)) is not None:
+            # One value spread over several lines, as 4672 renders a privilege list. Joined with newlines,
+            # which is how the XML form writes the same field, so the parser splits it the one way.
+            by_section[listed] += "\n" + more.group(1)
+            continue
+        listed = None
+    # Built last, so a value that grew over several lines is the one a label-only lookup sees.
+    by_label: dict[str, list[str]] = {}
+    for (_, label), value in by_section.items():
         by_label.setdefault(label, []).append(value)
     return by_section, by_label
 

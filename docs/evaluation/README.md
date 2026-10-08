@@ -4,34 +4,44 @@ The numbers are in [`detection-baseline.md`](detection-baseline.md), regenerated
 `sentinelx evaluate-detection`. This page says what they mean and what they changed. It is written by
 hand; the report is not.
 
-## Before and after the SigmaHQ pack
+## Before and after
 
-| | Own rules only (7) | With the SigmaHQ pack (169) |
-|---|---|---|
-| Industry-priority techniques detected | 2 of 5 | **3 of 5** |
-| Techniques a shipped rule claims | 1 of 3 | **2 of 3** (after reading the NTLM log, below) |
-| Rules that fired on the T1059.001 recording | 1 | 11 |
-| Rules shipped | 7 (4 Sigma, 3 threshold) | 170 (166 Sigma, 4 threshold, one of them a Sigma correlation rule) |
-| Events parsed | 46,588 of 46,794 (99.6%) | unchanged |
-| Events read at all | 47,281 | **64,946** (after reading the rendered Security logs, below) |
+Three measured steps, same eight recordings each time.
 
-Of the 64,946 events now read, **0 are rejected**: every event of a type Sentinel-X maps became a
-normalised event. The other 12,106 are audit types no parser maps — Kerberos service tickets, special
-privileges assigned, filtering-platform connections — which the report counts separately, because
-"we don't map this event type" and "we failed to read this event" are different admissions.
-The detection gain came from
-[step 3](../12-improvement-research.md#3-ship-a-curated-sigmahq-rule-set-with-attribution): 162 community
-rules, chosen by a fixed rule and shipped with their authors named.
+| | Own rules only | A technique-filtered pack | Every evaluable rule |
+|---|---|---|---|
+| Rules shipped | 7 | 171 | **926** (9 own, 917 community) |
+| Industry-priority techniques detected | 2 of 5 | 3 of 5 | **3 of 5** |
+| Techniques a shipped rule claims | 1 of 3 | 2 of 3 | **2 of 3** |
+| Community rules that fired at all | — | 12 | **20** |
+| Events read | 47,281 | 47,281 | **64,946** |
+| Events parsed | 46,588 (99.6% of what was read) | unchanged | **60,852** |
+| Events rejected | 206 | 206 | **0** |
+
+Of the 64,946 events read, **none are rejected**: every event of a type Sentinel-X maps became a
+normalised event. The remaining 4,094 are audit types no parser maps — filtering-platform connections,
+auditing-policy changes, handle requests — which the report counts in their own column, because "we do not
+map this event type" and "we failed to read this event" are different admissions and only the second is a
+defect.
+
+**What the third column bought, and what it did not.** 5.7× the rules moved no technique verdict. It did
+add detections the technique filter had hidden on recordings the project had been replaying for weeks:
+Mimikatz execution (12 findings), PowerUp's DLL-hijack write (36), Mshta running remote HTA and
+JavaScript, a process masquerading as `svchost.exe`. That is the argument for
+[ADR-0025](../adr/ADR-0025-every-evaluable-community-rule.md): a filter built from the techniques we had
+thought of could only ever find the techniques we had thought of, and would report the silence as a clean
+run.
 
 ## What held up
 
 - **Parsing real telemetry.** The Sysmon parser read 99.6% of the ~46,800 events recorded on real
   machines, in a format nobody wrote for Sentinel-X. What it refused, it refused by name: Sysmon 17 and 18
   (named pipes), 6 (driver loaded), 4 (Sysmon service state) and 16 (configuration change).
-- **Community rules ran unchanged.** 914 of the 1,377 rules in SigmaHQ's core package load in this engine
-  with no edits, which is what the Sysmon work in step 1 bought. The 162 shipped ones found real activity
-  in recordings nobody made for this project: downloads through `bitsadmin` and `certutil` (T1105),
-  eleven distinct PowerShell techniques (T1059.001), and SharpView's domain-group discovery (T1069.002).
+- **Community rules ran unchanged.** 917 of the 1,377 rules in SigmaHQ's core package load in this engine
+  with no edits, which is what the Sysmon work in step 1 bought. They found real activity in recordings
+  nobody made for this project: downloads through `bitsadmin`, `certutil` and `curl` (T1105), eleven
+  distinct PowerShell techniques (T1059.001), SharpView's domain-group discovery (T1069.002), and
+  attacker tooling the recordings never advertised — Mimikatz and PowerUp.
 - **Detection on other people's data.** The project's own encoded-PowerShell rule flagged Atomic Red
   Team's T1059.001 tests and its T1027 test, which decodes to `Write-Host "Hey, Atomic!"`. The shipped
   Sigma correlation rule ("many distinct external destinations from one host") fired once, on the WMI
@@ -77,13 +87,34 @@ rules, chosen by a fixed rule and shipped with their authors named.
    logons that really do name a public address. Nothing but the real data would have shown this: the rule
    had passed every test, because no test had an event with no source address.
 
-## Bugs this found in the evaluator itself
+7. **Most of a Security log was still unmapped.** Reading the rendered text put 12,106 events in
+   front of parsers that had no mapping for them. The five most common were credential-use events:
+   explicit credentials (4648), special privileges (4672), Kerberos tickets (4768/4769) and NTLM
+   credential validation (4776) — between them the daily evidence of lateral movement. Mapping them took
+   parsing from 52,840 events to 60,852 and left 4,094 unmapped, now mostly filtering-platform and
+   object-access events. Measured honestly, it bought little *detection*: the community rules want 4697
+   (16 rules) and 5145 (10), which these recordings do not contain. It bought evidence — a timeline that
+   shows who used whose credentials, against which service.
+
+## Bugs this found
+
+In the evaluator:
 
 - Harness markers missed `PowerShell  -NoProfile` with a doubled space.
 - `-EncodedCommand` was only decoded in some spellings; `/NoProfile /EncodedCommand …` read the next
   switch as its Base64 value, because `/` is a Base64 character.
 
-Both are covered by tests now (`app/tests/test_detection_eval.py`).
+In the parsers, found while mapping Kerberos events:
+
+- Windows writes a Kerberos client address as `::ffff:10.0.1.14`. Stored as IPv6 that normalises to
+  `::ffff:a00:10e`, which no analyst would search for and which no `10.0.0.0/8` filter would match — the
+  same failure mode as the `-` placeholder, reached by a different route. An IPv4-mapped address is now
+  read as the IPv4 address it is.
+- The rendered text reader read only the first line of a multi-line value, so a logon granted eight
+  privileges recorded one.
+
+All are covered by tests (`app/tests/test_detection_eval.py`,
+`app/ingest_pipeline/tests/test_wineventlog_text.py`, `app/ingest_pipeline/tests/test_parsers.py`).
 
 ## How to reproduce
 
@@ -93,16 +124,26 @@ uv run sentinelx fetch-detection-datasets     # ~104 MB, verified by SHA-256, ne
 uv run sentinelx evaluate-detection --report ../docs/evaluation/detection-baseline.md
 ```
 
+To re-derive the community rule set itself (it is a command, not a procedure — ADR-0025):
+
+```bash
+uv run sentinelx import-sigma-rules --sha256 45ccbd62cbf0d7ccca6f44eaa010f86bb24f082b5411c5e22c71907e7770ee46
+```
+
 The recordings are cached under `backend/.cache/` and ignored by git. Nothing in the evaluation needs a
 database, Redis, OpenSearch or Docker: it runs the real parsers and the real `DetectionService` in memory,
-in about 80 seconds with 170 rules.
+in about eight minutes with 926 rules (it was ~80 seconds with 170: the cost is linear in the rule count).
 
 ## What would move the numbers next
 
 - A rule for plain `whoami`, or a narrower tag on the one that exists (finding 2).
-- More Windows Security event types. 12,106 events read are audit types no parser maps; 4672 (special
-  privileges), 4648 (explicit credentials) and 4769/4768 (Kerberos tickets) are the common ones, and each
-  is a lateral-movement signal SigmaHQ has rules for.
+- **Event 4697 (a service was installed) and 5145 (a network share was accessed).** Measured, not
+  guessed: 16 and 10 of the refused community rules need them, more than any other unmapped field. No
+  recording in this set contains either, so mapping them would need a recording that does — the next
+  dataset to add, rather than the next parser to write.
+- **A recording for the techniques that are missed for data reasons.** T1059.003's recording holds eight
+  events and T1047's launches `notepad.exe`. Both verdicts say more about the recordings than about the
+  rules, and a second source (EVTX-ATTACK-SAMPLES, Security-Datasets) would separate the two.
 - Rarity ([step 5](../12-improvement-research.md#5-evidence-backed-rarity-first-seen), built): `wmic
   process call create notepad.exe` is unremarkable alone, and the baseline can now say whether this
   organisation has ever seen it. Wiring that into the evaluation as a second signal, so a missed

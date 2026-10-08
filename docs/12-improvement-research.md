@@ -55,15 +55,18 @@ missed, and false positives on the benign background events.
 This mirrors SigmaHQ's own quality process, which tests rules against recorded EVTX logs in CI
 ([SigmaHQ QA pipeline](https://blog.sigmahq.io/sigmahq-quality-assurance-pipeline-d99eaba1760e)).
 
-### 3. Ship a curated SigmaHQ rule set, with attribution ✅ built
-*Done:* 162 rules from SigmaHQ's `sigma_core.zip` (release `r2026-07-01`) under
+### 3. Ship the SigmaHQ rule set, with attribution ✅ built
+*Done:* 917 rules from SigmaHQ's `sigma_core.zip` (release `r2026-07-01`) under
 [`rules/sigmahq/`](../backend/app/modules/detection/rules/sigmahq/NOTICE.md), unmodified, with a manifest
 naming each rule's upstream path. Findings and the rules API carry `rule_author` and `rule_source`, as the
 Detection Rule License requires. Priority detection went from 2 of 5 to **3 of 5**
 ([before and after](evaluation/README.md#before-and-after-the-sigmahq-pack)).
-*Selection rule (reproducible):* every core rule that this engine can evaluate **and** is tagged with a
-technique the evaluation targets — the Red Canary top ten that Windows logs can show, plus every technique
-a Sentinel-X rule claims. 914 of the 1,377 core rules load here; the technique filter narrows that to 162.
+*Selection rule:* every core rule this engine can evaluate — 917 of the 1,377 published — re-derived by
+`sentinelx import-sigma-rules`, which verifies the package by SHA-256 and prints why each of the other 460
+was refused. The first import also filtered by technique, down to 162; that filter is gone
+([ADR-0025](adr/ADR-0025-every-evaluable-community-rule.md)), because it meant the project could only
+detect what it had already thought to look for. Dropping it added Mimikatz and PowerUp detections on
+recordings already in the evaluation, and moved no technique verdict.
 
 Import selected SigmaHQ rules that the normaliser can evaluate. They are under the
 [Detection Rule License 1.1](https://github.com/SigmaHQ/Detection-Rule-License/blob/main/LICENSE.Detection.Rules.md):
@@ -152,7 +155,7 @@ All eight are built. What they changed, in order:
 |---|-------|--------|
 | 1 | Sysmon normalisation | 914 of 1,377 SigmaHQ core rules became loadable |
 | 2 | Evaluation on public recordings | a measured baseline: 2 of 5 priority techniques, 99.6% of events parsed |
-| 3 | 162 attributed SigmaHQ rules | 3 of 5 priority techniques |
+| 3 | 917 attributed SigmaHQ rules | 3 of 5 priority techniques; Mimikatz and PowerUp found in recordings already replayed |
 | 4 | Sigma correlation rules | the standard's multi-event format, alongside the cross-source platform rules |
 | 5 | Baseline novelty | "has this ever happened here?", as counted context |
 | 6 | Navigator and Attack Flow exports | incidents open in MITRE's own tools |
@@ -162,7 +165,11 @@ All eight are built. What they changed, in order:
 **Since then,** both log formats the evaluation named are read ([ADR-0024](adr/ADR-0024-rendered-wineventlog-text.md)
 and the NTLM parser), which took events read from 47,281 to 64,946 with nothing rejected.
 
-**Still open, and deliberately so:** more Windows Security event types (4672, 4648, 4769/4768 are the
-common unmapped ones, and each is a lateral-movement signal SigmaHQ has rules for), a sliding window for
-novelty, a rule-coverage Navigator layer, and MESSALA-style checklist scoring for the assistant. Each is
-written up under its step above.
+**Since then,** the credential-use Security events are mapped (4648, 4672, 4768, 4769, 4771, 4776), which
+took parsing from 52,840 to 60,852 of the 64,946 events read, and the community pack is every rule this
+engine can evaluate rather than a technique-filtered slice.
+
+**Still open, and deliberately so:** events 4697 and 5145 (the most-wanted unmapped fields, measured
+across the refused rules — but no recording here contains them), a second public dataset for the
+techniques missed for data reasons, a sliding window for novelty, a rule-coverage Navigator layer, and
+MESSALA-style checklist scoring for the assistant. Each is written up under its step above.

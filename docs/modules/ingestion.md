@@ -130,11 +130,29 @@ Input: one event object with `EventID`, `TimeCreated` (or `@timestamp` / `timest
 | 4624 | Authentication · Logon · Success · Informational |
 | 4625 | Authentication · Logon · Failure · Low |
 | 4634, 4647 | Authentication · Logoff · Success · Informational |
+| 4648 | Authentication · Account Switch · **Unknown** · Informational |
+| 4672 | Authorize Session · Assign Privileges · **Unknown** · Informational |
 | 4688 | Process Activity · Launch · Success · Informational |
+| 4768 | Authentication · Authentication Ticket · from the result code |
+| 4769 | Authentication · Service Ticket Request · from the result code |
+| 4771 | Authentication · Preauth · Failure · Low |
+| 4776 | Authentication · Logon · from the result code |
+
+Two outcomes are deliberately **Unknown**. Windows writes 4648 when a logon is *attempted* with another
+account's credentials, before and regardless of the result, so a success would be invented. 4672 states
+which privileges a session was given, not whether anything was done with them. Where a record does carry
+a result code (4768, 4769, 4776) the outcome is read from it — `0x0` is a success, anything else a failure
+— and the code is kept so the reason survives.
 
 | Source | OCSF field |
 |--------|------------|
 | `TargetUserName` / `TargetDomainName` / `TargetUserSid` | `user.name` / `domain` / `uid` |
+| `TargetServerName` (4648) | `dst_endpoint.hostname` — what the credentials were used against |
+| `PrivilegeList` (4672) | `privileges`, one entry per line Windows wrote |
+| `ServiceName` / `ServiceSid` (4768/4769) | `service.name` / `service.uid` |
+| `AuthenticationPackageName`, `PackageName` | `auth_protocol`, plus `auth_protocol_id` where the package names one protocol (NTLM or Kerberos; `Negotiate` picked one and does not say which) |
+| `Workstation` (4776), `IpAddress` / `IpPort` (4648, 4768–4771) | `src_endpoint.hostname` / `.ip` / `.port` |
+| `TicketOptions`, `TicketEncryptionType`, `PreAuthType`, `TransmittedServices` | `unmapped` |
 | `SubjectUserName` / `SubjectDomainName` / `SubjectUserSid` (4688) | `actor.user.*` |
 | `IpAddress` (valid IPs only), `IpPort` (0 dropped), `WorkstationName` | `src_endpoint.ip`, `.port`, `.hostname` |
 | `Computer` | `device.hostname`; also `dst_endpoint.hostname` for logons |

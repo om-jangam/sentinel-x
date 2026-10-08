@@ -69,6 +69,7 @@ class EventClass(IntEnum):
     MODULE_ACTIVITY = 1005
     PROCESS_ACTIVITY = 1007
     AUTHENTICATION = 3002
+    AUTHORIZE_SESSION = 3003
     NETWORK_ACTIVITY = 4001
     HTTP_ACTIVITY = 4002
     DNS_ACTIVITY = 4003
@@ -98,8 +99,9 @@ ACTIVITY_NAMES: Mapping[EventClass, Mapping[int, str]] = {
     EventClass.PROCESS_ACTIVITY: {1: "Launch", 2: "Terminate", 3: "Open", 4: "Inject", 5: "Set User ID"},
     EventClass.AUTHENTICATION: {
         1: "Logon", 2: "Logoff", 3: "Authentication Ticket", 4: "Service Ticket Request",
-        5: "Service Ticket Renew", 6: "Preauth",
+        5: "Service Ticket Renew", 6: "Preauth", 7: "Account Switch",
     },
+    EventClass.AUTHORIZE_SESSION: {1: "Assign Privileges", 2: "Assign Groups", 3: "Assign Roles"},
     EventClass.NETWORK_ACTIVITY: {1: "Open", 2: "Close", 3: "Reset", 4: "Fail", 5: "Refuse", 6: "Traffic", 7: "Listen"},
     EventClass.HTTP_ACTIVITY: {
         1: "Connect", 2: "Delete", 3: "Get", 4: "Head", 5: "Options", 6: "Post", 7: "Put", 8: "Trace", 9: "Patch",
@@ -128,6 +130,15 @@ class Status(IntEnum):
     UNKNOWN = 0
     SUCCESS = 1
     FAILURE = 2
+    OTHER = 99
+
+
+class AuthProtocol(IntEnum):
+    """OCSF `auth_protocol_id`, so "NTLM" and "Kerberos" are comparable and not just spelling."""
+
+    UNKNOWN = 0
+    NTLM = 1
+    KERBEROS = 2
     OTHER = 99
 
 
@@ -203,6 +214,13 @@ class User(_Object):
     name: S255 | None = None
     uid: S255 | None = None
     domain: S255 | None = None
+
+
+class Service(_Object):
+    """What a session was authenticated *to* — for Kerberos, the service the ticket was asked for."""
+
+    name: S255 | None = None
+    uid: S255 | None = None
 
 
 class HashAlgorithm(IntEnum):
@@ -380,6 +398,7 @@ class Observable(_Object):
 # Minimum context each class needs to be useful for detection (a Sentinel-X rule, stricter than OCSF).
 _REQUIRED_CONTEXT: Mapping[EventClass, tuple[tuple[str, ...], str]] = {
     EventClass.AUTHENTICATION: (("user",), "user"),
+    EventClass.AUTHORIZE_SESSION: (("user",), "user"),
     EventClass.NETWORK_ACTIVITY: (("src_endpoint", "dst_endpoint"), "src_endpoint or dst_endpoint"),
     EventClass.DNS_ACTIVITY: (("query",), "query"),
     EventClass.PROCESS_ACTIVITY: (("process",), "process"),
@@ -423,9 +442,12 @@ class OcsfEvent(_Object):
     injection_type: S64 | None = None
 
     auth_protocol: S64 | None = None
+    auth_protocol_id: AuthProtocol | None = None
     logon_type: S64 | None = None
     logon_type_id: Annotated[int, Field(ge=0, le=99)] | None = None
     is_mfa: bool | None = None
+    service: Service | None = None
+    privileges: Annotated[list[S64], Field(max_length=64)] | None = None
 
     observables: Annotated[list[Observable], Field(max_length=100)] = Field(default_factory=list)
     raw_data: Annotated[str, Field(max_length=MAX_RAW_DATA_CHARS)] | None = None

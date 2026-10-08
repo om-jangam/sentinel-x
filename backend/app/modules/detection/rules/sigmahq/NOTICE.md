@@ -21,16 +21,25 @@ Sentinel-X therefore:
 
 ## Which rules are here, and why
 
-Chosen by a fixed rule, not by what makes Sentinel-X look good: every rule in the core package that
-**(a)** the Sentinel-X engine can evaluate (its logsource, fields, modifiers and value types are all
-supported) and **(b)** is tagged with one of the techniques the evaluation targets:
+Every rule in the core package that **the Sentinel-X engine can evaluate** — 917 of the 1,377 published.
+Nothing else is filtered, because SigmaHQ's `core` package is already its curated tier: every rule in it
+is `high` or `critical` severity and `status: test` or `stable`, with nothing experimental and no
+low-confidence hunting rules.
 
-- the Red Canary Threat Detection Report top-ten techniques that Windows event logs can show
-  (T1059.001, T1059.003, T1105, T1047, T1027, T1204.004);
-- every technique a Sentinel-X rule of its own claims (T1110, T1033, T1069.002, T1071).
+The first import narrowed this further, to rules tagged with a technique the evaluation targeted (162 of
+them). That was the wrong filter: it meant the project could only detect what it had already thought to
+look for, and a technique nobody had listed was invisible by construction.
 
-Sub-techniques and parent techniques of those count too. The selection is reproducible: see
-[docs/12](../../../../../../docs/12-improvement-research.md#3-ship-a-curated-sigmahq-rule-set-with-attribution).
+The 460 refused rules are refused with a reason, never approximated: a logsource this engine has no
+mapping for (PowerShell script blocks, the System log, Azure and AWS audit logs, proxy logs), a field no
+parser fills, or a modifier that is not implemented. A rule that half-runs is worse than one that is
+absent, because it reports silence as safety.
+
+Re-run the selection at any time; it is a command, not a procedure:
+
+```bash
+uv run sentinelx import-sigma-rules --sha256 <the package's SHA-256>
+```
 
 ## Updating
 

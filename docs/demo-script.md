@@ -76,7 +76,7 @@ Click any step. The inspector shows the **original log record** behind it.
 **Findings & links tab.** Show why the findings were joined: *shared entity* (same host and account) and
 *logon after failures*, each with its events. The same encoded command is flagged by the project's own
 rule **and** by three SigmaHQ community rules, each naming its author with a link to the published rule.
-> "162 community rules ship here. Their licence says every match must credit the author, so every finding
+> "917 community rules ship here. Their licence says every match must credit the author, so every finding
 > does, and the link goes to the original."
 
 **"How unusual is this?" (under the summary).** The baseline counts what this organisation has seen
@@ -140,7 +140,7 @@ Back on **Incidents**, open the **High** one: SSH password guessing against `web
 | Can it stop the attack? | No, by design. Response is out of scope. |
 | How is it tested? | 646 backend tests (including PostgreSQL) and 53 frontend tests, plus two evaluations: `sentinelx evaluate-detection` on public attack recordings and `sentinelx evaluate-assistant` on the model. |
 | How do you know detection works? | It is measured on recordings of real attacks from Splunk's public collection: 3 of 5 of the most common Windows techniques are detected, and 99.6% of ~47,000 events parse. The numbers, and what they exposed, are in `docs/evaluation/`. |
-| Where do the rules come from? | 4 written here, plus 162 from SigmaHQ's community set — 914 of their 1,377 core rules load in this engine unchanged. Each community finding credits its author, as their licence requires. |
+| Where do the rules come from? | 9 written here, plus every rule in SigmaHQ's core set this engine can evaluate — 917 of their 1,377, loaded unchanged. The other 460 are refused with a reason, not half-run. Each community finding credits its author, as their licence requires. |
 | Isn't "first seen here" just anomaly detection? | It is a count, not a model: how many times this organisation has seen a parent/child process pair or an outside address, and when it first did. It never changes severity or opens an incident. |
 
 ## If something goes wrong

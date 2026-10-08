@@ -132,16 +132,16 @@ def test_the_records_feed_the_windows_parser_unchanged() -> None:
 
 
 def test_a_file_of_records_is_read_in_order() -> None:
-    other = "12/04/2020 01:19:22 PM\nLogName=Security\nEventCode=4672\nMessage=Special privileges assigned.\n"
+    other = "12/04/2020 01:19:22 PM\nLogName=Security\nEventCode=4907\nMessage=Auditing settings changed.\n"
     items = list(iter_records(f"{PROCESS}\n{other}\n{LOGON}"))
-    assert [item["EventID"] for item in items if isinstance(item, dict)] == [4688, 4672, 4624]
+    assert [item["EventID"] for item in items if isinstance(item, dict)] == [4688, 4907, 4624]
 
 
 def test_an_event_type_nothing_maps_is_refused_by_the_parser_not_the_reader() -> None:
     """One place decides what Sentinel-X maps: the reader hands the record over, the parser names the type."""
-    record = parse_record("12/04/2020 01:19:22 PM\nLogName=Security\nEventCode=4672\nMessage=Privileges.\n")
+    record = parse_record("12/04/2020 01:19:22 PM\nLogName=Security\nEventCode=4907\nMessage=Auditing.\n")
     assert record["EventData"] == {}
-    with pytest.raises(UnsupportedEventError, match="unsupported Windows Security event 4672"):
+    with pytest.raises(UnsupportedEventError, match="unsupported Windows Security event 4907"):
         normalize("windows_security", record)
 
 

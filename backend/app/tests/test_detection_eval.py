@@ -55,22 +55,27 @@ def test_technique_matching(finding: str, label: str, matches: bool) -> None:
 
 WMI_NOISE = event_xml(5857, "Microsoft-Windows-WMI-Activity/Operational", {"ProviderName": "x"})
 NTLM_4776 = event_xml(4776, "Security", {"TargetUserName": "admin", "Status": "0xc000006a"})
+AUDIT_POLICY = event_xml(4907, "Security", {"ObjectName": "C:\\Windows\\WinSxS\\x.cdf-ms"})
 
 
 async def test_replay_uses_the_real_rules_and_counts_what_it_could_not_parse() -> None:
     dataset = Dataset("T1059.001", "PowerShell", "priority", ())
     classic = "12/04/2020 01:19:21 PM\nLogName=Security\nEventCode=4688\nMessage=A new process has been created.\n"
     result = await replay(
-        dataset, [("a.log", f"{SYSMON_1}\n{SECURITY_4688}\n{WMI_NOISE}\n{NTLM_4776}\n"), ("classic.log", classic)]
+        dataset,
+        [
+            ("a.log", f"{SYSMON_1}\n{SECURITY_4688}\n{WMI_NOISE}\n{NTLM_4776}\n{AUDIT_POLICY}\n"),
+            ("classic.log", classic),
+        ],
     )
 
-    assert result.events == 5
-    assert result.channels["Security"] == 3, "two XML events and one rendered as text"
-    assert result.accepted == 2, "the WMI log is not a parsed source, and two Security events don't map"
-    # The two ways an event can fail to become evidence are counted apart: 4776 is an event type no parser
+    assert result.events == 6
+    assert result.channels["Security"] == 4, "three XML events and one rendered as text"
+    assert result.accepted == 3, "the Sysmon event, the 4688 and the failed credential validation"
+    # The two ways an event can fail to become evidence are counted apart: 4907 is an event type no parser
     # maps, while the rendered 4688 is one Sentinel-X does map and could not read, because it names no
     # process. Only the second is a defect, and only the second belongs in the report's "rejected" column.
-    assert result.unsupported == {"unsupported Windows Security event 4776": 1}
+    assert result.unsupported == {"unsupported Windows Security event 4907": 1}
     assert result.rejected == {"4688 event has no NewProcessName": 1}
     assert result.detected
     assert "PowerShell started with an encoded command" in {f.rule_title for f in result.matching}

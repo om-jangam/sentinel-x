@@ -19,6 +19,8 @@ from pathlib import Path
 from app.core.config import get_settings
 
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
+# Repeated here rather than imported: argument parsing must not pull in httpx and the Sigma compiler.
+DEFAULT_SIGMA_RELEASE = "r2026-07-01"
 
 
 def _alembic_config() -> object:
@@ -524,6 +526,21 @@ def cmd_evaluate_detection(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_import_sigma_rules(args: argparse.Namespace) -> int:
+    from app.sigma_import import SigmaImportError, import_rules, render_report
+
+    try:
+        selection = import_rules(
+            release=args.release, cache=Path(args.cache), out=Path(args.out), expect_sha256=args.sha256
+        )
+    except SigmaImportError as exc:
+        print(f"refused: {exc}", file=sys.stderr)
+        return 1
+    print(render_report(selection))
+    print(f"\nwritten to {args.out}; re-run evaluate-detection and commit the new numbers")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="sentinelx")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -605,6 +622,15 @@ def main(argv: list[str] | None = None) -> int:
     evaluate_detection.add_argument("--cache", default=dataset_cache)
     evaluate_detection.add_argument("--report", help="write the Markdown report here")
     evaluate_detection.set_defaults(func=cmd_evaluate_detection)
+
+    import_sigma = sub.add_parser(
+        "import-sigma-rules", help="re-import the SigmaHQ community pack (every rule this engine evaluates)"
+    )
+    import_sigma.add_argument("--release", default=DEFAULT_SIGMA_RELEASE, help="SigmaHQ release tag")
+    import_sigma.add_argument("--cache", default=str(BACKEND_ROOT / ".cache" / "sigma"))
+    import_sigma.add_argument("--out", default=str(BACKEND_ROOT / "app/modules/detection/rules/sigmahq"))
+    import_sigma.add_argument("--sha256", help="refuse the package unless it has this SHA-256")
+    import_sigma.set_defaults(func=cmd_import_sigma_rules)
 
     openapi = sub.add_parser("export-openapi", help="write the OpenAPI document")
     openapi.add_argument("--out", default=str(BACKEND_ROOT / "openapi.json"))

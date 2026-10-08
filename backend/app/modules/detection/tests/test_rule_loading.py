@@ -223,10 +223,17 @@ def test_every_shipped_rule_loads_and_every_mapping_points_at_a_real_field() -> 
     community = [rule for rule in rules.all() if rule.meta.path.startswith("sigmahq/")]
     assert len([r for r in own if r.type is RuleType.SIGMA]) == 4  # the correlation's base rule is not one
     assert len(rules.threshold) == 5  # 4 in the platform format, 1 as a Sigma correlation rule
-    assert len(community) >= 150, "the SigmaHQ pack is shipped"
+    assert len(community) >= 900, "the SigmaHQ pack is every rule this engine can evaluate"
     for rule in rules.all():
-        assert rule.meta.attack.techniques, f"{rule.meta.path} names no ATT&CK technique"
         assert rule.meta.description, f"{rule.meta.path} has no description"
+    for rule in own:
+        assert rule.meta.attack.techniques, f"{rule.meta.path} names no ATT&CK technique"
+
+    # A consequence of shipping the whole evaluable pack rather than a technique-filtered slice: some
+    # community rules carry no ATT&CK tag, and a finding from one of those names no technique. Counted
+    # here so the number is visible and cannot drift unnoticed, not asserted away.
+    untagged = [rule for rule in community if not rule.meta.attack.techniques]
+    assert len(untagged) < len(community) // 5, f"{len(untagged)} of {len(community)} community rules are untagged"
 
 
 def test_community_rules_keep_their_author_and_a_link_to_the_original() -> None:

@@ -32,13 +32,23 @@ def clean(value: Any) -> Any:
 
 
 def as_ip(value: Any) -> str | None:
+    """An address as the record states it, except that an IPv4-mapped IPv6 address is read as the IPv4.
+
+    Windows writes Kerberos client addresses as `::ffff:10.0.1.14`. Stored as IPv6 it is normalised to
+    `::ffff:a00:10e`: an analyst searching for 10.0.1.14 would not find it, and a rule filtering
+    `10.0.0.0/8` would treat the host as external. RFC 4291 says the two spellings are the same address,
+    so the IPv4 one is kept.
+    """
     text = clean(value)
     if not isinstance(text, str):
         return None
     try:
-        return str(ip_address(text))
+        address = ip_address(text)
     except ValueError:
         return None
+    if (mapped := getattr(address, "ipv4_mapped", None)) is not None:
+        return str(mapped)
+    return str(address)
 
 
 def as_int(value: Any, *, base: int = 10) -> int | None:

@@ -161,7 +161,7 @@ or late data behaves the same as live data.
 
 ## Community rules (SigmaHQ)
 
-Besides its own 7 rules, Sentinel-X ships 162 rules from [SigmaHQ](https://github.com/SigmaHQ/sigma)'s
+Besides its own 9 rules, Sentinel-X ships 917 rules from [SigmaHQ](https://github.com/SigmaHQ/sigma)'s
 core package, release `r2026-07-01`, unmodified, under `rules/sigmahq/` with a manifest and
 [NOTICE](../../backend/app/modules/detection/rules/sigmahq/NOTICE.md). They are licensed under the
 Detection Rule License 1.1, which requires every match to name the rule's author, so:
@@ -171,9 +171,25 @@ Detection Rule License 1.1, which requires every match to name the rule's author
   attributed to the text that fired even after the pack is updated;
 - the console shows the author and links to the published rule.
 
-Which rules: every core rule this engine can evaluate that is tagged with a technique the evaluation
-targets (see [docs/12](../12-improvement-research.md#3-ship-a-curated-sigmahq-rule-set-with-attribution)).
-Rules load once per process and are cached by file fingerprint, so the 169 rules cost ~0.4 s at start-up.
+**Which rules:** every core rule this engine can evaluate, with no further filter
+([ADR-0025](../adr/ADR-0025-every-evaluable-community-rule.md)). SigmaHQ's `core` package is already their
+curated tier — all `high` or `critical`, all `test` or `stable` — so a second opinion about 900 rules
+Sentinel-X did not write would add nothing. The 460 it cannot evaluate are refused with a reason
+(unmapped logsource, a field no parser fills, an unimplemented modifier) rather than half-run.
+
+Re-derive the set at any time; it is a command, not a procedure:
+
+```bash
+uv run sentinelx import-sigma-rules --sha256 <the package's SHA-256>
+```
+
+It verifies the downloaded package against that digest, writes every evaluable rule verbatim, regenerates
+`MANIFEST.json`, and deletes rules a previous import selected and this one did not. Rules compile once per
+process and are cached by file fingerprint, so the 926 rules cost ~3 s at start-up.
+
+93 of the community rules carry no ATT&CK tag, so a finding from one names no technique and the Navigator
+export has nothing to place for it. A test counts them, so the number cannot drift unnoticed. Sentinel-X's
+own rules must always name a technique.
 
 ## Measured on public recordings
 

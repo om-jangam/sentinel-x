@@ -211,6 +211,9 @@ def test_value_helpers() -> None:
     assert clean("x ") == "x"
     assert as_ip("::1") == "::1"
     assert as_ip("not-an-ip") is None
+    # Windows writes Kerberos client addresses this way; as IPv6 it normalises to ::ffff:a00:10e, which no
+    # analyst would search for and no 10.0.0.0/8 filter would match.
+    assert as_ip("::ffff:10.0.1.14") == "10.0.1.14"
     assert as_int("0x1a", base=16) == 26
     assert as_int("abc") is None
     assert as_int(7) == 7

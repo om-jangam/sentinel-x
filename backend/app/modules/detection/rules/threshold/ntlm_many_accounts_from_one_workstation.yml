@@ -1,11 +1,12 @@
 id: 3f2a9c14-6b58-4d07-8e91-5c0a7d3b8e62
 title: NTLM authentication tried for many accounts from one workstation
 description: >
-  A domain controller audited NTLM authentication for ten or more different accounts from the same
+  A domain controller recorded NTLM authentication for ten or more different accounts from the same
   workstation within ten minutes. That is the shape of password spraying: one source, many accounts, few
-  attempts each. The audit record says which account was tried and from where; it does not say whether the
-  authentication succeeded, so this counts attempts, not failures, and an analyst has to check the logon
-  records for the outcome.
+  attempts each. It counts every record that names NTLM, whichever log it came from: the NTLM operational
+  log (8004), credential validation (4776) and NTLM network logons (4624/4625). Those differ in what they
+  admit — 8004 does not say whether the authentication worked, while 4776 states a result code — so this
+  counts attempts, not failures, and an analyst reads the outcome off the individual records.
 level: medium
 tags:
   - attack.credential_access
@@ -14,7 +15,7 @@ references:
   - https://attack.mitre.org/techniques/T1110/003/
 match:
   class_uid: 3002
-  auth_protocol: NTLM
+  auth_protocol_id: 1  # OCSF: NTLM, however the log spells the package
 group_by: [src_endpoint.hostname]
 count_distinct: user.name
 threshold: 10

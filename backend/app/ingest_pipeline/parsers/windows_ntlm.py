@@ -22,7 +22,14 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from app.ingest_pipeline.ocsf import MAX_RAW_DATA_CHARS, OCSF_VERSION, EventClass, Severity, Status
+from app.ingest_pipeline.ocsf import (
+    MAX_RAW_DATA_CHARS,
+    OCSF_VERSION,
+    AuthProtocol,
+    EventClass,
+    Severity,
+    Status,
+)
 from app.ingest_pipeline.parsers.base import ParseError, Record, UnsupportedEventError, as_int, clean
 
 LOG_NAME = "Microsoft-Windows-NTLM/Operational"
@@ -77,6 +84,7 @@ def parse(record: Record) -> dict[str, Any]:
         },
         "user": user,
         "auth_protocol": "NTLM",
+        "auth_protocol_id": int(AuthProtocol.NTLM),
         "raw_data": json.dumps(record, default=str, separators=(",", ":"))[:MAX_RAW_DATA_CHARS],
         "unmapped": {
             "event_id": event_id,
