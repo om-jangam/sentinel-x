@@ -33,7 +33,8 @@ group and firing for threshold rules.
 |----------|------------|
 | `GET /api/v1/findings` — filters `time_from`, `time_to` (on `last_seen`, ≤ 90 days), `severity_min`, `rule_id`, `technique`; `limit` ≤ 200; opaque `cursor`; newest first | `finding:read` |
 | `GET /api/v1/findings/{id}` | `finding:read` |
-| `GET /api/v1/detection/rules`, `GET /api/v1/detection/rules/{id}` | `rule:read` |
+| `GET /api/v1/detection/rules` — `limit` ≤ 200 (50 by default), opaque `cursor`, by title | `rule:read` |
+| `GET /api/v1/detection/rules/{id}` | `rule:read` |
 
 Resolve evidence with `GET /api/v1/events/{event_uid}` (`event:read`).
 
@@ -190,6 +191,13 @@ process and are cached by file fingerprint, so the 926 rules cost ~3 s at start-
 93 of the community rules carry no ATT&CK tag, so a finding from one names no technique and the Navigator
 export has nothing to place for it. A test counts them, so the number cannot drift unnoticed. Sentinel-X's
 own rules must always name a technique.
+
+**Paging the catalogue.** 926 rules are ~950 KB of JSON, so `GET /api/v1/detection/rules` returns the
+standard `{items, next_cursor}` envelope, 50 at a time by default and at most 200. The cursor is the id of
+the last rule served, not an offset: ids are unique and the order is by title, so a page boundary still
+means the same thing after a re-import that adds or removes rules. A cursor naming a rule that is no
+longer loaded is a 422 rather than a silent skip, because the alternative is a client that quietly misses
+rules.
 
 ## Measured on public recordings
 

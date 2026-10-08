@@ -9,7 +9,7 @@ from app.core.security.permissions import Permission
 from app.core.security.principal import Principal
 from app.modules.detection.domain.findings import Finding, FindingPage, FindingQuery
 from app.modules.detection.domain.ports import DetectionUnitOfWork
-from app.modules.detection.domain.rules import Rule, RuleSet
+from app.modules.detection.domain.rules import Rule, RulePage, RuleSet
 
 
 class FindingQueryService:
@@ -32,9 +32,9 @@ class RuleCatalog:
     def __init__(self, rules: RuleSet) -> None:
         self._rules = rules
 
-    def list_rules(self, principal: Principal) -> list[Rule]:
+    def list_rules(self, principal: Principal, *, limit: int, after: str | None = None) -> RulePage:
         principal.require(Permission.RULE_READ)
-        return self._rules.all()
+        return self._rules.page(limit=limit, after=after)
 
     def get_rule(self, principal: Principal, rule_id: str) -> Rule:
         principal.require(Permission.RULE_READ)

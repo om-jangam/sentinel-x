@@ -61,9 +61,10 @@ to be re-judged by hand every time the rule set or the technique list changed.
   seconds to **7m43s**: linear in the rule count, as a rule engine that evaluates every rule against every
   event has to be. It is a development-time cost (the evaluation), not a request-path one, but it puts a
   ceiling on how much bigger the pack can get before the engine needs an index of rules by logsource.
-- **`GET /api/v1/detection/rules` now returns about 950 KB** (926 rules of metadata) and has no
-  pagination. The workspace does not call it, so nothing regressed in the product; it is left as it is
-  rather than redesigned in passing, and paginating it is a decision for whoever needs it.
+- **`GET /api/v1/detection/rules` is paginated.** 926 rules of metadata are about 950 KB, so the
+  endpoint now returns the same `{items, next_cursor}` envelope as every other collection (docs/06 §2),
+  50 at a time by default. The cursor is the last rule's id rather than an offset, so a page boundary
+  survives a re-import; a cursor for a rule that is no longer loaded is a 422 rather than a silent skip.
 
 ## Alternatives rejected
 

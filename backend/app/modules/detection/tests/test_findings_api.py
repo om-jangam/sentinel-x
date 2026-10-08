@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from uuid import UUID
 
 import httpx
+import pytest
 
 from app.conftest import Seeded, bearer, login
+from app.core.pagination import encode_cursor
 from app.ingest_pipeline.ocsf import event_uid_for
 from app.ingest_pipeline.parsers import normalize
 from app.modules.detection.tests.conftest import SAMPLES
@@ -111,9 +114,49 @@ async def test_bad_queries_and_missing_findings(client: httpx.AsyncClient, admin
     assert missing.status_code == 404
 
 
+async def rule_pages(client: httpx.AsyncClient, token: str, *, limit: int = 200) -> list[dict[str, Any]]:
+    """Every rule, by following `next_cursor` to the end."""
+    rules: list[dict[str, Any]] = []
+    cursor: str | None = None
+    for _ in range(50):  # a bound, so a cursor that never advances fails the test instead of hanging
+        query = f"limit={limit}" + (f"&cursor={cursor}" if cursor else "")
+        page = (await client.get(f"/api/v1/detection/rules?{query}", headers=bearer(token))).json()
+        rules += page["items"]
+        cursor = page["next_cursor"]
+        if cursor is None:
+            return rules
+    raise AssertionError("pagination did not terminate")
+
+
+async def test_the_rule_catalogue_is_paginated_in_title_order(client: httpx.AsyncClient, admin_token: str) -> None:
+    first = (await client.get("/api/v1/detection/rules?limit=2", headers=bearer(admin_token))).json()
+    assert len(first["items"]) == 2
+    assert first["next_cursor"], "926 rules do not fit in one page"
+
+    second = (
+        await client.get(f"/api/v1/detection/rules?limit=2&cursor={first['next_cursor']}", headers=bearer(admin_token))
+    ).json()
+    assert [rule["id"] for rule in second["items"]] != [rule["id"] for rule in first["items"]]
+
+    all_rules = await rule_pages(client, admin_token, limit=200)
+    titles = [rule["title"].casefold() for rule in all_rules]
+    assert titles == sorted(titles), "a stable order, so a page boundary means something"
+    assert len({rule["id"] for rule in all_rules}) == len(all_rules), "no rule is served twice"
+    # The whole catalogue in one request still works, for a client that wants it.
+    one_page = (await client.get("/api/v1/detection/rules?limit=200", headers=bearer(admin_token))).json()
+    assert [rule["id"] for rule in one_page["items"]] == [rule["id"] for rule in all_rules[:200]]
+
+
+@pytest.mark.parametrize("cursor", ["not-base64!", "", "aaaa", encode_cursor("x" * 65)])
+async def test_a_cursor_that_is_not_a_rule_is_refused(client: httpx.AsyncClient, admin_token: str, cursor: str) -> None:
+    """Including a valid cursor for a rule that no longer exists: resuming would skip rules silently."""
+    response = await client.get(f"/api/v1/detection/rules?cursor={cursor}", headers=bearer(admin_token))
+    assert response.status_code == 422
+
+
 async def test_rules_catalogue(client: httpx.AsyncClient, admin_token: str) -> None:
-    rules = (await client.get("/api/v1/detection/rules", headers=bearer(admin_token))).json()
-    assert len(rules) >= 150, "own rules plus the SigmaHQ pack"
+    rules = await rule_pages(client, admin_token)
+    assert len(rules) >= 900, "own rules plus every evaluable SigmaHQ rule"
     community = [rule for rule in rules if rule["path"].startswith("sigmahq/")]
     assert community, "the community pack is served"
     for rule in community:

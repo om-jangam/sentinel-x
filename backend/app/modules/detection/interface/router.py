@@ -7,9 +7,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import ServiceUnavailableError
+from app.core.errors import ServiceUnavailableError, ValidationFailedError
 from app.core.http.deps import get_session, require_permission
-from app.core.pagination import decode_cursor
+from app.core.pagination import DEFAULT_PAGE_SIZE, Page, decode_cursor, encode_cursor
 from app.core.security.permissions import Permission
 from app.core.security.principal import Principal
 from app.modules.detection.application.finding_service import FindingQueryService, RuleCatalog
@@ -32,6 +32,17 @@ def get_rule_catalog(request: Request) -> RuleCatalog:
 
 findings_router = APIRouter(prefix="/api/v1/findings", tags=["detection"])
 rules_router = APIRouter(prefix="/api/v1/detection", tags=["detection"])
+
+MAX_RULE_ID = 64
+
+
+def _rule_after(cursor: str | None) -> str | None:
+    if cursor is None:
+        return None
+    rule_id = decode_cursor(cursor)
+    if not rule_id or len(rule_id) > MAX_RULE_ID:
+        raise ValidationFailedError("Invalid pagination cursor")
+    return rule_id
 
 
 @findings_router.get("", summary="List findings, newest first")
@@ -67,12 +78,18 @@ async def get_finding(
     return FindingRead.from_entity(await service.get(principal, finding_id))
 
 
-@rules_router.get("/rules", summary="List the loaded detection rules")
+@rules_router.get("/rules", summary="List the loaded detection rules, by title", response_model=Page[RuleRead])
 async def list_rules(
+    limit: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+    cursor: str | None = Query(default=None),
     principal: Principal = Depends(require_permission(Permission.RULE_READ)),
     catalog: RuleCatalog = Depends(get_rule_catalog),
-) -> list[RuleRead]:
-    return [RuleRead.from_rule(rule) for rule in catalog.list_rules(principal)]
+) -> Page[RuleRead]:
+    page = catalog.list_rules(principal, limit=limit, after=_rule_after(cursor))
+    return Page[RuleRead](
+        items=[RuleRead.from_rule(rule) for rule in page.items],
+        next_cursor=None if page.next_after is None else encode_cursor(page.next_after),
+    )
 
 
 @rules_router.get("/rules/{rule_id}", summary="Inspect one detection rule")

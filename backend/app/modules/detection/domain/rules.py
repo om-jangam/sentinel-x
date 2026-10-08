@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 
-from app.core.errors import NotFoundError
+from app.core.errors import NotFoundError, ValidationFailedError
 from app.modules.detection.domain.predicates import Predicate
 
 
@@ -129,3 +129,28 @@ class RuleSet:
             if rule.meta.id == rule_id:
                 return rule
         raise NotFoundError("Detection rule not found")
+
+    def page(self, *, limit: int, after: str | None = None) -> RulePage:
+        """One page of the catalogue, in `all()`'s order, resuming after the rule with id `after`.
+
+        The cursor is a rule id rather than an offset. Ids are unique and the order is by title, so a page
+        boundary survives a reload that adds or removes rules — an offset would silently skip or repeat.
+        """
+        rules = self.all()
+        start = 0
+        if after is not None:
+            index = next((i for i, rule in enumerate(rules) if rule.meta.id == after), None)
+            if index is None:
+                # The rule the last page ended on is gone (the pack was re-imported). Resuming would skip
+                # or repeat rules without saying so, so the client is told to start again.
+                raise ValidationFailedError("Invalid pagination cursor")
+            start = index + 1
+        window = tuple(rules[start : start + limit])
+        exhausted = start + len(window) >= len(rules)
+        return RulePage(items=window, next_after=None if exhausted or not window else window[-1].meta.id)
+
+
+@dataclass(frozen=True, slots=True)
+class RulePage:
+    items: tuple[Rule, ...]
+    next_after: str | None = None

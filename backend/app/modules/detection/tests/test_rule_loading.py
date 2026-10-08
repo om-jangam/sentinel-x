@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from app.core.errors import ValidationFailedError
 from app.modules.detection.domain.rules import RuleType, SingleEventRule
 from app.modules.detection.infrastructure.ocsf_paths import is_known_path
 from app.modules.detection.infrastructure.rule_loader import (
@@ -268,6 +269,35 @@ def test_one_bad_file_stops_loading_with_every_problem_listed(tmp_path: Path) ->
         load_rules(tmp_path)
     assert "sigma/a.yml" in str(error.value)
     assert "threshold/b.yml" in str(error.value)
+
+
+def test_the_catalogue_pages_by_rule_id_and_stops_exactly_at_the_end() -> None:
+    """926 rules do not belong in one response. The boundaries are what a client depends on."""
+    rules = load_rules()
+    titles = [rule.meta.title for rule in rules.all()]
+
+    walked: list[str] = []
+    cursor: str | None = None
+    while True:
+        page = rules.page(limit=100, after=cursor)
+        walked += [rule.meta.title for rule in page.items]
+        if (cursor := page.next_after) is None:
+            break
+    assert walked == titles, "every rule once, in order, following the cursor to the end"
+
+    # The page that lands exactly on the last rule reports no next cursor, rather than an empty page after.
+    total = len(titles)
+    last = rules.page(limit=total, after=None)
+    assert len(last.items) == total
+    assert last.next_after is None
+
+    first = rules.page(limit=1)
+    assert first.next_after == first.items[0].meta.id, "the cursor is the last id served, not an offset"
+
+
+def test_a_cursor_for_a_rule_that_is_gone_is_refused_rather_than_skipping_rules() -> None:
+    with pytest.raises(ValidationFailedError, match="Invalid pagination cursor"):
+        load_rules().page(limit=10, after="00000000-0000-0000-0000-000000000000")
 
 
 def test_duplicate_rule_ids_are_refused(tmp_path: Path) -> None:

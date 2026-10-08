@@ -380,7 +380,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the loaded detection rules */
+        /** List the loaded detection rules, by title */
         get: operations["list_rules_api_v1_detection_rules_get"];
         put?: never;
         post?: never;
@@ -1518,6 +1518,13 @@ export interface components {
         Page_AuditEntryRead_: {
             /** Items */
             items: components["schemas"]["AuditEntryRead"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** Page[RuleRead] */
+        Page_RuleRead_: {
+            /** Items */
+            items: components["schemas"]["RuleRead"][];
             /** Next Cursor */
             next_cursor?: string | null;
         };
@@ -2741,7 +2748,10 @@ export interface operations {
     };
     list_rules_api_v1_detection_rules_get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2754,7 +2764,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RuleRead"][];
+                    "application/json": components["schemas"]["Page_RuleRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

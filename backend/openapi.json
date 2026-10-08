@@ -1280,29 +1280,65 @@
         "tags": [
           "detection"
         ],
-        "summary": "List the loaded detection rules",
+        "summary": "List the loaded detection rules, by title",
         "operationId": "list_rules_api_v1_detection_rules_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/RuleRead"
-                  },
-                  "type": "array",
-                  "title": "Response List Rules Api V1 Detection Rules Get"
+                  "$ref": "#/components/schemas/Page_RuleRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/detection/rules/{rule_id}": {
@@ -2838,7 +2874,7 @@
               "type": "integer"
             },
             "type": "array",
-            "maxItems": 9,
+            "maxItems": 10,
             "title": "Class Uids"
           },
           "severity_min": {
@@ -4405,6 +4441,33 @@
           "items"
         ],
         "title": "Page[AuditEntryRead]"
+      },
+      "Page_RuleRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RuleRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "Page[RuleRead]"
       },
       "Page_UserRead_": {
         "properties": {
