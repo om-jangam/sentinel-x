@@ -2749,6 +2749,10 @@ export interface operations {
     list_rules_api_v1_detection_rules_get: {
         parameters: {
             query?: {
+                /** @description Rules covering this ATT&CK technique, its parent, or its sub-techniques */
+                technique?: string | null;
+                /** @description Sigma logsource, exactly as the rules report it; threshold rules belong to no logsource */
+                logsource?: string | null;
                 limit?: number;
                 cursor?: string | null;
             };

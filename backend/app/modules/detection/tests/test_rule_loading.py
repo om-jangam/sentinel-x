@@ -8,7 +8,13 @@ from pathlib import Path
 import pytest
 
 from app.core.errors import ValidationFailedError
-from app.modules.detection.domain.rules import RuleType, SingleEventRule
+from app.modules.detection.domain.rules import (
+    MAX_PAGE_SIZE,
+    RuleQuery,
+    RuleType,
+    SingleEventRule,
+    covers_technique,
+)
 from app.modules.detection.infrastructure.ocsf_paths import is_known_path
 from app.modules.detection.infrastructure.rule_loader import (
     RULES_DIR,
@@ -279,25 +285,122 @@ def test_the_catalogue_pages_by_rule_id_and_stops_exactly_at_the_end() -> None:
     walked: list[str] = []
     cursor: str | None = None
     while True:
-        page = rules.page(limit=100, after=cursor)
+        page = rules.page(RuleQuery(limit=100, after=cursor))
         walked += [rule.meta.title for rule in page.items]
         if (cursor := page.next_after) is None:
             break
     assert walked == titles, "every rule once, in order, following the cursor to the end"
 
-    # The page that lands exactly on the last rule reports no next cursor, rather than an empty page after.
-    total = len(titles)
-    last = rules.page(limit=total, after=None)
-    assert len(last.items) == total
-    assert last.next_after is None
+    assert page.total == len(titles), "the last page still reports the size of the whole catalogue"
 
-    first = rules.page(limit=1)
+    # A page that lands exactly on the last rule reports no next cursor, rather than an empty page after.
+    # Measured on a filtered subset, because the whole catalogue is larger than the largest page.
+    size = rules.page(RuleQuery(limit=MAX_PAGE_SIZE, logsource="windows/security")).total
+    exact = rules.page(RuleQuery(limit=size, logsource="windows/security"))
+    assert len(exact.items) == size
+    assert exact.next_after is None
+
+    first = rules.page(RuleQuery(limit=1))
     assert first.next_after == first.items[0].meta.id, "the cursor is the last id served, not an offset"
+
+
+def test_filtering_by_technique_includes_sub_techniques_and_parents() -> None:
+    """A rule tagged T1059.001 is a rule for T1059: asking for either has to find it."""
+    rules = load_rules()
+    parent = rules.page(RuleQuery(limit=200, technique="T1059"))
+    assert parent.total > 1
+    tagged = {rule.meta.id for rule in parent.items}
+
+    specific = rules.page(RuleQuery(limit=200, technique="T1059.001"))
+    assert {rule.meta.id for rule in specific.items} <= tagged, "a sub-technique selects fewer rules"
+    assert specific.total < parent.total
+
+    for rule in parent.items:
+        assert any(t.startswith("T1059") for t in rule.meta.attack.techniques), rule.meta.title
+    assert rules.page(RuleQuery(limit=10, technique="t1059")).total == parent.total, "case does not matter"
+
+
+def test_filtering_by_technique_that_nothing_covers_is_an_empty_page_not_an_error() -> None:
+    page = load_rules().page(RuleQuery(limit=50, technique="T9999"))
+    assert (page.items, page.next_after, page.total) == ((), None, 0)
+
+
+def test_filtering_by_logsource_selects_sigma_rules_for_that_log_only() -> None:
+    rules = load_rules()
+    page = rules.page(RuleQuery(limit=200, logsource="windows/security"))
+    assert page.total > 0
+    for rule in page.items:
+        assert isinstance(rule, SingleEventRule)
+        assert rule.logsource == "windows/security"
+
+    assert rules.page(RuleQuery(limit=5, logsource="WINDOWS/SECURITY")).total == page.total, "case-insensitive"
+    # A platform threshold rule matches OCSF fields across sources, so it belongs to no one logsource and
+    # is not returned by any value of this filter.
+    thresholds = {rule.meta.id for rule in rules.threshold}
+    every_logsource = {rule.logsource for rule in rules.single_event}
+    for logsource in every_logsource:
+        selected = {rule.meta.id for rule in rules.page(RuleQuery(limit=200, logsource=logsource)).items}
+        assert not selected & thresholds
+
+
+def test_the_two_filters_narrow_together() -> None:
+    rules = load_rules()
+    both = rules.page(RuleQuery(limit=200, technique="T1110.003", logsource="windows/security"))
+    for rule in both.items:
+        assert isinstance(rule, SingleEventRule)
+        assert rule.logsource == "windows/security"
+        assert any(covers_technique(t, "T1110.003") for t in rule.meta.attack.techniques)
+    only_technique = rules.page(RuleQuery(limit=200, technique="T1110.003"))
+    assert both.total <= only_technique.total
+
+
+def test_paging_a_filtered_catalogue_counts_and_ends_on_the_filtered_set() -> None:
+    rules = load_rules()
+    first = rules.page(RuleQuery(limit=1, technique="T1059"))
+    assert first.total > 1
+    assert first.next_after is not None
+
+    walked = [rule.meta.id for rule in first.items]
+    cursor: str | None = first.next_after
+    while cursor is not None:
+        page = rules.page(RuleQuery(limit=1, after=cursor, technique="T1059"))
+        walked += [rule.meta.id for rule in page.items]
+        cursor = page.next_after
+    assert len(walked) == first.total
+    assert len(set(walked)) == len(walked)
+
+
+def test_a_cursor_from_a_different_filter_is_refused() -> None:
+    """Changing the filter mid-pagination would otherwise resume from an arbitrary place."""
+    rules = load_rules()
+    elsewhere = rules.page(RuleQuery(limit=1, logsource="process_creation"))
+    assert elsewhere.next_after is not None
+    with pytest.raises(ValidationFailedError, match="Invalid pagination cursor"):
+        rules.page(RuleQuery(limit=10, after=elsewhere.next_after, logsource="windows/security"))
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        ({"technique": "1110"}, "must look like"),
+        ({"technique": "T11100"}, "must look like"),
+        ({"technique": "T1110.3"}, "must look like"),
+        ({"limit": 0}, "between 1 and 200"),
+        ({"limit": 201}, "between 1 and 200"),
+        ({"logsource": ""}, "1 to 64 characters"),
+    ],
+)
+def test_an_invalid_rule_query_is_refused_before_anything_is_searched(kwargs: dict[str, object], message: str) -> None:
+    with pytest.raises(ValidationFailedError) as raised:
+        RuleQuery(**kwargs)  # type: ignore[arg-type]
+    # The message names the field, so a 422 tells a client which parameter to fix.
+    assert [problem["loc"] for problem in raised.value.errors] == [[next(iter(kwargs))]]
+    assert message in raised.value.errors[0]["msg"]
 
 
 def test_a_cursor_for_a_rule_that_is_gone_is_refused_rather_than_skipping_rules() -> None:
     with pytest.raises(ValidationFailedError, match="Invalid pagination cursor"):
-        load_rules().page(limit=10, after="00000000-0000-0000-0000-000000000000")
+        load_rules().page(RuleQuery(limit=10, after="00000000-0000-0000-0000-000000000000"))
 
 
 def test_duplicate_rule_ids_are_refused(tmp_path: Path) -> None:

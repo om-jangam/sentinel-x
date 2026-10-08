@@ -114,12 +114,14 @@ async def test_bad_queries_and_missing_findings(client: httpx.AsyncClient, admin
     assert missing.status_code == 404
 
 
-async def rule_pages(client: httpx.AsyncClient, token: str, *, limit: int = 200) -> list[dict[str, Any]]:
-    """Every rule, by following `next_cursor` to the end."""
+async def rule_pages(
+    client: httpx.AsyncClient, token: str, *, limit: int = 200, extra: str = ""
+) -> list[dict[str, Any]]:
+    """Every matching rule, by following `next_cursor` to the end."""
     rules: list[dict[str, Any]] = []
     cursor: str | None = None
     for _ in range(50):  # a bound, so a cursor that never advances fails the test instead of hanging
-        query = f"limit={limit}" + (f"&cursor={cursor}" if cursor else "")
+        query = f"limit={limit}" + (f"&{extra}" if extra else "") + (f"&cursor={cursor}" if cursor else "")
         page = (await client.get(f"/api/v1/detection/rules?{query}", headers=bearer(token))).json()
         rules += page["items"]
         cursor = page["next_cursor"]
@@ -152,6 +154,44 @@ async def test_a_cursor_that_is_not_a_rule_is_refused(client: httpx.AsyncClient,
     """Including a valid cursor for a rule that no longer exists: resuming would skip rules silently."""
     response = await client.get(f"/api/v1/detection/rules?cursor={cursor}", headers=bearer(admin_token))
     assert response.status_code == 422
+
+
+async def test_the_catalogue_filters_by_technique_and_logsource(client: httpx.AsyncClient, admin_token: str) -> None:
+    async def rules(query: str) -> list[dict[str, Any]]:
+        return await rule_pages(client, admin_token, extra=query)
+
+    spraying = await rules("technique=T1110.003")
+    assert spraying, "the shipped spray rules are tagged T1110.003"
+    for rule in spraying:
+        assert any(t.startswith("T1110") for t in rule["techniques"]), rule["title"]
+
+    # The parent technique finds everything the sub-technique does, and more.
+    parent = {rule["id"] for rule in await rules("technique=T1110")}
+    assert {rule["id"] for rule in spraying} <= parent
+    assert len(parent) > len(spraying)
+
+    security = await rules("logsource=windows/security")
+    assert security
+    assert {rule["logsource"] for rule in security} == {"windows/security"}
+    assert all(rule["type"] == "sigma" for rule in security), "threshold rules belong to no logsource"
+
+    both = await rules("technique=T1059.001&logsource=process_creation")
+    assert both
+    for rule in both:
+        assert rule["logsource"] == "process_creation"
+        assert any(t.startswith("T1059") for t in rule["techniques"]), rule["title"]
+
+    nothing = (await client.get("/api/v1/detection/rules?technique=T9999", headers=bearer(admin_token))).json()
+    assert nothing == {"items": [], "next_cursor": None}, "a technique nothing covers is empty, not an error"
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["technique=1110", "technique=T1110.3", "logsource=", "limit=0", "limit=201", "cursor=not-base64!"],
+)
+async def test_an_unusable_rule_query_is_refused(client: httpx.AsyncClient, admin_token: str, query: str) -> None:
+    response = await client.get(f"/api/v1/detection/rules?{query}", headers=bearer(admin_token))
+    assert response.status_code == 422, query
 
 
 async def test_rules_catalogue(client: httpx.AsyncClient, admin_token: str) -> None:

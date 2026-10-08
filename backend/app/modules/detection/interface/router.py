@@ -14,7 +14,8 @@ from app.core.security.permissions import Permission
 from app.core.security.principal import Principal
 from app.modules.detection.application.finding_service import FindingQueryService, RuleCatalog
 from app.modules.detection.domain.findings import MAX_PAGE_SIZE, FindingCursor, FindingQuery
-from app.modules.detection.domain.rules import RuleSet
+from app.modules.detection.domain.rules import MAX_LOGSOURCE, RuleQuery, RuleSet
+from app.modules.detection.domain.rules import MAX_PAGE_SIZE as MAX_RULE_PAGE_SIZE
 from app.modules.detection.infrastructure.unit_of_work import SqlDetectionUnitOfWork
 from app.modules.detection.interface.schemas import FindingPageResponse, FindingRead, RuleRead
 
@@ -80,12 +81,25 @@ async def get_finding(
 
 @rules_router.get("/rules", summary="List the loaded detection rules, by title", response_model=Page[RuleRead])
 async def list_rules(
-    limit: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+    technique: str | None = Query(
+        default=None,
+        max_length=16,
+        examples=["T1110.003"],
+        description="Rules covering this ATT&CK technique, its parent, or its sub-techniques",
+    ),
+    logsource: str | None = Query(
+        default=None,
+        max_length=MAX_LOGSOURCE,
+        examples=["windows/security"],
+        description="Sigma logsource, exactly as the rules report it; threshold rules belong to no logsource",
+    ),
+    limit: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_RULE_PAGE_SIZE),
     cursor: str | None = Query(default=None),
     principal: Principal = Depends(require_permission(Permission.RULE_READ)),
     catalog: RuleCatalog = Depends(get_rule_catalog),
 ) -> Page[RuleRead]:
-    page = catalog.list_rules(principal, limit=limit, after=_rule_after(cursor))
+    query = RuleQuery(limit=limit, after=_rule_after(cursor), technique=technique, logsource=logsource)
+    page = catalog.list_rules(principal, query)
     return Page[RuleRead](
         items=[RuleRead.from_rule(rule) for rule in page.items],
         next_cursor=None if page.next_after is None else encode_cursor(page.next_after),

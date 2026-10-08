@@ -1289,6 +1289,50 @@
         ],
         "parameters": [
           {
+            "name": "technique",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 16
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Rules covering this ATT&CK technique, its parent, or its sub-techniques",
+              "examples": [
+                "T1110.003"
+              ],
+              "title": "Technique"
+            },
+            "description": "Rules covering this ATT&CK technique, its parent, or its sub-techniques"
+          },
+          {
+            "name": "logsource",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sigma logsource, exactly as the rules report it; threshold rules belong to no logsource",
+              "examples": [
+                "windows/security"
+              ],
+              "title": "Logsource"
+            },
+            "description": "Sigma logsource, exactly as the rules report it; threshold rules belong to no logsource"
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,

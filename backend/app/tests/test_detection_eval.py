@@ -23,9 +23,9 @@ from app.detection_eval import (
     is_harness_command,
     render_report,
     replay,
-    technique_matches,
 )
 from app.ingest_pipeline.tests.test_winxml import SECURITY_4688, SYSMON_1, event_xml
+from app.modules.detection.domain.rules import covers_technique
 
 
 def test_the_manifest_is_well_formed() -> None:
@@ -50,7 +50,7 @@ def test_the_manifest_is_well_formed() -> None:
     ],
 )
 def test_technique_matching(finding: str, label: str, matches: bool) -> None:
-    assert technique_matches(finding, label) is matches
+    assert covers_technique(finding, label) is matches
 
 
 WMI_NOISE = event_xml(5857, "Microsoft-Windows-WMI-Activity/Operational", {"ProviderName": "x"})

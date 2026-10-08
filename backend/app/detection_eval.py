@@ -53,6 +53,7 @@ from app.ingest_pipeline.wineventlog_text import iter_records as iter_rendered
 from app.ingest_pipeline.winxml import WindowsXmlError, iter_events
 from app.modules.detection.application.detection_service import DetectionService
 from app.modules.detection.domain.findings import Finding
+from app.modules.detection.domain.rules import covers_technique
 from app.modules.detection.infrastructure.rule_loader import load_rules
 from app.modules.detection.infrastructure.window_store import InMemoryWindowStore
 
@@ -353,12 +354,6 @@ class _UnitOfWork:
         return None
 
 
-def technique_matches(finding_technique: str, label: str) -> bool:
-    """Same technique, its parent, or one of its sub-techniques."""
-    finding, label = finding_technique.upper(), label.upper()
-    return finding == label or label.startswith(finding + ".") or finding.startswith(label + ".")
-
-
 @dataclass(slots=True)
 class DatasetResult:
     dataset: Dataset
@@ -383,7 +378,7 @@ class DatasetResult:
         return [
             f
             for f in self.findings
-            if not self.is_harness(f) and any(technique_matches(t, self.dataset.technique) for t in f.techniques)
+            if not self.is_harness(f) and any(covers_technique(t, self.dataset.technique) for t in f.techniques)
         ]
 
     @property
