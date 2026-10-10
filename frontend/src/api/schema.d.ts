@@ -390,6 +390,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/detection/exports/attack-navigator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The loaded rules as a MITRE ATT&CK Navigator layer (v4.5), scored by rules per technique */
+        get: operations["get_rule_coverage_layer_api_v1_detection_exports_attack_navigator_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/detection/rules/{rule_id}": {
         parameters: {
             query?: never;
@@ -2778,6 +2795,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_rule_coverage_layer_api_v1_detection_exports_attack_navigator_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };

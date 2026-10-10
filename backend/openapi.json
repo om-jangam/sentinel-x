@@ -1385,6 +1385,34 @@
         }
       }
     },
+    "/api/v1/detection/exports/attack-navigator": {
+      "get": {
+        "tags": [
+          "detection"
+        ],
+        "summary": "The loaded rules as a MITRE ATT&CK Navigator layer (v4.5), scored by rules per technique",
+        "operationId": "get_rule_coverage_layer_api_v1_detection_exports_attack_navigator_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Rule Coverage Layer Api V1 Detection Exports Attack Navigator Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/detection/rules/{rule_id}": {
       "get": {
         "tags": [

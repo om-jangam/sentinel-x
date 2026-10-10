@@ -105,7 +105,11 @@ before. In Sentinel-X, rarity would be deterministic and cited:
 *Done:* `GET /api/v1/incidents/{id}/exports/attack-navigator` and `.../attack-flow`, with download buttons
 in the workspace ([correlation](modules/correlation.md#exports)). Attack Flow actions carry the event_uids
 that show them.
-*Not yet:* a rule-coverage layer across the whole rule set (as opposed to one incident).
+*Since:* the rule set exports as a layer too —
+`GET /api/v1/detection/exports/attack-navigator` and `sentinelx export-rule-coverage`
+([committed snapshot](evaluation/rule-coverage.json)). 926 rules name 219 techniques, 129 of them
+sub-techniques; 93 rules name none. The layer's description says plainly that a score counts rules, not
+detections, and points at the evaluation for what the rules actually found.
 
 - **ATT&CK Navigator layer** ([layer format v4.5](https://github.com/mitre-attack/attack-navigator/blob/master/layers/spec/v4.5/layerformat.md)):
   one per incident (techniques observed, with event counts as comments) and one for rule coverage. It
@@ -158,7 +162,7 @@ All eight are built. What they changed, in order:
 | 3 | 917 attributed SigmaHQ rules | 3 of 5 priority techniques; Mimikatz and PowerUp found in recordings already replayed |
 | 4 | Sigma correlation rules | the standard's multi-event format, alongside the cross-source platform rules |
 | 5 | Baseline novelty | "has this ever happened here?", as counted context |
-| 6 | Navigator and Attack Flow exports | incidents open in MITRE's own tools |
+| 6 | Navigator and Attack Flow exports | incidents open in MITRE's own tools; the rule set exports as a coverage layer |
 | 7 | Attribution check | the model's "who did it" is checked against the graph |
 | 8 | Incident report | a handover document where every line cites its events |
 

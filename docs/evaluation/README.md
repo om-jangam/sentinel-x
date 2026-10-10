@@ -104,6 +104,14 @@ In the evaluator:
 - `-EncodedCommand` was only decoded in some spellings; `/NoProfile /EncodedCommand …` read the next
   switch as its Base64 value, because `/` is a Base64 character.
 
+In the rule metadata, found while building the coverage layer:
+
+- ATT&CK v17 renamed TA0005 Defense Evasion to **Stealth** and added TA0112 **Defense Impairment**. The
+  tactic list here was the pre-v17 one, so 413 tactic tags across the shipped pack matched nothing and
+  were dropped — including `stealth`, which is the **largest** tactic in the set (303 rules) and was
+  reporting as no tactic at all. Rules still tagged `defense_evasion` now read as Stealth, since TA0005
+  was renamed rather than replaced.
+
 In the parsers, found while mapping Kerberos events:
 
 - Windows writes a Kerberos client address as `::ffff:10.0.1.14`. Stored as IPv6 that normalises to
@@ -116,12 +124,21 @@ In the parsers, found while mapping Kerberos events:
 All are covered by tests (`app/tests/test_detection_eval.py`,
 `app/ingest_pipeline/tests/test_wineventlog_text.py`, `app/ingest_pipeline/tests/test_parsers.py`).
 
+## What the rules look for, as opposed to what they found
+
+`sentinelx export-rule-coverage` writes [`rule-coverage.json`](rule-coverage.json), an ATT&CK Navigator
+layer of the 926 loaded rules: 219 techniques named, 129 of them sub-techniques, 93 rules naming none.
+Read it next to the table above, not instead of it — the layer counts rules per technique, and this page
+is the only thing here that counts detections. A technique with eight rules and no measured detection is
+exactly the case the evaluation exists to expose.
+
 ## How to reproduce
 
 ```bash
 cd backend
 uv run sentinelx fetch-detection-datasets     # ~104 MB, verified by SHA-256, never committed
 uv run sentinelx evaluate-detection --report ../docs/evaluation/detection-baseline.md
+uv run sentinelx export-rule-coverage         # writes ../docs/evaluation/rule-coverage.json
 ```
 
 To re-derive the community rule set itself (it is a command, not a procedure — ADR-0025):

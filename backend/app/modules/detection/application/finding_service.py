@@ -36,6 +36,11 @@ class RuleCatalog:
         principal.require(Permission.RULE_READ)
         return self._rules.page(query)
 
+    def list_all(self, principal: Principal) -> list[Rule]:
+        """Every loaded rule, for a view that summarises the whole set rather than listing it."""
+        principal.require(Permission.RULE_READ)
+        return self._rules.all()
+
     def get_rule(self, principal: Principal, rule_id: str) -> Rule:
         principal.require(Permission.RULE_READ)
         return self._rules.get(rule_id)

@@ -20,7 +20,9 @@ class RuleType(StrEnum):
 # Sigma levels map onto OCSF severity_id.
 LEVEL_SEVERITY = {"informational": 1, "low": 2, "medium": 3, "high": 4, "critical": 5}
 
-# MITRE ATT&CK Enterprise tactics, as Sigma writes them in `attack.<tactic>` tags.
+# MITRE ATT&CK Enterprise tactics (v17), as Sigma writes them in `attack.<tactic>` tags. v17 renamed
+# TA0005 Defense Evasion to **Stealth** and added TA0112 **Defense Impairment**; the shipped SigmaHQ pack
+# uses the new names on 413 tags, every one of which this set silently dropped before they were added.
 TACTICS = frozenset(
     {
         "reconnaissance",
@@ -29,7 +31,8 @@ TACTICS = frozenset(
         "execution",
         "persistence",
         "privilege_escalation",
-        "defense_evasion",
+        "stealth",
+        "defense_impairment",
         "credential_access",
         "discovery",
         "lateral_movement",
@@ -39,6 +42,8 @@ TACTICS = frozenset(
         "impact",
     }
 )
+# Older rules (including one of Sentinel-X's own) still use the pre-v17 name for the same tactic id.
+RENAMED_TACTICS = {"defense_evasion": "stealth"}
 _TECHNIQUE_TAG = re.compile(r"attack\.(t\d{4}(?:\.\d{3})?)", re.IGNORECASE)
 TECHNIQUE_ID = re.compile(r"T\d{4}(?:\.\d{3})?")
 # The catalogue is in memory, so a page is a slice of a list; the bounds match the API's envelope.
@@ -63,9 +68,10 @@ def attack_from_tags(tags: Iterable[str]) -> Attack:
             technique = match.group(1).upper()
             if technique not in techniques:
                 techniques.append(technique)
-        elif lowered.startswith("attack.") and lowered[7:].replace("-", "_") in TACTICS:
-            tactic = lowered[7:].replace("-", "_")
-            if tactic not in tactics:
+        elif lowered.startswith("attack."):
+            # TA0005 was renamed, not replaced, so a rule still tagged `defense_evasion` means Stealth.
+            tactic = RENAMED_TACTICS.get(lowered[7:].replace("-", "_"), lowered[7:].replace("-", "_"))
+            if tactic in TACTICS and tactic not in tactics:
                 tactics.append(tactic)
     return Attack(techniques=tuple(techniques), tactics=tuple(tactics))
 

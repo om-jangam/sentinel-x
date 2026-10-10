@@ -105,7 +105,7 @@ async def test_each_story_becomes_one_incident(container: Container, seeded: See
     }
     assert windows.incident.title == (
         "Successful logon after repeated failures from 198.51.100.23, "
-        "then execution, defense evasion, discovery, command and control on ws-fin-07"
+        "then execution, stealth, discovery, command and control on ws-fin-07"
     )
     beacon = next(link for link in windows.links if "Repeated connections" in str(link.detail.get("rule_title")))
     # The network story joins because its events name the same machine as the Windows events.

@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import cast
+from typing import Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utcnow
 from app.core.errors import ServiceUnavailableError, ValidationFailedError
 from app.core.http.deps import get_session, require_permission
 from app.core.pagination import DEFAULT_PAGE_SIZE, Page, decode_cursor, encode_cursor
 from app.core.security.permissions import Permission
 from app.core.security.principal import Principal
 from app.modules.detection.application.finding_service import FindingQueryService, RuleCatalog
+from app.modules.detection.domain.coverage import coverage_layer
 from app.modules.detection.domain.findings import MAX_PAGE_SIZE, FindingCursor, FindingQuery
 from app.modules.detection.domain.rules import MAX_LOGSOURCE, RuleQuery, RuleSet
 from app.modules.detection.domain.rules import MAX_PAGE_SIZE as MAX_RULE_PAGE_SIZE
@@ -104,6 +106,17 @@ async def list_rules(
         items=[RuleRead.from_rule(rule) for rule in page.items],
         next_cursor=None if page.next_after is None else encode_cursor(page.next_after),
     )
+
+
+@rules_router.get(
+    "/exports/attack-navigator",
+    summary="The loaded rules as a MITRE ATT&CK Navigator layer (v4.5), scored by rules per technique",
+)
+async def get_rule_coverage_layer(
+    principal: Principal = Depends(require_permission(Permission.RULE_READ)),
+    catalog: RuleCatalog = Depends(get_rule_catalog),
+) -> dict[str, Any]:
+    return coverage_layer(catalog.list_all(principal), generated=utcnow())
 
 
 @rules_router.get("/rules/{rule_id}", summary="Inspect one detection rule")

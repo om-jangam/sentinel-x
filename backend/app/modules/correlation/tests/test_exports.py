@@ -8,7 +8,8 @@ import httpx
 import pytest
 
 from app.conftest import Seeded, bearer
-from app.modules.correlation.domain.exports import ATTACK_FLOW_EXTENSION, LAYER_VERSION
+from app.core.attack_navigator import LAYER_VERSION
+from app.modules.correlation.domain.exports import ATTACK_FLOW_EXTENSION
 from app.modules.correlation.tests.test_incidents_api import _ingest_samples
 
 

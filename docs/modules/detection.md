@@ -35,6 +35,7 @@ group and firing for threshold rules.
 | `GET /api/v1/findings/{id}` | `finding:read` |
 | `GET /api/v1/detection/rules` — filters `technique`, `logsource`; `limit` ≤ 200 (50 by default); opaque `cursor`; by title | `rule:read` |
 | `GET /api/v1/detection/rules/{id}` | `rule:read` |
+| `GET /api/v1/detection/exports/attack-navigator` — the rule set as an ATT&CK Navigator layer | `rule:read` |
 
 Resolve evidence with `GET /api/v1/events/{event_uid}` (`event:read`).
 
@@ -213,6 +214,27 @@ public-recording evaluation, so the filter and the measurement cannot drift apar
 
 The 93 community rules with no ATT&CK tag are reachable only without a `technique` filter — another
 reason the count is tested rather than ignored.
+
+## What the rules look for
+
+`GET /api/v1/detection/exports/attack-navigator` (and `sentinelx export-rule-coverage`, which needs no
+server) renders the loaded rules as an ATT&CK Navigator layer, scored by how many rules name each
+technique. A committed snapshot lives at [`docs/evaluation/rule-coverage.json`](../evaluation/rule-coverage.json);
+open it with *Open Existing Layer → Upload* at <https://mitre-attack.github.io/attack-navigator/>.
+
+| | |
+|---|---|
+| Rules | 926 |
+| Techniques named | 219 (129 sub-techniques) |
+| Rules naming no technique | 93 |
+| Busiest tactics | stealth 303, execution 264, privilege escalation 213, persistence 204, credential access 119 |
+
+**A score counts rules, not detections.** The layer says so in its own description, because this is the
+one export that invites the opposite reading: 917 community rules moved no technique verdict on the
+public recordings ([what the evaluation showed](../evaluation/README.md)), so a dark green row means
+"several rules look here", never "this would be caught". Techniques are scored only by rules that **name**
+them — a rule tagged `T1059.001` does not score `T1059`, since Navigator already nests sub-techniques and
+a borrowed parent score would overstate the row an analyst reads first.
 
 ## Measured on public recordings
 

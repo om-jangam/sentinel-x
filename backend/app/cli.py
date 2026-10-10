@@ -541,6 +541,28 @@ def cmd_import_sigma_rules(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export_rule_coverage(args: argparse.Namespace) -> int:
+    import json
+
+    from app.core.clock import utcnow
+    from app.modules.detection.domain.coverage import coverage, coverage_layer
+    from app.modules.detection.infrastructure.rule_loader import load_rules
+
+    rules = load_rules().all()
+    layer = json.dumps(coverage_layer(rules, generated=utcnow()), indent=2)
+    Path(args.out).write_text(layer + "\n", encoding="utf-8")
+    counted = coverage(rules)
+    print(f"layer written to {args.out}")
+    print(
+        f"  {counted.rule_count:,} rules name {counted.technique_count:,} techniques "
+        f"({counted.sub_technique_count:,} sub-techniques); {counted.untagged_rules:,} name none"
+    )
+    for tactic, count in counted.tactics[:5]:
+        print(f"  {count:5,} rules  {tactic.replace('_', ' ')}")
+    print("\nOpen it at https://mitre-attack.github.io/attack-navigator/ (Open Existing Layer → Upload)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="sentinelx")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -631,6 +653,10 @@ def main(argv: list[str] | None = None) -> int:
     import_sigma.add_argument("--out", default=str(BACKEND_ROOT / "app/modules/detection/rules/sigmahq"))
     import_sigma.add_argument("--sha256", help="refuse the package unless it has this SHA-256")
     import_sigma.set_defaults(func=cmd_import_sigma_rules)
+
+    coverage = sub.add_parser("export-rule-coverage", help="write the loaded rules as an ATT&CK Navigator layer")
+    coverage.add_argument("--out", default=str(BACKEND_ROOT.parent / "docs/evaluation/rule-coverage.json"))
+    coverage.set_defaults(func=cmd_export_rule_coverage)
 
     openapi = sub.add_parser("export-openapi", help="write the OpenAPI document")
     openapi.add_argument("--out", default=str(BACKEND_ROOT / "openapi.json"))

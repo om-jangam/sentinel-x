@@ -1,0 +1,4629 @@
+{
+  "name": "Sentinel-X \u00b7 rule coverage",
+  "versions": {
+    "attack": "17",
+    "navigator": "5.1.0",
+    "layer": "4.5"
+  },
+  "domain": "enterprise-attack",
+  "description": "926 loaded detection rules name 219 ATT&CK techniques (129 of them sub-techniques); 93 rules name none and appear nowhere in this layer. Exported by Sentinel-X on 2026-10-11. A score is how many rules look for a technique \u2014 not evidence that it would be caught, and not a measurement: for what the rules actually found on public attack recordings, see docs/evaluation.",
+  "techniques": [
+    {
+      "techniqueID": "T1003",
+      "score": 10,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - Potential Remote Credential Dumping Activity Via CrackMapExec Or Impacket-Secretsdump; HackTool - Rubeus Execution; Hacktool Execution - Imphash; Hacktool Execution - PE Metadata; Microsoft IIS Connection Strings Decryption",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "10"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "10"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1003.001",
+      "score": 48,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "CreateDump Process Dump; Cred Dump Tools Dropped Files; Credential Dumping Activity By Python Based Tool; Credential Dumping Attempt Via WerFault; HackTool - CrackMapExec File Indicators",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "48"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "48"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1003.002",
+      "score": 13,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Copying Sensitive Files with Credential Data; Cred Dump Tools Dropped Files; Dumping of Sensitive Hives Via Reg.EXE; Esentutl Volume Shadow Copy Service Keys; HackTool - Mimikatz Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "13"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "13"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1003.003",
+      "score": 10,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Copying Sensitive Files with Credential Data; Cred Dump Tools Dropped Files; NTDS Exfiltration Filename Patterns; NTDS.DIT Creation By Uncommon Process; PUA - DIT Snapshot Viewer",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "10"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "10"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1003.004",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Cred Dump Tools Dropped Files; Dumping of Sensitive Hives Via Reg.EXE; HackTool - Mimikatz Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1003.005",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Cred Dump Tools Dropped Files; Dumping of Sensitive Hives Via Reg.EXE; HackTool - Mimikatz Execution; Potential Reconnaissance For Cached Credentials Via Cmdkey.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1003.006",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - Mimikatz Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1005",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "SQLite Chromium Profile Data DB Access; SQLite Firefox Profile Data DB Access; VeeamBackup Database Credentials Dump Via Sqlcmd.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1007",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - PCHunter Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1008",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Outlook Macro Execution Without Warning Setting Enabled; Potential Persistence Via Outlook LoadMacroProviderOnBoot Setting; Suspicious Outlook Macro Created",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1012",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Exports Critical Registry Keys To a File; HackTool - PCHunter Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1014",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Triple Cross eBPF Rootkit Install Commands",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1018",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Chopper Webshell Process Pattern; PUA - AdFind Suspicious Execution; Renamed AdFind Execution; Webshell Detection With Command Line Keywords; Webshell Hacking Activity Patterns",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1021",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Privilege Escalation via Named Pipe Impersonation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1021.001",
+      "score": 8,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Outbound RDP Connections Over Non-Standard Tools; Potential Tampering With RDP Related Registry Keys Via Reg.EXE; RDP Login from Localhost; RDP Over Reverse SSH Tunnel; RDP to HTTP or HTTPS Target Ports",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "8"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1021.002",
+      "score": 10,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - SharpMove Tool Execution; Metasploit SMB Authentication; Potential CobaltStrike Service Installations - Registry; Potential DCOM InternetExplorer.Application DLL Hijack; Potential DCOM InternetExplorer.Application DLL Hijack - Image Load",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "10"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "10"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1021.003",
+      "score": 6,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - Potential Impacket Lateral Movement Activity; MMC Spawning Windows Shell; MMC20 Lateral Movement; Potential DCOM InternetExplorer.Application DLL Hijack; Potential DCOM InternetExplorer.Application DLL Hijack - Image Load",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "6"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "6"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1021.005",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Suspicious UltraVNC Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1021.006",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Remote LSASS Process Access Through Windows Remote Management",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1027",
+      "score": 28,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Base64 Encoded PowerShell Command Detected; File Decoded From Base64/Hex Via Certutil.EXE; File In Suspicious Location Encoded To Base64 Via Certutil.EXE; Invoke-Obfuscation CLIP+ Launcher; Invoke-Obfuscation Obfuscated IEX Invocation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "28"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "1"
+        },
+        {
+          "name": "community rules",
+          "value": "27"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1027.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Binary Padding - MacOS",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1027.004",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Csc.EXE Execution Form Potentially Suspicious Parent; Visual Basic Command Line Compiler Usage",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1027.005",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - CrackMapExec PowerShell Obfuscation; PUA - DefenderCheck Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1027.009",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Powershell Token Obfuscation - Process Creation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1033",
+      "score": 10,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Chopper Webshell Process Pattern; HackTool - SharpLdapWhoami Execution; HackTool - SharpView Execution; Renamed Whoami Execution; Security Privileges Enumeration Via Whoami.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "10"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "1"
+        },
+        {
+          "name": "community rules",
+          "value": "9"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1036",
+      "score": 20,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "CreateDump Process Dump; Forfiles.EXE Child Process Masquerading; HackTool - XORDump Execution; Potential LSASS Process Dump Via Procdump; Potential SysInternals ProcDump Evasion",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "20"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "20"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1036.002",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential Defense Evasion Via Right-to-Left Override; Potential File Extension Spoofing Using Right-to-Left Override",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1036.003",
+      "score": 12,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "File Download Via Bitsadmin To A Suspicious Target Folder; File With Suspicious Extension Downloaded Via Bitsadmin; LOL-Binary Copied From System Directory; Potential Defense Evasion Via Rename Of Highly Relevant Binaries; Potential WerFault ReflectDebugger Registry Value Abuse",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "12"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "12"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1036.005",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential MsiExec Masquerading; Suspicious Process Masquerading As SvcHost.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1036.007",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Suspicious Double Extension Files; Suspicious Parent Double Extension File Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1037.001",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential Persistence Via Logon Scripts - CommandLine; Uncommon Userinit Child Process",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1046",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - WinPwn Execution; HackTool - winPEAS Execution; Many distinct external destinations from one host",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "1"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1047",
+      "score": 15,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HTML Help HH.EXE Suspicious Child Process; HackTool - CrackMapExec Execution; HackTool - CrackMapExec Execution Patterns; HackTool - Potential Impacket Lateral Movement Activity; Potential Remote SquiblyTwo Technique Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "15"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "15"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1048",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Suspicious Redirection to Local Admin Share",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1048.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "DNS Exfiltration and Tunneling Tools Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1048.003",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Suspicious WebDav Client Execution Via Rundll32.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1049",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - SharpView Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1053",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - CrackMapExec Execution; HackTool - CrackMapExec Execution Patterns; HackTool - SharPersist Execution; Scheduled TaskCache Change by Uncommon Program; Suspicious Scheduled Task Write to System32 Tasks",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1053.002",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Interactive AT Job",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1053.003",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Triple Cross eBPF Rootkit Default Persistence",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1053.005",
+      "score": 13,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - Default PowerSploit/Empire Scheduled Task Creation; Potential Persistence Via Powershell Search Order Hijacking - Task; Potential Registry Persistence Attempt Via Windows Telemetry; Scheduled Task Executing Encoded Payload from Registry; Scheduled TaskCache Change by Uncommon Program",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "13"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "13"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1055",
+      "score": 11,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Dllhost.EXE Execution Anomaly; DotNet CLR DLL Loaded By Scripting Applications; Execution Of Non-Existing File; HackTool - CoercedPotato Execution; HackTool - DInjector PowerShell Cradle Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "11"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "11"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1055.001",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - Potential CobaltStrike Process Injection; ManageEngine Endpoint Central Dctask64.EXE Potential Abuse; Mavinject Inject DLL Into Running Process; Renamed Mavinject.EXE Execution; Renamed ZOHO Dctask64 Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1055.003",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - LittleCorporal Generated Maldoc Injection",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1055.012",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - CACTUSTORCH Remote Thread Creation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1057",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - PCHunter Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1059",
+      "score": 31,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Abusable DLL Potential Sideloading From Suspicious Location; Add Insecure Download Source To Winget; Capsh Shell Invocation - Linux; HackTool - Sliver C2 Implant Activity Pattern; HackTool - Stracciatella Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "31"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "31"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1059.001",
+      "score": 54,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Base64 Encoded PowerShell Command Detected; BloodHound Collection Files; Cmd.EXE Missing Space Characters Execution Anomaly; DSInternals Suspicious PowerShell Cmdlets; Exchange PowerShell Snap-Ins Usage",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "54"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "1"
+        },
+        {
+          "name": "community rules",
+          "value": "53"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1059.002",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "JXA In-memory Execution Via OSAScript; OSACompile Run-Only Execution; Suspicious Microsoft Office Child Process - MacOS",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1059.003",
+      "score": 11,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Conhost.exe CommandLine Path Traversal; HTML Help HH.EXE Suspicious Child Process; HackTool - CrackMapExec Execution; HackTool - CrackMapExec Execution Patterns; HackTool - Koadic Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "11"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "11"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1059.004",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Linux Reverse Shell Indicator; Shell Invocation via Env Command - Linux",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1059.005",
+      "score": 12,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Adwind RAT / JRAT File Artifact; Csc.EXE Execution Form Potentially Suspicious Parent; Cscript/Wscript Uncommon Script Extension Execution; HTML Help HH.EXE Suspicious Child Process; HackTool - CACTUSTORCH Remote Thread Creation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "12"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "12"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1059.007",
+      "score": 11,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Adwind RAT / JRAT File Artifact; Csc.EXE Execution Form Potentially Suspicious Parent; Cscript/Wscript Uncommon Script Extension Execution; HTML Help HH.EXE Suspicious Child Process; HackTool - CACTUSTORCH Remote Thread Creation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "11"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "11"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1059.012",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "ESXi Admin Permission Assigned To Account Via ESXCLI",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1068",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - SysmonEOP Execution; OMIGOD SCX RunAsProvider ExecuteScript; OMIGOD SCX RunAsProvider ExecuteShellCommand; Process Explorer Driver Creation By Non-Sysinternals Binary; Suspicious Spool Service Child Process",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1069",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Malicious PowerShell Commandlets - ProcessCreation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1069.001",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "BloodHound Collection Files; HackTool - Bloodhound/Sharphound Execution; Malicious PowerShell Commandlets - ProcessCreation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1069.002",
+      "score": 8,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "BloodHound Collection Files; HackTool - Bloodhound/Sharphound Execution; HackTool - SharpView Execution; Malicious PowerShell Commandlets - ProcessCreation; PUA - AdFind Suspicious Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "8"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "1"
+        },
+        {
+          "name": "community rules",
+          "value": "7"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1070",
+      "score": 6,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "ETW Trace Evasion Activity; Exchange PowerShell Cmdlet History Deleted; Fsutil Suspicious Invocation; Shadow Copies Deletion Using Operating Systems Utilities; Sysmon Driver Unloaded Via Fltmc.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "6"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "6"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1070.004",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Prefetch File Deleted; Suspicious Ping/Del Command Combination",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1071",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - SILENTTRINITY Stager DLL Load; HackTool - SILENTTRINITY Stager Execution; Repeated connections from one host to the same external destination",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "1"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1071.001",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Outbound Network Connection Initiated By Microsoft Dialer; Renamed Visual Studio Code Tunnel Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1071.004",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "DNS Exfiltration and Tunneling Tools Execution; Suspicious Cobalt Strike DNS Beaconing - Sysmon",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1078",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "External Remote SMB Logon from Public IP",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1082",
+      "score": 6,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - PCHunter Execution; HackTool - WinPwn Execution; HackTool - winPEAS Execution; Network Reconnaissance Activity; Potential GobRAT File Discovery Via Grep",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "6"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "6"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1083",
+      "score": 7,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - PCHunter Execution; PUA - Seatbelt Execution; Shell Execution GCC  - Linux; Shell Execution via Find - Linux; Shell Execution via Flock - Linux",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "7"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "7"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1087",
+      "score": 9,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Chopper Webshell Process Pattern; HackTool - SOAPHound Execution; HackTool - winPEAS Execution; Hacktool Ruler; Malicious PowerShell Commandlets - ProcessCreation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "9"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "9"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1087.001",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "BloodHound Collection Files; HackTool - Bloodhound/Sharphound Execution; Malicious PowerShell Commandlets - ProcessCreation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1087.002",
+      "score": 7,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "BloodHound Collection Files; HackTool - Bloodhound/Sharphound Execution; Malicious PowerShell Commandlets - ProcessCreation; PUA - AdFind Suspicious Execution; PUA - Suspicious ActiveDirectory Enumeration Via AdFind.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "7"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "7"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1090",
+      "score": 9,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Communication To LocaltoNet Tunneling Service Initiated; Communication To LocaltoNet Tunneling Service Initiated - Linux; Communication To Ngrok Tunneling Service - Linux; Communication To Ngrok Tunneling Service Initiated; HackTool - Htran/NATBypass Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "9"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "9"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1090.001",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - SharpChisel Execution; PUA - Chisel Tunneling Tool Execution; Renamed Cloudflared.EXE Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1090.003",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "DNS Query Tor .Onion Address - Sysmon; Tor Client/Browser Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1095",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "PUA - Netcat Suspicious Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1098",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "ESXi Admin Permission Assigned To Account Via ESXCLI; Enabled User Right in AD to Control User Objects; Password Change on Directory Service Restore Mode (DSRM) Account; User Added To Highly Privileged Group",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1102",
+      "score": 7,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Communication To LocaltoNet Tunneling Service Initiated; Communication To LocaltoNet Tunneling Service Initiated - Linux; Communication To Ngrok Tunneling Service - Linux; Communication To Ngrok Tunneling Service Initiated; New Connection Initiated To Potential Dead Drop Resolver Domain",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "7"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "7"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1102.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "New Connection Initiated To Potential Dead Drop Resolver Domain",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1105",
+      "score": 26,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Curl Download And Execute Combination; File Download And Execution Via IEExec.EXE; File Download From IP Based URL Via CertOC.EXE; File Download Using Notepad++ GUP Utility; File Download Via Bitsadmin To A Suspicious Target Folder",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "26"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "26"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1106",
+      "score": 6,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - CobaltStrike BOF Injection Pattern; HackTool - HandleKatz Duplicating LSASS Handle; HackTool - RedMimicry Winnti Playbook Execution; HackTool - WinPwn Execution; Potential WinAPI Calls Via CommandLine",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "6"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "6"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1110",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "External Remote SMB Logon from Public IP; HackTool - CrackMapExec Execution; HackTool - Hydra Password Bruteforce Execution; SSH authentication attempt for a user that does not exist",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "1"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1110.001",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Burst of authentication failures for one account from one source; HackTool - Hydra Password Bruteforce Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "1"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1110.002",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - Hashcat Password Cracker Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1110.003",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Authentication failures across many accounts from one source; NTLM authentication tried for many accounts from one workstation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "2"
+        },
+        {
+          "name": "community rules",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1112",
+      "score": 34,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Change User Account Associated with the FAX Service; Change the Fax Dll; DHCP Callout DLL Installation; Disable Security Events Logging Adding Reg Key MiniNt; ETW Logging Disabled In .NET Processes - Sysmon Registry",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "34"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "34"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1114",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Exchange PowerShell Snap-Ins Usage; Hacktool Ruler",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1123",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Suspicious Camera and Microphone Access",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1124",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Use of W32tm as Timer",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1125",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Suspicious Camera and Microphone Access",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1127",
+      "score": 6,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Kavremover Dropped Binary LOLBIN Usage; Potential Arbitrary Code Execution Via Node.EXE; Potentially Suspicious ASP.NET Compilation Via AspNetCompiler; Remote Thread Creation Ttdinject.exe Proxy; Suspicious Child Process of AspNetCompiler",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "6"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "6"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1127.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Silenttrinity Stager Msbuild Activity",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1132.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "DNS Exfiltration and Tunneling Tools Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1133",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "External Remote SMB Logon from Public IP; Running Chrome VPN Extensions via the Registry 2 VPN Extension; Unusual Child Process of dns.exe; Unusual File Deletion by Dns.exe; User Added to Remote Desktop Users Group",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1134",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Suspicious SYSTEM User Process Creation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1134.001",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - SharpDPAPI Execution; HackTool - SharpImpersonation Execution; Potential Meterpreter/CobaltStrike Activity",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1134.002",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "PUA - AdvancedRun Suspicious Execution; Potential Meterpreter/CobaltStrike Activity; Suspicious Child Process Created as System",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1134.003",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - SharpDPAPI Execution; HackTool - SharpImpersonation Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1134.004",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - PPID Spoofing SelectMyParent Tool Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1135",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "File Explorer Folder Opened Using Explorer Folder Shortcut Via Shell; HackTool - SharpView Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1136.001",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Creation of a Local Hidden User Account by Registry; Hidden Local User Creation; New User Created Via Net.EXE With Never Expire Option; User Added to Remote Desktop Users Group",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1136.002",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "PSEXEC Remote Execution File Artefact",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1137",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Outlook Macro Execution Without Warning Setting Enabled; Potential Persistence Via Microsoft Office Startup Folder; Potential Persistence Via Outlook LoadMacroProviderOnBoot Setting; Suspicious Outlook Macro Created",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1137.002",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Suspicious Microsoft Office Child Process - MacOS",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1137.003",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential Persistence Via Outlook Form",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1137.006",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential Persistence Via Excel Add-in - Registry; Potential Persistence Via Microsoft Office Add-In",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1140",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Base64 Encoded PowerShell Command Detected; MSHTA Execution with Suspicious File Extensions; Ping Hex IP; Potential Base64 Decoded From Images; PowerShell Base64 Encoded FromBase64String Cmdlet",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1176.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Suspicious Chromium Browser Instance Executed With Custom Extension",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1185",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Potential Data Stealing Via Chromium Headless Debugging",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1187",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "NTLM Hash Leak Via Curl NTLM Authentication",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1190",
+      "score": 8,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "OMIGOD SCX RunAsProvider ExecuteScript; OMIGOD SCX RunAsProvider ExecuteShellCommand; Remote Access Tool - ScreenConnect Server Web Shell Execution; Suspicious Child Process Of SQL Server; Suspicious MSExchangeMailboxReplication ASPX Write",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "8"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1195",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Octopus Scanner Malware",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1195.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Octopus Scanner Malware",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1197",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "File Download Via Bitsadmin To A Suspicious Target Folder; File With Suspicious Extension Downloaded Via Bitsadmin; Suspicious Download From Direct IP Via Bitsadmin; Suspicious Download From File-Sharing Website Via Bitsadmin",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1201",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - CrackMapExec Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1202",
+      "score": 16,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Custom File Open Handler Executes PowerShell; Diagnostic Library Sdiageng.DLL Loaded By Msdt.EXE; Outlook EnableUnsafeClientMailRules Setting Enabled; Potential Arbitrary Command Execution Using Msdt.EXE; Potential Arbitrary File Download Using Office Application",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "16"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "16"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1203",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Network Connection Initiated By Eqnedt32.EXE; OMIGOD SCX RunAsProvider ExecuteScript; OMIGOD SCX RunAsProvider ExecuteShellCommand; Suspicious HWP Sub Processes; Suspicious Spool Service Child Process",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1204.002",
+      "score": 11,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "File With Uncommon Extension Created By An Office Application; GAC DLL Loaded Via Office Applications; HackTool - LittleCorporal Generated Maldoc Injection; Suspicious Binary In User Directory Spawned From Office Application; Suspicious Microsoft Office Child Process",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "11"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "11"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1210",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - SharpWSUS/WSUSpendu Execution; Terminal Service Process Spawn",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1212",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Kerberos Manipulation; Suspicious NTLM Authentication on the Printer Spooler Service",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1216",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Potential Manage-bde.wsf Abuse To Proxy Execution; Suspicious CustomShellHost Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1218",
+      "score": 38,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Arbitrary File Download Via IMEWDBLD.EXE; Curl Download And Execute Combination; Devtoolslauncher.exe Executes Specified Binary; Execute Pcwrun.EXE To Leverage Follina; Execution DLL of Choice Using WAB.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "38"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "38"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1218.001",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HTML Help HH.EXE Suspicious Child Process; OneNote.EXE Execution of Malicious Embedded Scripts; Remote CHM File Download/Execution Via HH.EXE; Suspicious HH.EXE Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1218.002",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Control Panel Items",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1218.003",
+      "score": 7,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Bypass UAC via CMSTP; CMSTP Execution Process Access; CMSTP Execution Process Creation; CMSTP Execution Registry Event; CMSTP UAC Bypass via COM Object Access",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "7"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "7"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1218.005",
+      "score": 7,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Csc.EXE Execution Form Potentially Suspicious Parent; HackTool - CACTUSTORCH Remote Thread Creation; MSHTA Execution with Suspicious File Extensions; Potential LethalHTA Technique Execution; Remotely Hosted HTA File Executed Via Mshta.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "7"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "7"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1218.008",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Odbcconf.EXE Suspicious DLL Location; Potentially Suspicious DLL Registered Via Odbcconf.EXE; Suspicious Driver/DLL Installation Via Odbcconf.EXE; Suspicious Response File Execution Via Odbcconf.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1218.010",
+      "score": 10,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HTML Help HH.EXE Suspicious Child Process; Potentially Suspicious Child Process Of Regsvr32; Potentially Suspicious Regsvr32 HTTP IP Pattern; Regsvr32 DLL Execution With Suspicious File Extension; Regsvr32 Execution From Highly Suspicious Location",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "10"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "10"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1218.011",
+      "score": 15,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Bad Opsec Defaults Sacrificial Processes With Improper Arguments; CobaltStrike Load by Rundll32; HTML Help HH.EXE Suspicious Child Process; HackTool - F-Secure C3 Load by Rundll32; HackTool - RedMimicry Winnti Playbook Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "15"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "15"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1218.013",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Mavinject Inject DLL Into Running Process; Renamed Mavinject.EXE Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1219",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Renamed Visual Studio Code Tunnel Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1219.002",
+      "score": 8,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - Inveigh Execution Artefacts; HackTool - RemoteKrbRelay SMB Relay Secrets Dump Module Indicators; Hijack Legit RDP Session to Move Laterally; Remote Access Tool - AnyDesk Silent Installation; Remote Access Tool - Anydesk Execution From Suspicious Folder",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "8"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1220",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Potential Remote SquiblyTwo Technique Execution; Remote XSL Execution Via Msxsl.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1482",
+      "score": 8,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "BloodHound Collection Files; HackTool - Bloodhound/Sharphound Execution; HackTool - SharpView Execution; HackTool - TruffleSnout Execution; Malicious PowerShell Commandlets - ProcessCreation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "8"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1485",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Fsutil Suspicious Invocation; Potential File Overwrite Via Sysinternals SDelete; Renamed Sysinternals Sdelete Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1486",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Load Of RstrtMgr.DLL By A Suspicious Process; Renamed Gpg.EXE Execution; Suspicious Reg Add BitLocker",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1489",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Delete All Scheduled Tasks; Delete Important Scheduled Task; Disable Important Scheduled Task; Suspicious Windows Service Tampering",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1490",
+      "score": 8,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "All Backups Deleted Via Wbadmin.EXE; Boot Configuration Tampering Via Bcdedit.EXE; Copy From VolumeShadowCopy Via Cmd.EXE; Deletion of Volume Shadow Copies via WMI with PowerShell; Registry Disable System Restore",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "8"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1491.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential Ransomware Activity Using LegalNotice Message",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1496",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Linux Crypto Mining Indicators; Linux Crypto Mining Pool Connections; Network Communication With Crypto Mining Pool; Potential Crypto Mining Activity",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1505.003",
+      "score": 8,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Chopper Webshell Process Pattern; Linux Webshell Indicators; Suspicious Child Process Of SQL Server; Suspicious MSExchangeMailboxReplication ASPX Write; Suspicious Process By Web Server Process",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "8"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1505.004",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Suspicious IIS Module Registration",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1518",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - WinPwn Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1518.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Sysmon Discovery Via Default Driver Altitude Using Findstr.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1526",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "PUA - Seatbelt Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1528",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Renamed BrowserCore.EXE Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1539",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "SQLite Chromium Profile Data DB Access; SQLite Firefox Profile Data DB Access",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1542.001",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "UEFI Persistence Via Wpbbin - FileCreation; UEFI Persistence Via Wpbbin - ProcessCreation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1543.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential Persistence Via PlistBuddy",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1543.003",
+      "score": 7,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Allow Service Access Using Security Descriptor Tampering Via Sc.EXE; Deny Service Access Using Security Descriptor Tampering Via Sc.EXE; PSEXEC Remote Execution File Artefact; Potential CobaltStrike Service Installations - Registry; Suspicious New Service Creation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "7"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "7"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1543.004",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential Persistence Via PlistBuddy",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1546",
+      "score": 6,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "COM Hijack via Sdclt; Control Panel Items; Outlook Macro Execution Without Warning Setting Enabled; Potential Persistence Via Outlook LoadMacroProviderOnBoot Setting; Suspicious Get-Variable.exe Creation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "6"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "6"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1546.001",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Change Default File Association To Executable Via Assoc; Shell Open Registry Keys Manipulation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1546.003",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "NewActiveScriptEventConsumer Creation Attempt via Wmic.EXE; WMI Backdoor Exchange Transport Agent; WMI Persistence - Command Line Event Consumer; WMI Persistence - Script Event Consumer File Write",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1546.007",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "New Netsh Helper DLL Registered From A Suspicious Location",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1546.008",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Persistence Via Sticky Key Backdoor; Potential Privilege Escalation Using Symlink Between Osk and Cmd; Sticky Key Like Backdoor Execution; Sticky Key Like Backdoor Usage - Registry; Suspicious Debugger Registration Cmdline",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1546.011",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential Persistence Via Shim Database In Uncommon Location; Suspicious Shim Database Patching Activity",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1546.012",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential Persistence Via App Paths Default Property; Potential Persistence Via GlobalFlags",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1546.015",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential PSFactoryBuffer COM Hijacking; Rundll32 Registered COM Objects",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1547",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Potential RipZip Attack on Startup Folder; Registry Persistence Mechanisms in Recycle Bin; Suspicious GrpConv Execution; WINEKEY Registry Modification",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1547.001",
+      "score": 8,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "File Creation In Suspicious Directory By Msdt.EXE; Modify User Shell Folders Startup Value; Narrator's Feedback-Hub Persistence; Potential Startup Shortcut Persistence Via PowerShell.EXE; Registry Persistence via Explorer Run Key",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "8"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1547.003",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "New TimeProviders Registered With Uncommon DLL Name",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1547.004",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Winlogon Notify Key Logon Persistence",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1547.005",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Security Support Provider (SSP) Added to LSA Configuration",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1547.008",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "DLL Load via LSASS",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1547.009",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Creation Exe for Service with Unquoted Path",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1547.010",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Bypass UAC Using Event Viewer; Default RDP Port Changed to Non Standard Port",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1548",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Abused Debug Privilege by Arbitrary Parent Processes; COM Hijack via Sdclt; Credential Dumping Attempt Via Svchost; Potential Privilege Escalation via Local Kerberos Relay over LDAP; Regedit as Trusted Installer",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1548.002",
+      "score": 44,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Bypass UAC Using DelegateExecute; Bypass UAC Using SilentCleanup Task; Bypass UAC via CMSTP; Bypass UAC via Fodhelper.exe; Bypass UAC via WSReset.exe",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "44"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "44"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1550.002",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Hacktool Ruler",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1550.003",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - KrbRelayUp Execution; HackTool - Rubeus Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1552.001",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Copy Passwd Or Shadow From TMP Path; Credentials In Files; HackTool - Typical HiveNightmare SAM File Export; HackTool - WinPwn Execution; Linux Recon Indicators",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1552.004",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "DPAPI Backup Keys And Certificate Export Activity IOC; PowerShell Get-Process LSASS",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1552.006",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Findstr GPP Passwords; LSASS Process Reconnaissance Via Findstr.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1553.004",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Root Certificate Installed From Susp Locations",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1554",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "DNS HybridConnectionManager Service Bus",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1555",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "DPAPI Backup Keys And Certificate Export Activity IOC; HackTool - SecurityXploded Execution; HackTool - WinPwn Execution; Suspicious Serv-U Process Pattern",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1555.003",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - WinPwn Execution; SQLite Chromium Profile Data DB Access",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1555.004",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Suspicious Key Manager Access",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1555.005",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Remote Thread Created In KeePass.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1556",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Directory Service Restore Mode(DSRM) Registry Value Tampering",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1557.001",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - ADCSPwn Execution; HackTool - Impacket Tools Execution; Potential SMB Relay Attack Tool Execution; RottenPotato Like Attack Pattern",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1558",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - Mimikatz Kirbi File Creation; Replay Attack Detected",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1558.003",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - KrbRelay Execution; HackTool - KrbRelayUp Execution; HackTool - RemoteKrbRelay Execution; HackTool - Rubeus Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1559.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "CMSTP Execution Process Access",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1560.001",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Rar Usage with Password and Compression Level; Suspicious Manipulation Of Default Accounts Via Net.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1563.002",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential MSTSC Shadowing Activity; Suspicious RDP Redirect Using TSCON",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1564",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Potentially Suspicious Execution From Parent Process In Public Folder; Suspicious Creation with Colorcpl; Suspicious Executable File Creation",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1564.001",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "PowerShell Logging Disabled Via Registry Key Tampering; Registry Persistence via Service in Safe Mode; Set Suspicious Files as System Files Using Attrib.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1564.002",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Hiding User Account Via SpecialAccounts Registry Key",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1564.003",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "File Download with Headless Browser; HackTool - Covenant PowerShell Launcher; Potential Data Stealing Via Chromium Headless Debugging",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1564.004",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Potential Rundll32 Execution With DLL Stored In ADS; PrintBrm ZIP Creation of Extraction; Run PowerShell Script from ADS",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1565.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "History File Deletion",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1566",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HTML Help HH.EXE Suspicious Child Process; Phishing Pattern ISO in Archive; Suspicious HH.EXE Execution; Suspicious Microsoft OneNote Child Process",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1566.001",
+      "score": 7,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HTML Help HH.EXE Suspicious Child Process; ISO File Created Within Temp Folders; Suspicious Double Extension File Execution; Suspicious Execution From Outlook Temporary Folder; Suspicious HH.EXE Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "7"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "7"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1567",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Communication To Ngrok Tunneling Service - Linux; Communication To Ngrok Tunneling Service Initiated; Process Initiated Network Connection To Ngrok Domain",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1567.002",
+      "score": 3,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "DNS Query for Anonfiles.com Domain - Sysmon; PUA - Rclone Execution; Suspicious Dropbox API Usage",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "3"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1568.002",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Communication To Ngrok Tunneling Service - Linux; Communication To Ngrok Tunneling Service Initiated",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1569.002",
+      "score": 8,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - SharpUp PrivEsc Tool Execution; PUA - CsExec Execution; PUA - NSudo Execution; PUA - NirCmd Execution As LOCAL SYSTEM; PUA - RunXCmd Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "8"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1570",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "PSEXEC Remote Execution File Artefact; Rundll32 Execution Without Parameters",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1571",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Potentially Suspicious Malware Callback Communication; Potentially Suspicious Malware Callback Communication - Linux",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1572",
+      "score": 12,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Communication To LocaltoNet Tunneling Service Initiated; Communication To LocaltoNet Tunneling Service Initiated - Linux; Communication To Ngrok Tunneling Service - Linux; Communication To Ngrok Tunneling Service Initiated; PUA - 3Proxy Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "12"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "12"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1574",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Suspicious Printer Driver Empty Manufacturer",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1574.001",
+      "score": 35,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Aruba Network Service Potential DLL Sideloading; DHCP Callout DLL Installation; DLL Search Order Hijackig Via Additional Space in Path; DLL Sideloading Of ShellChromeAPI.DLL; DLL Sideloading by VMware Xfer Utility",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "35"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "35"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1574.005",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "HackTool - SharpUp PrivEsc Tool Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1574.008",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Using SettingSyncHost.exe as LOLBin",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1574.011",
+      "score": 4,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Abuse of Service Permissions to Hide Services Via Set-Service; Possible Privilege Escalation via Weak Service Permissions; Potential Privilege Escalation via Service Permissions Weakness; Service DACL Abuse To Hide Services Via Sc.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "4"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1587",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - PurpleSharp Execution; Linux HackTool Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1587.001",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "PUA - CsExec Execution; Potential Privilege Escalation To LOCAL SYSTEM; Potential PsExec Remote Execution; PsExec/PAExec Escalation to LOCAL SYSTEM; Uncommon File Created In Office Startup Folder",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1588.002",
+      "score": 5,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Hacktool Execution - Imphash; Hacktool Execution - PE Metadata; Renamed SysInternals DebugView Execution; Suspicious Execution Of Renamed Sysinternals Tools - Registry; Usage of Renamed Sysinternals Tools - RegistrySet",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "5"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1590.001",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "PUA - Crassus Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1592.004",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Linux Recon Indicators",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1595",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "PUA - PingCastle Execution From Potentially Suspicious Parent",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1608",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HybridConnectionManager Service Installation - Registry; Suspicious Download from Office Domain",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1615",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - SharpUp PrivEsc Tool Execution; Suspicious Reconnaissance Activity Via GatherNetworkInfo.VBS",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1620",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "PowerShell Base64 Encoded Reflective Assembly Load",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1649",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "HackTool - Certify Execution; HackTool - Certipy Execution",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1685",
+      "score": 54,
+      "enabled": true,
+      "showSubtechniques": false,
+      "comment": "Add SafeBoot Keys Via Reg Utility; Antivirus Filter Driver Disallowed On Dev Drive - Registry; Disable PUA Protection on Windows Defender; Disable Windows Defender AV Security Monitoring; Disable Windows Defender Functionalities Via Registry Keys",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "54"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "54"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1685.001",
+      "score": 14,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Audit Policy Tampering Via Auditpol; Audit Policy Tampering Via NT Resource Kit Auditpol; Change Winevt Channel Access Permission Via Registry; Disable Security Events Logging Adding Reg Key MiniNt; Disable Windows Event Logging Via Registry",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "14"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "14"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1685.005",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Suspicious Eventlog Clearing or Configuration Change Activity; Suspicious Windows Trace ETW Session Tamper Via Logman.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1685.006",
+      "score": 1,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "Syslog Clearing or Removal Via System Utilities",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "1"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "techniqueID": "T1686.003",
+      "score": 2,
+      "enabled": true,
+      "showSubtechniques": true,
+      "comment": "RDP Connection Allowed Via Netsh.EXE; Suspicious Program Location Whitelisted In Firewall Via Netsh.EXE",
+      "metadata": [
+        {
+          "name": "rules",
+          "value": "2"
+        },
+        {
+          "name": "Sentinel-X rules",
+          "value": "0"
+        },
+        {
+          "name": "community rules",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "gradient": {
+    "colors": [
+      "#e8f5e9",
+      "#1b5e20"
+    ],
+    "minValue": 0,
+    "maxValue": 54
+  },
+  "legendItems": [
+    {
+      "label": "Rules look for this technique",
+      "color": "#1b5e20"
+    }
+  ],
+  "sorting": 3,
+  "hideDisabled": true,
+  "showTacticRowBackground": true,
+  "selectTechniquesAcrossTactics": true
+}

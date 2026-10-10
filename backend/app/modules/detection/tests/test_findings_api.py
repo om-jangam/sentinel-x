@@ -194,6 +194,21 @@ async def test_an_unusable_rule_query_is_refused(client: httpx.AsyncClient, admi
     assert response.status_code == 422, query
 
 
+async def test_the_rule_set_exports_as_a_navigator_layer(client: httpx.AsyncClient, admin_token: str) -> None:
+    layer = (await client.get("/api/v1/detection/exports/attack-navigator", headers=bearer(admin_token))).json()
+
+    assert layer["versions"]["layer"] == "4.5"
+    assert layer["domain"] == "enterprise-attack"
+    assert len(layer["techniques"]) > 150
+    covered = {entry["techniqueID"] for entry in layer["techniques"]}
+    assert "T1110.003" in covered, "the technique the shipped spray rules claim"
+    assert "not evidence that it would be caught" in layer["description"]
+
+    scores = {entry["techniqueID"]: entry["score"] for entry in layer["techniques"]}
+    assert scores["T1110.003"] >= 1
+    assert layer["gradient"]["maxValue"] == max(scores.values())
+
+
 async def test_rules_catalogue(client: httpx.AsyncClient, admin_token: str) -> None:
     rules = await rule_pages(client, admin_token)
     assert len(rules) >= 900, "own rules plus every evaluable SigmaHQ rule"
@@ -234,4 +249,6 @@ async def test_permissions(client: httpx.AsyncClient, admin_token: str) -> None:
 
     assert (await client.get("/api/v1/findings", headers=bearer(viewer))).status_code == 200
     assert (await client.get("/api/v1/detection/rules", headers=bearer(viewer))).status_code == 403
+    layer = await client.get("/api/v1/detection/exports/attack-navigator", headers=bearer(viewer))
+    assert layer.status_code == 403, "the coverage layer is the rule set, so it needs rule:read too"
     assert (await client.get("/api/v1/findings")).status_code == 401

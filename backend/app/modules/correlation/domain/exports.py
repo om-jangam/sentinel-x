@@ -20,12 +20,10 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 
+from app.core.attack_navigator import Scored, layer
 from app.modules.correlation.domain.incidents import IncidentDetail, LinkKind
 from app.modules.correlation.domain.timeline import TimelineStep
 
-LAYER_VERSION = "4.5"
-NAVIGATOR_VERSION = "5.1.0"
-ATTACK_VERSION = "17"
 ATTACK_FLOW_EXTENSION = "extension-definition--fb9c968a-745b-4ade-9b25-c324172197f4"
 # Stable ids for repeat exports: a v5 UUID of the incident id and the object's place in the document.
 EXPORT_NAMESPACE = uuid.UUID("2f0f4bb1-05f2-4b9f-9d54-9a4c4d55d5e2")
@@ -55,43 +53,24 @@ def navigator_layer(detail: IncidentDetail, *, generated: datetime) -> dict[str,
             if title:
                 rules.setdefault(key, set()).add(title)
 
-    techniques = [
-        {
-            "techniqueID": technique,
-            "tactic": None,
-            "score": len(uids),
-            "enabled": True,
-            "comment": "; ".join(sorted(rules.get(technique, set())))[:MAX_COMMENT],
-            "metadata": [{"name": "events", "value": str(len(uids))}],
-            "showSubtechniques": "." in technique,
-        }
-        for technique, uids in sorted(events.items())
-    ]
-    for entry in techniques:
-        if entry["tactic"] is None:
-            del entry["tactic"]
-
-    return {
-        "name": f"Sentinel-X · {incident.title}"[:100],
-        "versions": {"attack": ATTACK_VERSION, "navigator": NAVIGATOR_VERSION, "layer": LAYER_VERSION},
-        "domain": "enterprise-attack",
-        "description": (
+    return layer(
+        name=f"Sentinel-X · {incident.title}",
+        description=(
             f"Incident {incident.id} ({incident.severity}), {incident.finding_count} findings over "
             f"{incident.event_count} events, {_rfc3339(incident.first_seen)} to {_rfc3339(incident.last_seen)}. "
             f"Exported by Sentinel-X on {_rfc3339(generated)}; every technique is one a finding named."
         ),
-        "techniques": techniques,
-        "gradient": {
-            "colors": ["#e8f5e9", "#1b5e20"],
-            "minValue": 0,
-            "maxValue": max([1, *(len(uids) for uids in events.values())]),
-        },
-        "legendItems": [{"label": "Observed in this incident", "color": "#1b5e20"}],
-        "sorting": 3,
-        "hideDisabled": True,
-        "showTacticRowBackground": True,
-        "selectTechniquesAcrossTactics": True,
-    }
+        techniques=[
+            Scored(
+                technique_id=technique,
+                score=len(uids),
+                comment="; ".join(sorted(rules.get(technique, set()))),
+                metadata=(("events", str(len(uids))),),
+            )
+            for technique, uids in sorted(events.items())
+        ],
+        legend="Observed in this incident",
+    )
 
 
 def _asset(incident_id: str, kind: str, value: str) -> dict[str, Any]:
